@@ -35,6 +35,9 @@ t4 = 50  # нижня сторона
 # Початкова температура всередині пластини
 t_guess = 25
 
+max_T = max((t1, t2, t3, t4, t_guess))
+min_T = min((t1, t2, t3, t4, t_guess))
+
 def print_temperature_matrix(matrix, title=""):
     """Функція для форматованого виведення матриці температур"""
     print(f"\n{title}")
@@ -98,7 +101,7 @@ fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(15, 7))
 fig.suptitle('Динаміка розподілу температури в пластині')
 
 # Створюємо рівномірну шкалу температур від 25 до 80 з кроком 5
-levels = np.arange(25, 85, 5)
+levels = np.arange(min_T, max_T+5, 5)
 
 # Початкова візуалізація
 contour = ax1.contourf(T, levels=levels, cmap='jet')
@@ -107,7 +110,7 @@ ax1.set_title('Контурний графік')
 ax1.set_xlabel('X координата')
 ax1.set_ylabel('Y координата')
 
-im = ax2.imshow(T, cmap='jet', interpolation='nearest', vmin=25, vmax=80, origin='lower')
+im = ax2.imshow(T, cmap='jet', interpolation='nearest', vmin=min_T, vmax=max_T, origin='lower')
 ax2.set_title('Теплова карта')
 ax2.set_xlabel('X координата')
 ax2.set_ylabel('Y координата')
@@ -128,7 +131,7 @@ def update(frame):
     ax1.set_ylabel('Y координата')
 
     # Оновлення теплової карти з новою шкалою
-    im = ax2.imshow(temperature_history[frame], cmap='jet', interpolation='nearest', vmin=25, vmax=80, origin='lower')
+    im = ax2.imshow(temperature_history[frame], cmap='jet', interpolation='nearest', vmin=min_T, vmax=max_T, origin='lower')
     ax2.set_title(f'Теплова карта (ітерація {frame})')
     ax2.set_xlabel('X координата')
     ax2.set_ylabel('Y координата')
@@ -140,7 +143,7 @@ def update(frame):
             ax2.text(j, i, f'{temp:.1f}°C',
                      ha='center', va='center',
                      color='white' if temp > 70 else 'black',
-                     fontsize=10)
+                     fontsize=8)
 
     return ax1, ax2
 
