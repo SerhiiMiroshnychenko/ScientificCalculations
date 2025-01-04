@@ -97,14 +97,17 @@ print_temperature_matrix(T, "\nФінальний розподіл темпер�
 fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(15, 7))
 fig.suptitle('Динаміка розподілу температури в пластині')
 
+# Створюємо рівномірну шкалу температур від 25 до 80 з кроком 5
+levels = np.arange(25, 85, 5)
+
 # Початкова візуалізація
-contour = ax1.contourf(T, 80, cmap='jet')
+contour = ax1.contourf(T, levels=levels, cmap='jet')
 ax1.grid(color='k', linestyle='--')
 ax1.set_title('Контурний графік')
 ax1.set_xlabel('X координата')
 ax1.set_ylabel('Y координата')
 
-im = ax2.imshow(T, cmap='jet', interpolation='nearest')
+im = ax2.imshow(T, cmap='jet', interpolation='nearest', vmin=25, vmax=80)
 ax2.set_title('Теплова карта')
 ax2.set_xlabel('X координата')
 ax2.set_ylabel('Y координата')
@@ -117,15 +120,15 @@ def update(frame):
     ax1.clear()
     ax2.clear()
 
-    # Оновлення контурного графіку
-    contour = ax1.contourf(temperature_history[frame], 80, cmap='jet')
+    # Оновлення контурного графіку з новою шкалою
+    contour = ax1.contourf(temperature_history[frame], levels=levels, cmap='jet')
     ax1.grid(color='k', linestyle='--')
     ax1.set_title(f'Контурний графік (ітерація {frame})')
     ax1.set_xlabel('X координата')
     ax1.set_ylabel('Y координата')
 
-    # Оновлення теплової карти
-    im = ax2.imshow(temperature_history[frame], cmap='jet', interpolation='nearest')
+    # Оновлення теплової карти з новою шкалою
+    im = ax2.imshow(temperature_history[frame], cmap='jet', interpolation='nearest', vmin=25, vmax=80)
     ax2.set_title(f'Теплова карта (ітерація {frame})')
     ax2.set_xlabel('X координата')
     ax2.set_ylabel('Y координата')
@@ -143,7 +146,7 @@ def update(frame):
 
 # Створення анімації
 anim = FuncAnimation(fig, update, frames=len(temperature_history),
-                     interval=500, repeat=True)
+                     interval=500, repeat=False)
 
 plt.tight_layout()
 plt.show()
