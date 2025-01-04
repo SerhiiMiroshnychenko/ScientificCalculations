@@ -34,18 +34,41 @@ t4 = 50  # нижня сторона
 # Початкова температура всередині пластини
 t_guess = 25
 
+def print_temperature_matrix(matrix, title=""):
+    """Функція для форматованого виведення матриці температур"""
+    print(f"\n{title}")
+    print("-" * 80)
+    print("     ", end="")
+    print("X", end="\t")
+    for j in range(matrix.shape[1]):
+        print(f"{j:<7}", end="")
+    print("\nY")
+    print("-" * 80)
+    for i in range(matrix.shape[0]):
+        print(f"{i:<4}", end=" ")
+        for j in range(matrix.shape[1]):
+            print(f"{matrix[i,j]:>7.2f}", end="")
+        print()
+    print("-" * 80)
+
+
 # Створення масиву температур та встановлення початкових умов
 T = np.zeros((xdim,ydim))
-print(f"{T = }")
+# Виведення нульової матриці
+print_temperature_matrix(T, "Нульова матриця температури:")
+
 T.fill(t_guess)
-print(f"{T = }")
+# Матриця температури до встановлення граничних умов
+print_temperature_matrix(T, "Матриця температури до встановлення граничних умов:")
+
 
 # Встановлення граничних умов
 T[0:xdim,0] = t1    # ліва сторона
 T[0,1:ydim] = t2    # верхня сторона
 T[0:xdim,ydim-1] = t3  # права сторона
 T[xdim-1,1:ydim] = t4  # нижня сторона
-print(f"{T = }")
+# Виведення початкового стану
+print_temperature_matrix(T, "Початковий розподіл температури:")
 
 # Ітераційний процес розрахунку методом скінченних різниць
 for n in range(0,niter):
@@ -56,14 +79,11 @@ for n in range(0,niter):
             T[i,j] = 0.25*(T[i+1,j] + T[i-1,j] + T[i,j+1] + T[i,j-1])
     
     # Виведення проміжних результатів кожні 5 ітерацій
-    if (n+1) % 5 == 0:
-        print(f"Ітерація {n+1}:")
-        print(T)
-        print("\n")
+    if (n+1) % 5 == 0 and (n+1) != 25:
+        print_temperature_matrix(T, f"Ітерація {n+1}:")
 
 # Виведення фінального розподілу температури
-print("Фінальний розподіл температури:")
-print(T)
+print_temperature_matrix(T, "\nФінальний розподіл температури:")
 
 # Візуалізація результатів
 plt.figure(figsize=(7,7))
