@@ -134,14 +134,14 @@ def update(frame):
             temp = temperature_history[frame][i,j]
             ax2.text(j, i, f'{temp:.1f}°C',
                      ha='center', va='center',
-                     color='white' if temp > 80 else 'black',
-                     fontsize=8)
+                     color='white' if temp > 100 else 'black',
+                     fontsize=10)
 
     return ax1, ax2
 
 # Створення анімації
 anim = FuncAnimation(fig, update, frames=len(temperature_history),
-                     interval=500, repeat=False)
+                     interval=500, repeat=True)
 
 plt.tight_layout()
 plt.show()
