@@ -87,7 +87,7 @@ fig2.suptitle('Еволюція температури (нагрів з обох
 
 line2, = ax3.plot([], [], 'b-', lw=2)
 ax3.set_xlim(0, tEnd2)
-ax3.set_ylim(-0.1, 0.5)  # Змінено максимум до 0.5
+ax3.set_ylim(-0.1, 0.9)  # Змінено максимум до 0.9
 ax3.set_xlabel('Час')
 ax3.set_ylabel('Температура в точці #50')
 ax3.grid(True)
@@ -95,11 +95,11 @@ ax3.grid(True)
 # Створюємо теплову карту
 img2 = ax4.imshow(np.zeros((size, n_frames)),
                   aspect='auto',
-                  extent=[0, tEnd2, 0, size-1],  # Змінено порядок координат
+                  extent=[0, tEnd2, 0, size-1],
                   cmap='viridis',
-                  vmin=0, vmax=0.5,  # Змінено максимум до 0.5
+                  vmin=0, vmax=0.9,  # Також змінено максимум до 0.9
                   interpolation='bilinear',
-                  origin='upper')  # Додано параметр origin
+                  origin='upper')
 plt.colorbar(img2, ax=ax4, label='Температура')
 ax4.set_ylabel('Координата')
 ax4.set_xlabel('Час')
