@@ -95,46 +95,6 @@ for tIndex in (0, n_steps//200, n_steps//50, n_steps//25,  -1):
     plt.colorbar(label='Температура')
     plt.show()
 
-# # Початковий момент часу
-# tIndex = 0
-# plt.figure(figsize=(10, 8))
-# plt.xlabel('Координата x')
-# plt.ylabel('Координата y')
-# plt.title(f'Розподіл температури в початковий момент часу (t = {solution.t[tIndex]:.1f})')
-# plt.contourf(x_list, y_list, solution.y[:,tIndex].reshape(sizex, sizey))
-# plt.colorbar(label='Температура')
-# plt.show()
-#
-# # Проміжний момент часу
-# tIndex = n_steps//200
-# plt.figure(figsize=(10, 8))
-# plt.xlabel('Координата x')
-# plt.ylabel('Координата y')
-# plt.title(f'Розподіл температури в проміжний момент часу (t = {solution.t[tIndex]:.1f})')
-# plt.contourf(x_list, y_list, solution.y[:,tIndex].reshape(sizex, sizey))
-# plt.colorbar(label='Температура')
-# plt.show()
-#
-# # Проміжний момент часу
-# tIndex = n_steps//50
-# plt.figure(figsize=(10, 8))
-# plt.xlabel('Координата x')
-# plt.ylabel('Координата y')
-# plt.title(f'Розподіл температури в проміжний момент часу (t = {solution.t[tIndex]:.1f})')
-# plt.contourf(x_list, y_list, solution.y[:,tIndex].reshape(sizex, sizey))
-# plt.colorbar(label='Температура')
-# plt.show()
-#
-# # Кінцевий момент часу
-# tIndex = -1
-# plt.figure(figsize=(10, 8))
-# plt.xlabel('Координата x')
-# plt.ylabel('Координата y')
-# plt.title(f'Розподіл температури в кінцевий момент часу (t = {solution.t[tIndex]:.1f})')
-# plt.contourf(x_list, y_list, solution.y[:,tIndex].reshape(sizex, sizey))
-# plt.colorbar(label='Температура')
-# plt.show()
-
 # Створюємо нові початкові умови: нагріті всі границі
 u0 = np.zeros([sizex,sizey])  # Спочатку температура скрізь нульова
 u0[0,:] = 1    # Температура = 1 на лівій границі
@@ -165,42 +125,3 @@ for tIndex in (0, n_steps//200, n_steps//10, n_steps//3, -1):
     plt.contourf(x_list, y_list, solution.y[:, tIndex].reshape(sizex, sizey))
     plt.colorbar(label='Температура')
     plt.show()
-# # Початковий момент часу
-# tIndex = 0
-# plt.figure(figsize=(10, 8))
-# plt.xlabel('Координата x')
-# plt.ylabel('Координата y')
-# plt.title(f'Розподіл температури в початковий момент часу (t = {solution.t[tIndex]:.1f})')
-# plt.contourf(x_list, y_list, solution.y[:,tIndex].reshape(sizex, sizey))
-# plt.colorbar(label='Температура')
-# plt.show()
-#
-# # Проміжний момент часу
-# tIndex = n_steps//200
-# plt.figure(figsize=(10, 8))
-# plt.xlabel('Координата x')
-# plt.ylabel('Координата y')
-# plt.title(f'Розподіл температури в проміжний момент часу (t = {solution.t[tIndex]:.1f})')
-# plt.contourf(x_list, y_list, solution.y[:,tIndex].reshape(sizex, sizey))
-# plt.colorbar(label='Температура')
-# plt.show()
-#
-# # Проміжний момент часу
-# tIndex = n_steps//50
-# plt.figure(figsize=(10, 8))
-# plt.xlabel('Координата x')
-# plt.ylabel('Координата y')
-# plt.title(f'Розподіл температури в проміжний момент часу (t = {solution.t[tIndex]:.1f})')
-# plt.contourf(x_list, y_list, solution.y[:,tIndex].reshape(sizex, sizey))
-# plt.colorbar(label='Температура')
-# plt.show()
-#
-# # Кінцевий момент часу
-# tIndex = -1
-# plt.figure(figsize=(10, 8))
-# plt.xlabel('Координата x')
-# plt.ylabel('Координата y')
-# plt.title(f'Розподіл температури в кінцевий момент часу (t = {solution.t[tIndex]:.1f})')
-# plt.contourf(x_list, y_list, solution.y[:,tIndex].reshape(sizex, sizey))
-# plt.colorbar(label='Температура')
-# plt.show()
