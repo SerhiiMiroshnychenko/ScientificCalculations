@@ -1,126 +1,193 @@
-# %% [markdown]
-# # Multidimensional differential equations
-#
-# - Börge Göbel
+"""
+# Двовимірне рівняння теплопровідності
 
-# %%
+## Постановка задачі
+Даний скрипт розв'язує двовимірне рівняння теплопровідності:
+∂u/∂t = a * (∂²u/∂x² + ∂²u/∂y²)
+
+де:
+- u(x,y,t) - температура в точці (x,y) в момент часу t
+- a - коефіцієнт температуропровідності
+- t - час
+- x, y - просторові координати
+
+## Метод розв'язання
+1. Використовуємо метод кінцевих різниць для дискретизації просторових похідних
+2. Застосовуємо перетворення двовимірного масиву в одновимірний для використання стандартних методів розв'язку
+3. Для розв'язку системи використовуємо метод Рунге-Кутти 4-5 порядку
+4. Візуалізуємо результати за допомогою контурних графіків
+
+## Граничні умови
+Реалізовано різні варіанти граничних умов:
+1. Постійна температура на лівій та нижній границях
+2. Постійна температура на всіх границях
+"""
+
+# Імпортуємо необхідні бібліотеки
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy import integrate
 
-# %% [markdown]
-# ## In 2 dimensions
+# Визначаємо основні фізичні параметри системи
+a = 1.0   # Коефіцієнт температуропровідності
+dx = 1.0  # Крок сітки по x
+dy = 1.0  # Крок сітки по y
 
-# %% [markdown]
-# \\(
-# \frac{\partial}{\partial t} u(\vec{r},t) = a \left(\frac{\partial^2}{\partial x^2} u(\vec{r},t) + \frac{\partial^2}{\partial y^2} u(\vec{r},t)\right)
-# \\)
-#
-# Here, \\( u(\vec{r},t) \\) is an array \\(\{ u_{1,1}, u_{1,2}, \dots, u_{n,n} \} \\) that has different values for different times. We can discretize the spatial derivative according to:
-#
-# \\(
-# \frac{\partial^2}{\partial x^2} u_{i,j} + \frac{\partial^2}{\partial y^2} u_{i,j} = \frac{u_{i+1,j}-2u_{i,j}+u_{i-1,j}}{(\Delta x)^2}+\frac{u_{i,j+1}-2u_{i,j}+u_{i,j-1}}{(\Delta y)^2}
-# \\)
+def f_2D(t, u):
+    """
+    Функція, що реалізує праву частину двовимірного рівняння теплопровідності.
 
-# %%
-a = 1.0
-dx = 1.0
-dy = 1.0
+    Параметри:
+    t (float) - поточний час (не використовується, але потрібен для сумісності з solve_ivp)
+    u (numpy.array) - двовимірний масив температур розміром [sizex, sizey]
 
-def f_2D(t,u):
-    unew = np.zeros( [len(u),len(u)] )
-    unew[1:-1,1:-1] = (u[2:,1:-1] -2*u[1:-1,1:-1] + u[:-2,1:-1]) * a/dx**2 + (u[1:-1,2:] -2*u[1:-1,1:-1] + u[1:-1,:-2]) * a/dy**2
+    Повертає:
+    numpy.array - масив похідних температури по часу для кожної точки
+    """
+    # Створюємо масив для збереження похідних
+    unew = np.zeros([len(u), len(u)])
+
+    # Розраховуємо похідні для всіх внутрішніх точок
+    # Перший доданок - похідна по x, другий - по y
+    unew[1:-1,1:-1] = (u[2:,1:-1] - 2*u[1:-1,1:-1] + u[:-2,1:-1]) * a/dx**2 + \
+                      (u[1:-1,2:] - 2*u[1:-1,1:-1] + u[1:-1,:-2]) * a/dy**2
     return unew
 
-sizex = 100
-sizey = 100
+# Визначаємо розміри розрахункової сітки
+sizex = 100  # Кількість точок по x
+sizey = 100  # Кількість точок по y
 
-def f_2D_flattened(t,u):
+def f_2D_flattened(t, u):
+    """
+    Допоміжна функція для перетворення двовимірної задачі в одновимірну.
+    Це необхідно для використання стандартних методів розв'язку ОДУ.
+
+    Параметри:
+    t (float) - поточний час
+    u (numpy.array) - одновимірний масив (розгорнутий двовимірний)
+
+    Повертає:
+    numpy.array - одновимірний масив похідних
+    """
+    # Перетворюємо одновимірний масив назад у двовимірний
     u = u.reshape(sizex, sizey)
-    unew = np.zeros( [sizex,sizey] )
-    unew[1:-1,1:-1] = (u[2:,1:-1] -2*u[1:-1,1:-1] + u[:-2,1:-1]) * a/dx**2 + (u[1:-1,2:] -2*u[1:-1,1:-1] + u[1:-1,:-2]) * a/dy**2
+
+    # Створюємо масив для похідних
+    unew = np.zeros([sizex, sizey])
+
+    # Розраховуємо похідні для всіх внутрішніх точок
+    unew[1:-1,1:-1] = (u[2:,1:-1] - 2*u[1:-1,1:-1] + u[:-2,1:-1]) * a/dx**2 + \
+                      (u[1:-1,2:] - 2*u[1:-1,1:-1] + u[1:-1,:-2]) * a/dy**2
+
+    # Повертаємо розгорнутий одновимірний масив
     return unew.flatten()
 
-# %%
-tStart = 0
-tEnd = 10000
+# Задаємо параметри часової еволюції
+tStart = 0       # Початковий час
+tEnd = 10000     # Кінцевий час
 
-u0 = np.zeros([sizex,sizey])
-u0[0,:] = 1
-u0[:,0] = 1
+# Створюємо початкові умови: нагріті ліва та нижня границі
+u0 = np.zeros([sizex, sizey])  # Спочатку температура скрізь нульова
+u0[0,:] = 1   # Температура = 1 на лівій границі
+u0[:,0] = 1   # Температура = 1 на нижній границі
 
-solution = integrate.solve_ivp(f_2D_flattened, [tStart, tEnd], u0.flatten(), method='RK45', t_eval=np.linspace(tStart,tEnd,10001))
+# Розв'язуємо систему рівнянь
+solution = integrate.solve_ivp(
+    f_2D_flattened,                          # Функція правої частини
+    [tStart, tEnd],                          # Часовий інтервал
+    u0.flatten(),                            # Початкові умови (розгорнуті в 1D)
+    method='RK45',                           # Метод Рунге-Кутти 4-5 порядку
+    t_eval=np.linspace(tStart,tEnd,10001)    # Точки часу для збереження результату
+)
 
-# %%
+# Створюємо сітку для візуалізації
 x_list, y_list = np.meshgrid(np.arange(sizex), np.arange(sizey))
 
+# Візуалізуємо результати для різних моментів часу
 
+# Початковий момент часу
 tIndex = 0
-plt.xlabel('Coordinate x')
-plt.ylabel('Coordinate y')
+plt.figure(figsize=(10, 8))
+plt.xlabel('Координата x')
+plt.ylabel('Координата y')
+plt.title(f'Розподіл температури в початковий момент часу (t = {solution.t[tIndex]:.1f})')
 plt.contourf(x_list, y_list, solution.y[:,tIndex].reshape(sizex, sizey))
-plt.colorbar()
-plt.title('t = '+str(solution.t[tIndex]))
+plt.colorbar(label='Температура')
 plt.show()
 
+# Проміжний момент часу
 tIndex = tEnd//200
-plt.xlabel('Coordinate x')
-plt.ylabel('Coordinate y')
+plt.figure(figsize=(10, 8))
+plt.xlabel('Координата x')
+plt.ylabel('Координата y')
+plt.title(f'Розподіл температури в проміжний момент часу (t = {solution.t[tIndex]:.1f})')
 plt.contourf(x_list, y_list, solution.y[:,tIndex].reshape(sizex, sizey))
-plt.colorbar()
-plt.title('t = '+str(solution.t[tIndex]))
+plt.colorbar(label='Температура')
 plt.show()
 
-tIndex = tEnd
-plt.xlabel('Coordinate x')
-plt.ylabel('Coordinate y')
+# Кінцевий момент часу
+tIndex = -1
+plt.figure(figsize=(10, 8))
+plt.xlabel('Координата x')
+plt.ylabel('Координата y')
+plt.title(f'Розподіл температури в кінцевий момент часу (t = {solution.t[tIndex]:.1f})')
 plt.contourf(x_list, y_list, solution.y[:,tIndex].reshape(sizex, sizey))
-plt.colorbar()
-plt.title('t = '+str(solution.t[tIndex]))
+plt.colorbar(label='Температура')
 plt.show()
 
 # %% [markdown]
-# ### Different starting conditions
+# ### Інші початкові умови
+#
+# Розглянемо випадок, коли температура підтримується на всіх границях області
 
-# %%
+# Задаємо ті самі параметри часової еволюції
 tStart = 0
 tEnd = 10000
 
-u0 = np.zeros([sizex,sizey])
-u0[0,:] = 1
-u0[:,0] = 1
+# Створюємо нові початкові умови: нагріті всі границі
+u0 = np.zeros([sizex,sizey])  # Спочатку температура скрізь нульова
+u0[0,:] = 1    # Температура = 1 на лівій границі
+u0[:,0] = 1    # Температура = 1 на нижній границі
+u0[-1,:] = 1   # Температура = 1 на правій границі
+u0[:,-1] = 1   # Температура = 1 на верхній границі
 
-u0[-1,:] = 1
-u0[:,-1] = 1
+# Розв'язуємо систему рівнянь з новими умовами
+solution = integrate.solve_ivp(
+    f_2D_flattened,
+    [tStart, tEnd],
+    u0.flatten(),
+    method='RK45',
+    t_eval=np.linspace(tStart,tEnd,10001)
+)
 
-solution = integrate.solve_ivp(f_2D_flattened, [tStart, tEnd], u0.flatten(), method='RK45', t_eval=np.linspace(tStart,tEnd,10001))
+# Візуалізуємо результати для різних моментів часу
 
-# %%
-x_list, y_list = np.meshgrid(np.arange(sizex), np.arange(sizey))
-
-
+# Початковий момент часу
 tIndex = 0
-plt.xlabel('Coordinate x')
-plt.ylabel('Coordinate y')
+plt.figure(figsize=(10, 8))
+plt.xlabel('Координата x')
+plt.ylabel('Координата y')
+plt.title(f'Розподіл температури в початковий момент часу (t = {solution.t[tIndex]:.1f})')
 plt.contourf(x_list, y_list, solution.y[:,tIndex].reshape(sizex, sizey))
-plt.colorbar()
-plt.title('t = '+str(solution.t[tIndex]))
+plt.colorbar(label='Температура')
 plt.show()
 
+# Проміжний момент часу
 tIndex = tEnd//200
-plt.xlabel('Coordinate x')
-plt.ylabel('Coordinate y')
+plt.figure(figsize=(10, 8))
+plt.xlabel('Координата x')
+plt.ylabel('Координата y')
+plt.title(f'Розподіл температури в проміжний момент часу (t = {solution.t[tIndex]:.1f})')
 plt.contourf(x_list, y_list, solution.y[:,tIndex].reshape(sizex, sizey))
-plt.colorbar()
-plt.title('t = '+str(solution.t[tIndex]))
+plt.colorbar(label='Температура')
 plt.show()
 
-tIndex = tEnd
-plt.xlabel('Coordinate x')
-plt.ylabel('Coordinate y')
+# Кінцевий момент часу
+tIndex = -1
+plt.figure(figsize=(10, 8))
+plt.xlabel('Координата x')
+plt.ylabel('Координата y')
+plt.title(f'Розподіл температури в кінцевий момент часу (t = {solution.t[tIndex]:.1f})')
 plt.contourf(x_list, y_list, solution.y[:,tIndex].reshape(sizex, sizey))
-plt.colorbar()
-plt.title('t = '+str(solution.t[tIndex]))
+plt.colorbar(label='Температура')
 plt.show()
-
-

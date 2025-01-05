@@ -1,135 +1,184 @@
-# %% [markdown]
-# # Multidimensional differential equations
-#
-# - Börge Göbel
+"""
+# Одновимірне рівняння теплопровідності
 
-# %%
-import numpy as np
-import matplotlib.pyplot as plt
-from scipy import integrate
+## Постановка задачі
+Даний скрипт розв'язує одновимірне рівняння теплопровідності:
+∂u/∂t = a * ∂²u/∂x²
+
+де:
+- u(x,t) - температура в точці x в момент часу t
+- a - коефіцієнт температуропровідності
+- t - час
+- x - просторова координата
+
+## Метод розв'язання
+1. Використовуємо метод кінцевих різниць для дискретизації просторової похідної
+2. Для розв'язку системи диференціальних рівнянь використовуємо метод Рунге-Кутти 4-5 порядку
+3. Візуалізуємо результати за допомогою графіків температури та теплових карт
+
+## Граничні умови
+Реалізовано два типи граничних умов:
+1. Подвійна пряма та зворотня різниця на краях
+2. Постійна температура на краях (температурна ванна)
+"""
 
 # %% [markdown]
+# # Багатовимірні диференціальні рівняння: Одновимірний випадок
 #
-
-# %% [markdown]
-# We solve the differential equations:
+# ## Теоретичні основи
 #
-# \\(
-# \frac{\partial}{\partial t} u(\vec{r},t) = a \Delta u(\vec{r},t)
-# \\)
-
-# %% [markdown]
-# ## In one dimension:
+# Рівняння теплопровідності описує процес поширення тепла в середовищі. У одновимірному випадку воно має вигляд:
 #
-# \\(
+# \\[
 # \frac{\partial}{\partial t} u(x,t) = a \frac{\partial^2}{\partial x^2} u(x,t)
-# \\)
+# \\]
 #
-# Here, \\( u(x,t) \\) is an array \\(\{ u_1, u_2, \dots, u_n \} \\) that has different values for different times. It describes the temperature. We can discretize the spatial derivative according to:
+# де \\( u(x,t) \\) - це температура в точці x в момент часу t, представлена як масив \\(\{ u_1, u_2, \dots, u_n \} \\).
 #
-# \\(
+# ## Дискретизація
+#
+# Для чисельного розв'язку використовуємо метод кінцевих різниць. Просторова похідна апроксимується як:
+#
+# \\[
 # \frac{\partial^2}{\partial x^2} u_j = \frac{u_{j+1}-2u_{j}+u_{j-1}}{(\Delta x)^2}
-# \\)
+# \\]
 #
-# For the edges we use double-forward or double-backward methods:
+# Для граничних точок використовуємо:
 #
-# \\(
-# \frac{\partial^2}{\partial x^2} u_1 = \frac{u_{1}-2u_{2}+u_{3}}{(\Delta x)^2}\\
+# \\[
+# \frac{\partial^2}{\partial x^2} u_1 = \frac{u_{1}-2u_{2}+u_{3}}{(\Delta x)^2}
+# \\]
+# \\[
 # \frac{\partial^2}{\partial x^2} u_n = \frac{u_{n}-2u_{n-1}+u_{n-2}}{(\Delta x)^2}
-# \\)
+# \\]
 #
-# We can rewrite the heat equation as a set of coupled equation:
+# ## Система рівнянь
 #
-# \begin{align}
-# \frac{\partial}{\partial t}u_1&=\frac{a}{(\Delta x)^2}\left(u_1-2u_2+u_3\right)\\
-# \frac{\partial}{\partial t}u_2&=\frac{a}{(\Delta x)^2}\left(u_1-2u_2+u_3\right)\\
-# \frac{\partial}{\partial t}u_3&=\frac{a}{(\Delta x)^2}\left(u_2-2u_3+u_4\right)\\
-# \vdots\\
-# \frac{\partial}{\partial t}u_j&=\frac{a}{(\Delta x)^2}\left(u_{j-1}-2u_j+u_{j+1}\right)\\
-# \vdots\\
-# \frac{\partial}{\partial t}u_{n-2}&=\frac{a}{(\Delta x)^2}\left(u_{n-3}-2u_{n-2}+u_{n-1}\right)\\
-# \frac{\partial}{\partial t}u_{n-1}&=\frac{a}{(\Delta x)^2}\left(u_{n-2}-2u_{n-1}+u_{n}\right)\\
-# \frac{\partial}{\partial t}u_n&=\frac{a}{(\Delta x)^2}\left(u_{n-2}-2u_{n-1}+u_{n}\right)
+# Після дискретизації отримуємо систему зв'язаних рівнянь:
+#
+# \\begin{align}
+# \frac{\partial}{\partial t}u_1 &= \frac{a}{(\Delta x)^2}(u_1-2u_2+u_3) \\
+# \frac{\partial}{\partial t}u_2 &= \frac{a}{(\Delta x)^2}(u_1-2u_2+u_3) \\
+# \frac{\partial}{\partial t}u_3 &= \frac{a}{(\Delta x)^2}(u_2-2u_3+u_4) \\
+# \vdots \\
+# \frac{\partial}{\partial t}u_j &= \frac{a}{(\Delta x)^2}(u_{j-1}-2u_j+u_{j+1}) \\
+# \vdots \\
+# \frac{\partial}{\partial t}u_n &= \frac{a}{(\Delta x)^2}(u_{n-2}-2u_{n-1}+u_n)
 # \end{align}
-#
-# Alternatively, we can also keep the temperature at the edges constant and consider these to be (part of) the constant heat bath:
-#
-# \\( u_1 = \mathrm{const.}\\ u_n = \mathrm{const.} \\)
-#
+# \\]
 
-# %%
-# Testing
-u = np.array([1,4,9,16,25])
-unew = np.zeros(5)
-unew[1:-1] = u[2:] -2*u[1:-1] + u[:-2]
+# Імпортуємо необхідні бібліотеки
+import numpy as np          # для роботи з масивами та математичними операціями
+import matplotlib.pyplot as plt  # для візуалізації результатів
+from scipy import integrate     # для чисельного інтегрування
 
-# %%
-a = 1.0
-dx = 1.0
+# Визначаємо основні фізичні параметри системи
+a = 1.0  # Коефіцієнт температуропровідності (визначає швидкість поширення тепла)
+dx = 1.0  # Крок просторової сітки (відстань між точками)
 
-def f_1D(t,u):
+def f_1D(t, u):
+    """
+    Функція, що реалізує праву частину рівняння теплопровідності.
+
+    Параметри:
+    t (float) - поточний час (не використовується, але потрібен для сумісності з solve_ivp)
+    u (numpy.array) - масив температур у всіх точках простору
+
+    Повертає:
+    numpy.array - масив похідних температури по часу для кожної точки
+    """
+    # Створюємо масив для збереження похідних
     unew = np.zeros(len(u))
-    unew[1:-1] = u[2:] -2*u[1:-1] + u[:-2]
+
+    # Розраховуємо похідні для всіх внутрішніх точок використовуючи центральні різниці
+    unew[1:-1] = u[2:] - 2*u[1:-1] + u[:-2]
+
+    # Множимо на коефіцієнти з рівняння
     return unew * a/dx**2
 
-# %%
-tStart = 0
-tEnd = 5000
+# Задаємо параметри часової еволюції
+tStart = 0      # Початковий час
+tEnd = 5000     # Кінцевий час
+size = 100      # Кількість точок у просторі
 
-size = 100
-u0 = np.zeros([size])
-u0[0] = 1
+# Створюємо початкові умови
+u0 = np.zeros([size])  # Спочатку температура скрізь нульова
+u0[0] = 1             # Встановлюємо температуру = 1 на лівому краї
 
-solution = integrate.solve_ivp(f_1D, [tStart, tEnd], u0, method='RK45', t_eval=np.linspace(tStart,tEnd,10001))
+# Розв'язуємо систему рівнянь
+solution = integrate.solve_ivp(
+    f_1D,                                    # Функція правої частини
+    [tStart, tEnd],                          # Часовий інтервал
+    u0,                                      # Початкові умови
+    method='RK45',                           # Метод Рунге-Кутти 4-5 порядку
+    t_eval=np.linspace(tStart,tEnd,10001)    # Точки часу для збереження результату
+)
 
-# %%
-index = size//2
+# Візуалізація результатів
 
-plt.xlabel('Time t')
-plt.ylabel('Temperature for cell #'+str(index))
+# Графік температури в центральній точці
+index = size//2  # Вибираємо центральну точку
 
+plt.figure(figsize=(10, 6))
+plt.xlabel('Час')
+plt.ylabel(f'Температура в точці #{index}')
+plt.title('Еволюція температури в центральній точці простору')
 plt.plot(solution.t, solution.y[index])
+plt.grid(True)
 plt.show()
 
-# %%
+# Теплова карта всього процесу
 t_list, x_list = np.meshgrid(solution.t, np.arange(size))
 
-plt.xlabel('Time t')
-plt.ylabel('Coordinate')
-
+plt.figure(figsize=(12, 8))
+plt.xlabel('Час')
+plt.ylabel('Координата')
+plt.title('Еволюція температури у всьому просторі')
 plt.contourf(t_list, x_list, solution.y)
-plt.colorbar()
+plt.colorbar(label='Температура')
 plt.show()
 
 # %% [markdown]
-# ### Other starting parameters
+# ### Інший варіант початкових умов
+#
+# Розглянемо випадок, коли температура підтримується на обох кінцях системи
 
-# %%
-tStart = 0
-tEnd = 2000
+# Задаємо нові параметри часової еволюції
+tStart = 0      # Початковий час
+tEnd = 2000     # Кінцевий час
 
-size = 100
-u0 = np.zeros([size])
-u0[0] = 1
-u0[-1] = 1
+# Створюємо нові початкові умови
+u0 = np.zeros([size])  # Спочатку температура скрізь нульова
+u0[0] = 1             # Температура = 1 на лівому краї
+u0[-1] = 1            # Температура = 1 на правому краї
 
-solution = integrate.solve_ivp(f_1D, [tStart, tEnd], u0, method='RK45', t_eval=np.linspace(tStart,tEnd,10001))
+# Розв'язуємо систему рівнянь з новими умовами
+solution = integrate.solve_ivp(
+    f_1D,
+    [tStart, tEnd],
+    u0,
+    method='RK45',
+    t_eval=np.linspace(tStart,tEnd,10001)
+)
 
-# %%
-index = size//2
+# Візуалізація результатів для нових умов
 
-plt.xlabel('Time t')
-plt.ylabel('Temperature for cell #'+str(index))
-
+# Графік температури в центральній точці
+plt.figure(figsize=(10, 6))
+plt.xlabel('Час')
+plt.ylabel(f'Температура в точці #{index}')
+plt.title('Еволюція температури в центральній точці (нагрів з обох кінців)')
 plt.plot(solution.t, solution.y[index])
+plt.grid(True)
 plt.show()
 
-# %%
+# Теплова карта всього процесу
 t_list, x_list = np.meshgrid(solution.t, np.arange(size))
 
-plt.xlabel('Time t')
-plt.ylabel('Coordinate')
-
+plt.figure(figsize=(12, 8))
+plt.xlabel('Час')
+plt.ylabel('Координата')
+plt.title('Еволюція температури у всьому просторі (нагрів з обох кінців)')
 plt.contourf(t_list, x_list, solution.y)
-plt.colorbar()
+plt.colorbar(label='Температура')
 plt.show()
