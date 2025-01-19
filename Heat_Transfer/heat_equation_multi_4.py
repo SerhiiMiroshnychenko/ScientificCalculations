@@ -1,0 +1,142 @@
+"""
+# Двовимірне рівняння теплопровідності
+
+## Постановка задачі
+Даний скрипт розв'язує двовимірне рівняння теплопровідності:
+∂u/∂t = a * (∂²u/∂x² + ∂²u/∂y²)
+
+де:
+- T(x,y,t) - температура в точці (x,y) в момент часу t
+- a - коефіцієнт температуропровідності залізнорудного агломерату
+- t - час, с
+- x, y - просторові координати
+
+Розміри пластини:
+- Висота: 400 мм
+- Ширина: 2500 мм
+"""
+
+# Імпортуємо необхідні бібліотеки
+import numpy as np
+import matplotlib.pyplot as plt
+from scipy import integrate
+
+# Визначаємо основні фізичні параметри системи
+a = 1e-6   # Коефіцієнт температуропровідності залізнорудного агломерату, м²/с
+dx = 0.01  # Крок сітки по x, м (10 мм)
+dy = 0.01  # Крок сітки по y, м (10 мм)
+
+def check_temperature(u, target_temp, tolerance=1.0):
+    """
+    Перевіряє чи досягнута цільова температура у всіх точках пластини
+    з заданою точністю
+    """
+    u_reshaped = u.reshape(40, 250)
+    return np.all(np.abs(u_reshaped - target_temp) <= tolerance)
+
+def format_time(total_seconds):
+    """
+    Форматує час із секунд у вигляд "x секунд (y годин)"
+    """
+    hours = total_seconds / 3600  # Переводимо в години
+    return f"{total_seconds:.1f} секунд ({hours:.2f} годин)"
+
+def f_2D_flattened(t, u):
+    """
+    Допоміжна функція для перетворення двовимірної задачі в одновимірну.
+    """
+    # Перетворюємо одновимірний масив назад у двовимірний
+    u = u.reshape(40, 250)
+
+    # Створюємо масив для похідних
+    unew = np.zeros([40, 250])
+
+    # Розраховуємо похідні для всіх внутрішніх точок
+    unew[1:-1,1:-1] = (u[2:,1:-1] - 2*u[1:-1,1:-1] + u[:-2,1:-1]) * a/dx**2 + \
+                      (u[1:-1,2:] - 2*u[1:-1,1:-1] + u[1:-1,:-2]) * a/dy**2
+
+    # Повертаємо розгорнутий одновимірний масив
+    return unew.flatten()
+
+# Визначаємо розміри розрахункової сітки
+sizex = 250  # Кількість точок по x (2500 мм / 10 мм)
+sizey = 40   # Кількість точок по y (400 мм / 10 мм)
+
+# Задаємо параметри часової еволюції
+tStart = 0       # Початковий час, с
+time_step = 40   # Крок по часу для перевірки температури, с
+max_time = 500000  # Максимальний час розрахунку, с
+
+# Граничні умови (температура на границях пластини)
+Tn = 20 # температура при нормальних умовах T(н)=20 °C
+T0 = 400 # змінна для початкової температури, T(0)=400 °C.
+
+# Створення масиву температур та встановлення початкових умов
+T = np.zeros([40, 250])
+T.fill(T0)
+
+T[0,:] = Tn    # Температура = 20 на нижній границі
+T[-1,:] = Tn   # Температура = 20 на верхній границі
+T[:,0] = Tn    # Температура = 20 на лівій границі
+T[:,-1] = Tn   # Температура = 20 на правій границі
+
+print("\nРозрахунок...")
+print(f"Розмір пластини: {sizex*dx*1000:.0f} x {sizey*dy*1000:.0f} мм")
+print(f"Кількість точок сітки: {sizex} x {sizey}")
+
+# Ініціалізуємо змінні для зберігання проміжних результатів
+current_time = tStart  # Поточний час, с
+solutions = []
+times = []
+
+while current_time < max_time:
+    # Розв'язуємо систему рівнянь на короткому проміжку часу
+    solution = integrate.solve_ivp(
+        f_2D_flattened,
+        [current_time, current_time + time_step],
+        T.flatten() if current_time == tStart else solutions[-1].y[:, -1],
+        method='RK45',
+        vectorized=True
+    )
+
+    solutions.append(solution)
+    times.extend(solution.t)
+
+    # Перевіряємо чи досягнута цільова температура
+    current_temp = solution.y[:, -1].reshape(sizey, sizex)
+    if check_temperature(solution.y[:, -1], Tn, tolerance=1.0):
+        print(f"\nДосягнуто цільову температуру {Tn}±1°C за {format_time(current_time)}")
+        break
+
+    current_time += time_step
+
+    # Виводимо інформацію про прогрес
+    if current_time % 400 == 0:
+        max_temp = np.max(current_temp)
+        min_temp = np.min(current_temp)
+        avg_temp = np.mean(current_temp)
+        print(f"Час: {current_time:.1f} с, температура: мін = {min_temp:.1f}°C, "
+              f"середня = {avg_temp:.1f}°C, макс = {max_temp:.1f}°C")
+
+# Об'єднуємо всі розв'язки для візуалізації
+all_times = np.array(times)
+all_solutions = np.hstack([sol.y for sol in solutions])
+
+# Створюємо сітку для візуалізації
+x_list, y_list = np.meshgrid(np.arange(sizex)*dx, np.arange(sizey)*dy)
+
+# Візуалізуємо результати для різних моментів часу
+viz_indices = [0,
+               len(all_times) // 4,
+               len(all_times) // 2,
+               3 * len(all_times) // 4,
+               -1]
+
+for idx in viz_indices:
+    plt.figure(figsize=(15, 8))  # Збільшуємо розмір графіка для кращого відображення
+    plt.xlabel('Координата x, м')
+    plt.ylabel('Координата y, м')
+    plt.title(f'Розподіл температури в момент часу t = {all_times[idx]:.1f} с')
+    plt.contourf(x_list, y_list, all_solutions[:, idx].reshape(40, 250))
+    plt.colorbar(label='Температура, °C')
+    plt.show()
