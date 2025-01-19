@@ -126,17 +126,26 @@ all_solutions = np.hstack([sol.y for sol in solutions])
 x_list, y_list = np.meshgrid(np.arange(sizex)*dx, np.arange(sizey)*dy)
 
 # Візуалізуємо результати для різних моментів часу
-viz_indices = [0,
-               len(all_times) // 4,
-               len(all_times) // 2,
-               3 * len(all_times) // 4,
-               -1]
+viz_indices = [0,                    # Початок
+               len(all_times) // 3,  # 1/3 часу
+               2 * len(all_times) // 3,  # 2/3 часу
+               -1]                   # Кінець
 
-for idx in viz_indices:
-    plt.figure(figsize=(15, 8))  # Збільшуємо розмір графіка для кращого відображення
-    plt.xlabel('Координата x, м')
-    plt.ylabel('Координата y, м')
-    plt.title(f'Розподіл температури в момент часу t = {all_times[idx]:.1f} с')
-    plt.contourf(x_list, y_list, all_solutions[:, idx].reshape(40, 250))
-    plt.colorbar(label='Температура, °C')
-    plt.show()
+# Створюємо одне велике полотно з підграфіками
+plt.figure(figsize=(10, 10))
+plt.suptitle('Розподіл температури в пластині в різні моменти часу', fontsize=14, y=0.98)
+
+for idx, plot_idx in enumerate(viz_indices, 1):
+    plt.subplot(2, 2, idx)
+    plt.title(f't = {all_times[plot_idx]:.1f} с\n({all_times[plot_idx]/3600:.2f} год)', pad=20)
+    plt.xlabel('x, м', labelpad=10)
+    plt.ylabel('y, м', labelpad=10)
+    temp = plt.contourf(x_list, y_list, all_solutions[:, plot_idx].reshape(sizey, sizex))
+    cbar = plt.colorbar(temp, label='Температура, °C', pad=0.05)
+
+    # Встановлюємо однакові пропорції для осей
+    plt.gca().set_aspect('equal', adjustable='box')
+
+# Додаємо відступи між графіками
+plt.tight_layout(rect=[0, 0, 1, 0.96], h_pad=1.5, w_pad=0.3)
+plt.show()
