@@ -1,0 +1,53 @@
+@startuml
+
+class DataCollector {
+    - connection: str
+    + fetch_data(query: str): DataFrame
+}
+
+class DataPreprocessor {
+    + clean_data(df: DataFrame): DataFrame
+    + scale_data(df: DataFrame): DataFrame
+    + handle_missing_values(df: DataFrame): DataFrame
+}
+
+class DataAnalyzer {
+    + compute_statistics(df: DataFrame): dict
+}
+
+class DataVisualizer {
+    + plot_graph(df: DataFrame, column: str): void
+}
+
+class DataSaver {
+    + save_to_csv(df: DataFrame, filename: str): void
+}
+
+class ModelTrainer {
+    + train_model(df: DataFrame, target: str): Model
+}
+
+class ModelEvaluator {
+    + evaluate_model(model: Model, test_data: DataFrame): dict
+}
+
+class VotingClassifier {
+    + predict(models: List[Model], test_data: DataFrame): List[int]
+}
+
+class ModelStorage {
+    + save_model(model: Model, filename: str): void
+    + load_model(filename: str): Model
+}
+
+DataPreprocessor --|> DataCollector
+DataAnalyzer --|> DataPreprocessor
+DataVisualizer --|> DataAnalyzer
+DataSaver --|> DataPreprocessor
+ModelTrainer --|> DataSaver
+ModelEvaluator --|> ModelTrainer
+VotingClassifier --|> ModelEvaluator
+ModelStorage --|> ModelTrainer
+ModelStorage --|> VotingClassifier
+
+@enduml
