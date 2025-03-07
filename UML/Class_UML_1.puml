@@ -1,43 +1,65 @@
 @startuml
 
 class DataCollector {
-    - connection: str
-    + fetch_data(query: str): DataFrame
+    - connection: string
+    + fetch_data(): DataFrame
 }
 
 class DataPreprocessor {
-    + clean_data(df: DataFrame): DataFrame
-    + scale_data(df: DataFrame): DataFrame
-    + handle_missing_values(df: DataFrame): DataFrame
+    + clean_data(): DataFrame
+    + scale_data(): DataFrame
+    + handle_missing_values(): DataFrame
 }
 
 class DataAnalyzer {
-    + compute_statistics(df: DataFrame): dict
+    - data_statistics: string
+    + compute_statistics(): dict
 }
 
 class DataVisualizer {
-    + plot_graph(df: DataFrame, column: str): void
+    + graphs: Binary
+    + plot_graph(): void
 }
 
 class DataSaver {
-    + save_to_csv(df: DataFrame, filename: str): void
+    + data_file: Binary
+    + save_to_csv(): void
+    + load_from_csv(): DataFrame
 }
 
 class ModelTrainer {
-    + train_model(df: DataFrame, target: str): Model
+    + model_type: string
+    + model_parameters: string
+    + data_parameters: string
+    + train_model(): Model
 }
 
-class ModelEvaluator {
-    + evaluate_model(model: Model, test_data: DataFrame): dict
-}
-
-class VotingClassifier {
-    + predict(models: List[Model], test_data: DataFrame): List[int]
+class ModelTester {
+    + model_type: string
+    + test_model(): dict
 }
 
 class ModelStorage {
-    + save_model(model: Model, filename: str): void
-    + load_model(filename: str): Model
+    + model_file: Binary
+    + save_model(): void
+    + load_model(): Model
+}
+
+class ModelAnalyzer {
+    + models_metrics: string
+    + models_matrix: Binary
+    + compute_models_metrics(): dict
+}
+
+class VoitingClassifierTrainer {
+    + models: string
+    + voiting_type: string
+    + train_models(): void
+}
+
+class VoitingClassifierTester {
+    + models: string
+    + test_models(): dict
 }
 
 DataPreprocessor --|> DataCollector
@@ -45,9 +67,15 @@ DataAnalyzer --|> DataPreprocessor
 DataVisualizer --|> DataAnalyzer
 DataSaver --|> DataPreprocessor
 ModelTrainer --|> DataSaver
-ModelEvaluator --|> ModelTrainer
-VotingClassifier --|> ModelEvaluator
+ModelTester --|> ModelTrainer
 ModelStorage --|> ModelTrainer
-ModelStorage --|> VotingClassifier
+VoitingClassifierTrainer --|> ModelTrainer
+VoitingClassifierTester --|> VoitingClassifierTrainer
+ModelStorage --|> VoitingClassifierTrainer
+
+ModelAnalyzer --> ModelTrainer
+ModelAnalyzer --> ModelTester
+ModelAnalyzer --> VoitingClassifierTrainer
+ModelAnalyzer --> VoitingClassifierTester
 
 @enduml
