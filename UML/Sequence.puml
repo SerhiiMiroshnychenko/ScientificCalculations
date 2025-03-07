@@ -1,0 +1,128 @@
+@startuml ML System Sequence
+
+skinparam SequenceGroupBorderColor black
+skinparam SequenceGroupBodyColor transparent
+
+skinparam {
+    ParticipantBackgroundColor white
+    ParticipantBorderColor black
+    SequenceLifeLineBorderColor gray
+    SequenceGroupHeaderFontStyle bold
+}
+
+participant DataCollector as DC
+participant DataPreprocessor as DP
+participant DataAnalyzer as DA
+participant DataVisualizer as DV
+participant DataSaver as DS
+participant ModelTrainer as MT
+participant ModelTester as MTe
+participant ModelAnalyzer as MA
+participant VotingClassifierTrainer as VCT
+participant VotingClassifierTester as VCTe
+participant ModelStorage as MS
+
+group Data Processing Phase
+    activate DC
+    DC -> DC: fetch_data()
+    DC -> DP: raw_data
+    deactivate DC
+
+    activate DP
+    DP -> DP: clean_data()
+    DP -> DP: scale_data()
+    DP -> DP: handle_missing_values()
+
+    DP -> DA: processed_data
+    activate DA
+    DA -> DA: compute_statistics()
+
+    DP -> DV: processed_data
+    activate DV
+    DV -> DV: plot_graph()
+
+    DP -> DS: processed_data
+    activate DS
+    DS -> DS: save_to_csv()
+    deactivate DS
+    deactivate DV
+    deactivate DA
+    deactivate DP
+end
+
+group Single Models Training Phase
+    loop for each model type
+        activate MT
+        MT -> DS: load_from_csv()
+        activate DS
+        DS --> MT: training_data
+        deactivate DS
+
+        MT -> MT: train_model()
+
+        MT -> MA: trained_model
+        activate MA
+        MA -> MA: compute_models_metrics()
+        deactivate MA
+
+        MT -> MS: save_model()
+        activate MS
+        MS -> MS: store model
+        deactivate MS
+
+        MT -> MTe: trained_model
+        activate MTe
+
+        MTe -> DS: load_from_csv()
+        activate DS
+        DS --> MTe: testing_data
+        deactivate DS
+
+        MTe -> MTe: test_model()
+        MTe -> MA: test_results
+        activate MA
+        MA -> MA: compute_models_metrics()
+        deactivate MA
+        deactivate MTe
+        deactivate MT
+    end
+end
+
+group Voting Classifier Phase
+    activate VCT
+    VCT -> MS: load_models()
+    activate MS
+    MS --> VCT: trained_models[]
+    deactivate MS
+
+    VCT -> DS: load_from_csv()
+    activate DS
+    DS --> VCT: training_data
+    deactivate DS
+
+    VCT -> VCT: train_voting_classifier(models[])
+
+    VCT -> MS: save_model()
+    activate MS
+    MS -> MS: store ensemble_model
+    deactivate MS
+
+    VCT -> VCTe: ensemble_model
+    activate VCTe
+
+    VCTe -> DS: load_from_csv()
+    activate DS
+    DS --> VCTe: testing_data
+    deactivate DS
+
+    VCTe -> VCTe: test_models()
+
+    VCTe -> MA: ensemble_results
+    activate MA
+    MA -> MA: compute_models_metrics()
+    deactivate MA
+    deactivate VCTe
+    deactivate VCT
+end
+
+@enduml

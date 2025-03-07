@@ -1,0 +1,97 @@
+@startuml ML System Use Cases
+
+skinparam actorStyle awesome
+skinparam packageStyle rectangle
+skinparam usecaseStyle roundbox
+
+skinparam {
+    BackgroundColor white
+    ArrowColor black
+    ActorBorderColor black
+    UsecaseBorderColor black
+    UseCaseBackgroundColor white
+}
+
+' Актори зліва
+actor DataCollector as DC
+actor DataPreprocessor as DP
+actor DataAnalyzer as DA
+actor DataVisualizer as DV
+
+' Актори справа
+actor DataSaver as DS #white
+actor ModelTrainer as MT
+actor ModelTester as MTe
+actor ModelAnalyzer as MA
+actor ModelStorage as MS
+actor VotingClassifierTrainer as VCT
+actor VotingClassifierTester as VCTe
+
+' Пакет обробки даних
+rectangle "Data Processing" {
+    usecase "Fetch Data\nfrom Database" as FD
+    usecase "Clean and\nPreprocess Data" as CPD
+    usecase "Analyze Data\nStatistics" as ADS
+    usecase "Visualize Data" as VD
+    usecase "Load Data\nfrom CSV" as LD
+    usecase "Save Data\nto CSV" as SD #white
+}
+
+' Пакет роботи з одиночними моделями
+rectangle "Single Model Operations" {
+    usecase "Train Single\nModel" as TSM
+    usecase "Save Trained\nModel" as STM
+    usecase "Test Single\nModel" as TestSM
+    usecase "Compute Single\nModel Metrics" as CMM
+}
+
+' Пакет роботи з ансамблем
+rectangle "Ensemble Operations" {
+    usecase "Load Trained\nModels" as LTM
+    usecase "Train Voting\nClassifier" as TVC
+    usecase "Test Voting\nClassifier" as TestVC
+    usecase "Save Ensemble\nModel" as SEM
+    usecase "Compute Ensemble\nMetrics" as CEM
+}
+
+' Зв'язки для обробки даних
+DC --> FD
+FD ..> CPD : <<include>>
+DP --> CPD
+CPD ..> ADS : <<include>>
+CPD ..> VD : <<include>>
+CPD ..> SD : <<include>>
+DA --> ADS
+DV --> VD
+DS -left-> SD
+DS -left-> LD
+
+' Зв'язки для одиночних моделей
+MT --> TSM
+TSM ..> LD : <<include>>
+MT --> STM
+STM ..> TSM : <<include>>
+MS --> STM
+
+MTe --> TestSM
+TestSM ..> LD : <<include>>
+MA --> CMM
+TestSM ..> CMM : <<include>>
+
+' Зв'язки для ансамблю
+VCT --> LTM
+MS --> LTM
+VCT --> TVC
+TVC ..> LTM : <<include>>
+TVC ..> LD : <<include>>
+VCT --> SEM
+SEM ..> TVC : <<include>>
+MS --> SEM
+
+VCTe --> TestVC
+TestVC ..> LD : <<include>>
+VCTe --> CEM
+TestVC ..> CEM : <<include>>
+MA --> CEM
+
+@enduml
