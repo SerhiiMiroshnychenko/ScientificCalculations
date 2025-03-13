@@ -38,15 +38,10 @@ print(f"   c = {c:.3e} кал·К²/моль")
 # Розрахунок середньої мольної теплоємності при сталому об'ємі
 
 # 1. Аналітичний метод
-def cv_integral_analytical(T1, T2):
-    """Обчислення інтегралу для середньої теплоємності аналітичним методом"""
-    term1 = (a - R_CAL) * (T2 - T1)
-    term2 = (b/2) * (T2**2 - T1**2)
-    term3 = -c * (1/T1 - 1/T2)
-    return (term1 + term2 + term3)/(T2 - T1)
-
-cv_cal_analytical = cv_integral_analytical(T1, T2)  # кал/(моль·К)
-cv_analytical = cv_cal_analytical * CAL_TO_JOULE    # Дж/(моль·К)
+# Середня теплоємність = інтеграл(cv(T)dT) від T1 до T2, поділений на (T2-T1)
+# Для функції виду c/T², інтеграл = -c/T
+cv_cal_analytical = (a - R_CAL) + b*(T1 + T2)/2 + c*(-1/T2 + 1/T1)/(T2 - T1)  # кал/(моль·К)
+cv_analytical = cv_cal_analytical * CAL_TO_JOULE  # Дж/(моль·К)
 
 print(f"\n2. Середня мольна теплоємність при сталому об'ємі (аналітичний метод):")
 print(f"   cv_сер = {cv_cal_analytical:.3f} кал/(моль·К) = {cv_analytical:.3f} Дж/(моль·К)")
