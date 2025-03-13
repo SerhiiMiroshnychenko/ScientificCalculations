@@ -1,0 +1,78 @@
+@startuml Діаграма класів системи прогнозування успішності замовлень
+
+!theme plain
+skinparam classAttributeIconSize 0
+skinparam classFontStyle bold
+skinparam classFontSize 14
+skinparam classBackgroundColor LightBlue
+skinparam classBorderColor DarkBlue
+skinparam classHeaderBackgroundColor #AAAAFF
+skinparam arrowColor #333333
+skinparam arrowThickness 1.5
+skinparam linetype ortho
+
+title Діаграма класів системи прогнозування успішності замовлень
+
+class "Metrics Analyzer" as MetricsAnalyzer {
+  + metrics : string
+  + matrix : Binary
+  + compute_metrics()
+}
+
+class "Voiting Classifier" as VoitingClassifier {
+  + models : Selection
+  + voiting_type : Selection
+  + classifier_file : Binary
+  + train_classifier()
+  + test_classifier()
+  + save_classifier()
+  + load_classifier()
+}
+
+class "ML Model Maker" as MLModelMaker {
+  + model_type : Selection
+  + model_parameters : Selection
+  + data_parameters : Selection
+  + model_file : Binary
+  + train_model()
+  + save_model()
+  + load_model()
+  + test_model()
+}
+
+class "Data Analyzer" as DataAnalyzer {
+  + data_statistic : string
+  + graphs : Binary
+  + compute_statistics()
+  + plot_graph()
+}
+
+class "Data Preparer" as DataPreparer {
+  - connection : string
+  + data_file : Binary
+  + fetch_data()
+  + clean_data()
+  + scale_data()
+  + handle_missing_values()
+  + save_to_csv()
+  + load_from_csv()
+}
+
+' Визначення зв'язків між класами
+MetricsAnalyzer --> VoitingClassifier
+MetricsAnalyzer --> MLModelMaker
+MLModelMaker -down-> DataPreparer
+VoitingClassifier -down-> MLModelMaker
+DataAnalyzer -down-> DataPreparer
+
+note as N1
+  <b>Binary</b> - бінарні файли, які зберігають 
+  стан об'єктів або візуалізації
+end note
+
+note as N2
+  <b>Selection</b> - параметри, які можна 
+  вибирати з заданого переліку
+end note
+
+@enduml

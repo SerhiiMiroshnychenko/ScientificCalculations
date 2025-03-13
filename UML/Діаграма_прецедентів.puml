@@ -1,0 +1,130 @@
+@startuml Система прогнозування успішності замовлень
+
+!theme plain
+skinparam packageStyle rectangle
+skinparam usecaseStyle roundedBox
+skinparam actorStyle hollow
+skinparam defaultFontName Arial
+skinparam defaultFontSize 12
+skinparam linetype ortho
+skinparam packagePadding 10
+skinparam packageFontSize 14
+skinparam usecase {
+  BackgroundColor PaleTurquoise
+  BorderColor DarkTurquoise
+}
+skinparam actor {
+  BackgroundColor LightBlue
+  BorderColor Blue
+}
+
+top to bottom direction
+title Діаграма прецедентів системи прогнозування успішності замовлень
+
+' Актори - класи з діаграми класів
+actor "Data Preparer" as DataPreparer
+actor "Data Analyzer" as DataAnalyzer
+actor "ML Model Maker" as MLModelMaker
+actor "Voiting Classifier" as VoitingClassifier
+actor "Metrics Analyzer" as MetricsAnalyzer
+actor "База даних Odoo" as OdooDB << система >>
+
+' Пакети (групи прецедентів)
+package "Підготовка даних" {
+  usecase "Отримати дані з БД\n(fetch_data)" as FetchData
+  usecase "Очистити дані\n(clean_data)" as CleanData
+  usecase "Масштабувати дані\n(scale_data)" as ScaleData
+  usecase "Обробити відсутні значення\n(handle_missing_values)" as HandleMissing
+  usecase "Зберегти дані у CSV\n(save_to_csv)" as SaveCSV
+  usecase "Завантажити дані з CSV\n(load_from_csv)" as LoadCSV
+}
+
+package "Аналіз даних" {
+  usecase "Розрахувати статистику\n(compute_statistics)" as CalculateStats
+  usecase "Побудувати графіки\n(plot_graph)" as CreateGraphs
+}
+
+package "Створення моделей ML" {
+  usecase "Вибрати тип моделі" as SelectModelType
+  usecase "Налаштувати параметри\nмоделі" as ConfigureModel
+  usecase "Вибрати параметри\nданих" as SelectDataParams
+  usecase "Тренувати модель\n(train_model)" as TrainModel
+  usecase "Тестувати модель\n(test_model)" as TestModel
+  usecase "Зберегти модель\n(save_model)" as SaveModel
+  usecase "Завантажити модель\n(load_model)" as LoadModel
+}
+
+package "Ансамблеве голосування" {
+  usecase "Вибрати моделі для\nансамблю" as SelectModels
+  usecase "Вибрати тип\nголосування" as SelectVotingType
+  usecase "Тренувати класифікатор\n(train_classifier)" as TrainClassifier
+  usecase "Тестувати класифікатор\n(test_classifier)" as TestClassifier
+  usecase "Зберегти класифікатор\n(save_classifier)" as SaveClassifier
+  usecase "Завантажити класифікатор\n(load_classifier)" as LoadClassifier
+}
+
+package "Аналіз метрик" {
+  usecase "Розрахувати метрики\n(compute_metrics)" as CalculateMetrics
+  usecase "Побудувати матрицю\nневизначеності" as CreateConfMatrix
+}
+
+package "Прогнозування" {
+  usecase "Підготувати дані для\nпрогнозу" as PrepareOrderData
+  usecase "Застосувати модель\nабо класифікатор" as ApplyModel
+  usecase "Отримати прогноз\nуспішності" as GetPrediction
+}
+
+' Взаємозв'язки між акторами та прецедентами
+DataPreparer --> FetchData
+DataPreparer --> CleanData
+DataPreparer --> ScaleData
+DataPreparer --> HandleMissing
+DataPreparer --> SaveCSV
+DataPreparer --> LoadCSV
+
+DataAnalyzer --> CalculateStats
+DataAnalyzer --> CreateGraphs
+
+MLModelMaker --> SelectModelType
+MLModelMaker --> ConfigureModel
+MLModelMaker --> SelectDataParams
+MLModelMaker --> TrainModel
+MLModelMaker --> TestModel
+MLModelMaker --> SaveModel
+MLModelMaker --> LoadModel
+
+VoitingClassifier --> SelectModels
+VoitingClassifier --> SelectVotingType
+VoitingClassifier --> TrainClassifier
+VoitingClassifier --> TestClassifier
+VoitingClassifier --> SaveClassifier
+VoitingClassifier --> LoadClassifier
+VoitingClassifier --> GetPrediction
+
+MetricsAnalyzer --> CalculateMetrics
+MetricsAnalyzer --> CreateConfMatrix
+
+OdooDB --> FetchData
+
+' Спрощені залежності між прецедентами
+FetchData <.. CleanData : <<include>>
+CleanData <.. ScaleData : <<include>>
+ScaleData <.. HandleMissing : <<include>>
+HandleMissing <.. SaveCSV : <<include>>
+
+LoadCSV <.. CalculateStats : <<include>>
+LoadCSV <.. CreateGraphs : <<include>>
+
+TrainModel <.. TestModel : <<include>>
+
+SelectModels <.. TrainClassifier : <<include>>
+TrainClassifier <.. TestClassifier : <<include>>
+
+TestModel <.. CalculateMetrics : <<include>>
+TestClassifier <.. CalculateMetrics : <<include>>
+
+LoadCSV <.. PrepareOrderData : <<include>>
+PrepareOrderData <.. ApplyModel : <<include>>
+ApplyModel <.. GetPrediction : <<include>>
+
+@enduml

@@ -1,0 +1,173 @@
+@startuml Діаграма послідовності системи прогнозування успішності замовлень
+
+!theme plain
+skinparam sequenceMessageAlign center
+skinparam responseMessageBelowArrow true
+skinparam maxMessageSize 120
+skinparam sequenceArrowThickness 1
+skinparam roundcorner 5
+skinparam sequenceParticipant {
+    BorderColor DarkBlue
+    BackgroundColor LightBlue
+    FontSize 14
+}
+skinparam sequenceLifeLine {
+    BorderColor DarkGray
+    BackgroundColor LightGray
+}
+skinparam sequenceArrow {
+    Color Black
+    Thickness 1
+}
+skinparam note {
+    BackgroundColor LightYellow
+    BorderColor DarkYellow
+}
+
+title Процес прогнозування успішності замовлень
+
+actor "Користувач" as User
+participant "База даних\nOdoo" as OdooDB
+participant "Data Preparer" as DataPreparer
+participant "Data Analyzer" as DataAnalyzer
+participant "ML Model Maker" as MLModelMaker
+participant "Metrics Analyzer" as MetricsAnalyzer
+participant "Voiting Classifier" as VoitingClassifier
+database "Файлова\nсистема" as FileSystem
+
+== Етап підготовки даних ==
+
+User -> DataPreparer: Запит на отримання даних
+activate DataPreparer
+
+DataPreparer -> OdooDB: fetch_data()
+activate OdooDB
+OdooDB --> DataPreparer: Повернення сирих даних
+deactivate OdooDB
+
+DataPreparer -> DataPreparer: clean_data()
+note right: Видалення викидів\nта некоректних значень
+
+DataPreparer -> DataPreparer: scale_data()
+note right: Нормалізація та\nстандартизація даних
+
+DataPreparer -> DataPreparer: handle_missing_values()
+note right: Обробка відсутніх значень
+
+DataPreparer -> FileSystem: save_to_csv()
+activate FileSystem
+FileSystem --> DataPreparer: Підтвердження збереження
+deactivate FileSystem
+
+DataPreparer --> User: Дані підготовлено
+deactivate DataPreparer
+
+== Етап аналізу даних ==
+
+User -> DataAnalyzer: Запит на аналіз даних
+activate DataAnalyzer
+
+DataAnalyzer -> FileSystem: Завантаження даних з CSV
+activate FileSystem
+FileSystem --> DataAnalyzer: Підготовлені дані
+deactivate FileSystem
+
+DataAnalyzer -> DataAnalyzer: compute_statistics()
+note right: Розрахунок статистичних\nпоказників
+
+DataAnalyzer -> DataAnalyzer: plot_graph()
+note right: Побудова графіків для\nвізуалізації даних
+
+DataAnalyzer --> User: Результати аналізу
+deactivate DataAnalyzer
+
+== Етап створення та тренування моделей ==
+
+User -> MLModelMaker: Запит на створення моделей
+activate MLModelMaker
+
+MLModelMaker -> FileSystem: Завантаження даних з CSV
+activate FileSystem
+FileSystem --> MLModelMaker: Підготовлені дані
+deactivate FileSystem
+
+MLModelMaker -> MLModelMaker: Вибір типу моделі
+MLModelMaker -> MLModelMaker: Налаштування параметрів моделі 
+MLModelMaker -> MLModelMaker: Вибір параметрів даних
+
+MLModelMaker -> MLModelMaker: train_model()
+note right: Тренування моделі на\nнавчальній вибірці
+
+MLModelMaker -> MLModelMaker: test_model()
+note right: Оцінка моделі на\nтестовій вибірці
+
+MLModelMaker -> MetricsAnalyzer: Запит на розрахунок метрик
+activate MetricsAnalyzer
+
+MetricsAnalyzer -> MetricsAnalyzer: compute_metrics()
+note right: Розрахунок метрик якості\n(точність, повнота, F1 та ін.)
+
+MetricsAnalyzer -> MetricsAnalyzer: Побудова матриці невизначеності
+MetricsAnalyzer --> MLModelMaker: Результати метрик
+deactivate MetricsAnalyzer
+
+MLModelMaker -> FileSystem: save_model()
+activate FileSystem
+FileSystem --> MLModelMaker: Підтвердження збереження
+deactivate FileSystem
+
+MLModelMaker --> User: Модель створено та оцінено
+deactivate MLModelMaker
+
+== Етап ансамблевого голосування ==
+
+User -> VoitingClassifier: Запит на створення ансамблю
+activate VoitingClassifier
+
+VoitingClassifier -> FileSystem: Завантаження збережених моделей
+activate FileSystem
+FileSystem --> VoitingClassifier: Збережені моделі
+deactivate FileSystem
+
+VoitingClassifier -> VoitingClassifier: Вибір моделей для ансамблю
+VoitingClassifier -> VoitingClassifier: Вибір типу голосування
+
+VoitingClassifier -> VoitingClassifier: train_classifier()
+note right: Тренування ансамблевого\nкласифікатора
+
+VoitingClassifier -> VoitingClassifier: test_classifier()
+note right: Оцінка ансамблевого\nкласифікатора
+
+VoitingClassifier -> MetricsAnalyzer: Запит на розрахунок метрик
+activate MetricsAnalyzer
+MetricsAnalyzer -> MetricsAnalyzer: compute_metrics()
+MetricsAnalyzer --> VoitingClassifier: Результати метрик
+deactivate MetricsAnalyzer
+
+VoitingClassifier -> FileSystem: save_classifier()
+activate FileSystem
+FileSystem --> VoitingClassifier: Підтвердження збереження
+deactivate FileSystem
+
+VoitingClassifier --> User: Ансамблевий класифікатор створено
+deactivate VoitingClassifier
+
+== Етап прогнозування ==
+
+User -> OdooDB: Нове замовлення на продаж
+activate OdooDB
+OdooDB --> DataPreparer: Дані про нове замовлення
+deactivate OdooDB
+
+activate DataPreparer
+DataPreparer -> DataPreparer: Підготовка даних для прогнозу
+DataPreparer --> VoitingClassifier: Підготовлені дані
+deactivate DataPreparer
+
+activate VoitingClassifier
+VoitingClassifier -> VoitingClassifier: Застосування моделі
+VoitingClassifier -> VoitingClassifier: Отримання прогнозу успішності
+VoitingClassifier --> User: Прогноз успішності замовлення
+deactivate VoitingClassifier
+
+@enduml
