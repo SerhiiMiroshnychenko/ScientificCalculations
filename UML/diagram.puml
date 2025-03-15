@@ -1,0 +1,56 @@
+@startuml
+
+' Визначення класів
+class "Metrics Analyzer" as MetricsAnalyzer {
+  + metrics : string
+  + matrix : Binary
+  + compute_metrics()
+}
+
+class "Voiting Classifier" as VoitingClassifier {
+  + models : Selection
+  + voiting_type : Selection
+  + classifier_file : Binary
+  + train_classifier()
+  + test_classifier()
+  + save_classifier()
+  + load_classifier()
+}
+
+class "ML Model Maker" as MLModelMaker {
+  + model_type : Selection
+  + model_parameters : Selection
+  + data_parameters : Selection
+  + model_file : Binary
+  + train_model()
+  + save_model()
+  + load_model()
+  + test_model()
+}
+
+class "Data Analyzer" as DataAnalyzer {
+  + data_statistic : string
+  + graphs : Binary
+  + compute_statistics()
+  + plot_graph()
+}
+
+class "Data Preparer" as DataPreparer {
+  - connection : string
+  + data_file : Binary
+  + fetch_data()
+  + clean_data()
+  + scale_data()
+  + handle_missing_values()
+  + save_to_csv()
+  + load_from_csv()
+}
+
+' Визначення зв'язків з правильними типами
+MetricsAnalyzer --> VoitingClassifier
+MetricsAnalyzer --> MLModelMaker
+DataAnalyzer --|> DataPreparer
+MLModelMaker --|> DataPreparer
+VoitingClassifier --|> MLModelMaker
+
+@enduml
