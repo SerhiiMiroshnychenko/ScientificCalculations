@@ -1,7 +1,7 @@
 """
 Скрипт для створення комбінованого місячного графіку з аналізом замовлень.
 Показує:
-- Загальну кількість замовлень
+- Загальна кількість замовлень
 - Відсоток успішності
 - Відносний вік клієнтів
 """
@@ -115,7 +115,7 @@ def create_monthly_combined_chart(csv_path, output_path):
         lines2, labels2 = ax2.get_legend_handles_labels()
         lines3, labels3 = ax3.get_legend_handles_labels()
         ax3.legend(lines1 + lines2 + lines3, labels1 + labels2 + labels3,
-                   loc='upper right', bbox_to_anchor=(1.2, 1.0))
+                   loc='center', bbox_to_anchor=(0.15, 0.9))
 
         plt.title(
             'Комбінований місячний аналіз\nВідносний вік клієнтів показує середній вік клієнта як відсоток часу, що минув від першого замовлення')
