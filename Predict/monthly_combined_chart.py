@@ -54,6 +54,8 @@ def create_monthly_combined_chart(csv_path, output_path):
             total_time = (order_date - date_from).days / 30.0  # Загальний час у місяцях
             customer_age = (order_date - customer_since).days / 30.0  # Вік у місяцях
             relative_age = (customer_age / total_time * 100) if total_time > 0 else 0
+            # Якщо відносний вік від'ємний - прирівнюємо до 0
+            relative_age = max(0, relative_age)
             monthly_data[month_key]['customer_ages'].append(relative_age)
 
         # Сортуємо місяці
