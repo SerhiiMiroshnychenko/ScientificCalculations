@@ -85,16 +85,16 @@ def create_monthly_combined_chart(csv_path, output_path):
         color1 = 'blue'
         ax1.set_xlabel('Місяць')
         ax1.set_ylabel('Загальна кількість замовлень', color=color1)
-        ax1.plot(months, orders_count, color=color1, marker='.', markersize=10,
-                 label='Загальна кількість замовлень')
+        ax1.plot(months, orders_count, color=color1, marker='o', markersize=8,
+                 label='Загальна кількість замовлень', alpha=0.7, linestyle='-')
         ax1.tick_params(axis='y', labelcolor=color1)
 
         # Друга вісь - Відсоток успішності (помаранчевий)
         ax2 = ax1.twinx()
         color2 = 'orange'
         ax2.set_ylabel('Відсоток успішності (%)', color=color2)
-        ax2.plot(months, success_rates, color=color2, marker='.', markersize=10,
-                 label='Відсоток успішності (%)')
+        ax2.plot(months, success_rates, color=color2, marker='s', markersize=8,
+                 label='Відсоток успішності (%)', alpha=0.7, linestyle='--')
         ax2.tick_params(axis='y', labelcolor=color2)
 
         # Третя вісь - Відносний вік клієнтів (зелений)
@@ -103,8 +103,8 @@ def create_monthly_combined_chart(csv_path, output_path):
         ax3.spines["right"].set_position(("axes", 1.1))
         color3 = 'green'
         ax3.set_ylabel('Відносний вік клієнтів (%)', color=color3)
-        ax3.plot(months, avg_relative_ages, color=color3, marker='.', markersize=10,
-                 label='Відносний вік клієнтів (%)\n(% часу від першого замовлення)')
+        ax3.plot(months, avg_relative_ages, color=color3, marker='^', markersize=8,
+                 label='Відносний вік клієнтів (%)\n(% часу від першого замовлення)', alpha=0.7, linestyle=':')
         ax3.tick_params(axis='y', labelcolor=color3)
 
         # Форматуємо вісь X
