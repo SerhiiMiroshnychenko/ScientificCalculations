@@ -88,10 +88,6 @@ def create_customer_relationship_chart(csv_path, output_path):
     ax1.set_ylabel('Кількість клієнтів', color='#1f77b4')
     ax1.tick_params(axis='y', labelcolor='#1f77b4')
 
-    # Додаємо значення над стовпчиками клієнтів
-    for i, v in enumerate(category_counts.values):
-        ax1.text(x[i] - width / 2, v, str(int(v)), ha='center', va='bottom')
-
     # Друга вісь для кількості замовлень
     ax3 = ax1.twinx()
     ax3.spines['right'].set_position(('outward', 60))
@@ -99,10 +95,6 @@ def create_customer_relationship_chart(csv_path, output_path):
                     color='skyblue', label='Кількість замовлень')
     ax3.set_ylabel('Кількість замовлень', color='blue')
     ax3.tick_params(axis='y', labelcolor='blue')
-
-    # Додаємо значення над стовпчиками замовлень
-    for i, v in enumerate(orders_counts.values):
-        ax3.text(x[i] + width / 2, v, str(int(v)), ha='center', va='bottom')
 
     # Третя вісь для відсотка успішності
     ax2 = ax1.twinx()
@@ -113,9 +105,16 @@ def create_customer_relationship_chart(csv_path, output_path):
     ax2.tick_params(axis='y', labelcolor='black')
     ax2.set_ylim(0, 100)
 
-    # Додаємо значення на лінії успішності
+    # Додаємо значення над стовпчиками з кольорами відповідних шкал
+    for i, v in enumerate(category_counts.values):
+        ax1.text(x[i] - width / 2, v, str(int(v)), ha='center', va='bottom', color='#1f77b4')  # синій як шкала клієнтів
+
+    for i, v in enumerate(orders_counts.values):
+        ax3.text(x[i] + width / 2, v, str(int(v)), ha='center', va='bottom', color='blue')  # синій як шкала замовлень
+
+    # Додаємо значення для лінії відсотка успішності
     for i, v in enumerate(success_by_category.values):
-        ax2.text(x[i], v * 100 + 2, f'{v * 100:.1f}%', ha='center', va='bottom')
+        ax2.text(x[i], v * 100 + 2, f'{v * 100:.1f}%', ha='center', va='bottom', color='black')  # чорний як шкала успішності
 
     # Налаштування міток осі X
     ax1.set_xticks(x)
