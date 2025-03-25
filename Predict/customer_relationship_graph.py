@@ -125,11 +125,13 @@ def create_customer_relationship_chart(csv_path, output_path):
     plt.title('Розподіл клієнтів та замовлень відносно терміну співпраці')
 
     # Об'єднуємо легенди
-    lines1, labels1 = ax1.get_legend_handles_labels()
-    lines2, labels2 = ax2.get_legend_handles_labels()
-    lines3, labels3 = ax3.get_legend_handles_labels()
+    lines1, labels1 = ax1.get_legend_handles_labels()  # Кількість клієнтів
+    lines2, labels2 = ax2.get_legend_handles_labels()  # Відсоток успішності
+    lines3, labels3 = ax3.get_legend_handles_labels()  # Кількість замовлень
 
-    ax1.legend(lines1 + lines2 + lines3, labels1 + labels2 + labels3,
+    # Змінюємо порядок елементів легенди відповідно до оригіналу
+    ax1.legend(lines1 + lines3 + lines2,
+               labels1 + labels3 + labels2,
                loc='upper center', bbox_to_anchor=(0.5, -0.2),
                ncol=3, frameon=False)
 
@@ -148,5 +150,5 @@ def create_customer_relationship_chart(csv_path, output_path):
 if __name__ == '__main__':
     # Приклад використання
     csv_path = 'data_collector_extended.csv'
-    output_path = 'customer_relationship_chart'
+    output_path = 'customer_relationship_graph'
     create_customer_relationship_chart(csv_path, output_path)
