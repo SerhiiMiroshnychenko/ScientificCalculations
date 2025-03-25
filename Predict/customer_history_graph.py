@@ -40,11 +40,14 @@ def create_customer_history_chart(csv_path, output_path):
 
     # Збереження базової статистики
     df['is_successful'] = df['state'].apply(lambda x: 1 if x == 'sale' else 0)
-    df['create_date'] = pd.to_datetime(df['create_date'])
-    df['date_order'] = pd.to_datetime(df['date_order'])
+
+    # Конвертація дат з обробкою мікросекунд
+    df['create_date'] = pd.to_datetime(df['create_date'].str.split('.').str[0])
+    df['date_order'] = pd.to_datetime(df['date_order'].str.split('.').str[0])
+
     df['avg_response_time_days'] = abs((df['date_order'] - df['create_date']).dt.total_seconds() / (3600 * 24))
 
-    ig, ax1 = plt.subplots(figsize=(12, 6))
+    fig, ax1 = plt.subplots(figsize=(12, 6))
 
     # Конвертуємо previous_orders_count в числовий формат
     df['previous_orders_count'] = pd.to_numeric(df['previous_orders_count'], errors='coerce').fillna(0).astype(int)
@@ -145,7 +148,7 @@ def create_customer_history_chart(csv_path, output_path):
 
     ax1.legend(lines1 + lines3 + lines2,
                ['Кількість клієнтів', 'Кількість замовлень', 'Відсоток успішності'],
-               loc='upper right')
+               loc='center', bbox_to_anchor=(0.25, 0.9))
 
     plt.tight_layout()
 
