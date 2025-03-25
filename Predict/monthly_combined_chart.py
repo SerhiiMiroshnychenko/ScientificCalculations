@@ -125,15 +125,16 @@ def create_monthly_combined_chart(csv_path, output_path):
         plt.tight_layout()
 
         # Зберігаємо у PNG форматі
-        plt.savefig(output_path, format='png', bbox_inches='tight', dpi=300)
+        png_path = output_path + '.png'
+        plt.savefig(png_path, format='png', bbox_inches='tight', dpi=300)
 
         # Зберігаємо у SVG форматі
-        svg_path = output_path.rsplit('.', 1)[0] + '.svg'
+        svg_path = output_path + '.svg'
         plt.savefig(svg_path, format='svg', bbox_inches='tight')
 
         plt.close()
         print(f"Графік успішно збережено у файли:")
-        print(f"- PNG: {output_path}")
+        print(f"- PNG: {png_path}")
         print(f"- SVG: {svg_path}")
         return True
 
@@ -146,5 +147,5 @@ def create_monthly_combined_chart(csv_path, output_path):
 
 if __name__ == '__main__':
     csv_path = 'data_collector_simple.csv'
-    output_path = 'monthly_combined_chart.png'
+    output_path = 'monthly_combined_chart'
     create_monthly_combined_chart(csv_path, output_path)
