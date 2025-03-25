@@ -129,11 +129,9 @@ def create_customer_relationship_chart(csv_path, output_path):
     lines2, labels2 = ax2.get_legend_handles_labels()  # Відсоток успішності
     lines3, labels3 = ax3.get_legend_handles_labels()  # Кількість замовлень
 
-    # Змінюємо порядок елементів легенди відповідно до оригіналу
-    ax1.legend(lines1 + lines3 + lines2,
-               labels1 + labels3 + labels2,
-               loc='upper center', bbox_to_anchor=(0.5, -0.2),
-               ncol=3, frameon=False)
+    # Змінюємо порядок елементів легенди відповідно до оригіналу та розміщуємо зверху
+    ax3.legend(lines1 + lines2 + lines3, labels1 + labels2 + labels3,
+               loc='center', bbox_to_anchor=(0.25, 0.9))
 
     plt.tight_layout()
 
@@ -144,6 +142,9 @@ def create_customer_relationship_chart(csv_path, output_path):
                 bbox_inches='tight')
 
     plt.close()
+    print(f"Графік успішно збережено у файли:")
+    print(f"- PNG: {output_path}.png")
+    print(f"- SVG: {output_path}.svg")
     return True
 
 
