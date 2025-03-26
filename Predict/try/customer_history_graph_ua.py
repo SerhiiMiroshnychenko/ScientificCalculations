@@ -52,11 +52,11 @@ def create_customer_history_chart(csv_path, output_path):
 
     # Збереження базової статистики
     df['is_successful'] = df['state'].apply(lambda x: 1 if x == 'sale' else 0)
-    
+
     # Конвертація дат з обробкою мікросекунд
     df['create_date'] = pd.to_datetime(df['create_date'].str.split('.').str[0])
     df['date_order'] = pd.to_datetime(df['date_order'].str.split('.').str[0])
-    
+
     df['avg_response_time_days'] = abs((df['date_order'] - df['create_date']).dt.total_seconds() / (3600 * 24))
 
     # Встановлюємо розміри у пропорціях для наукової статті
@@ -81,6 +81,9 @@ def create_customer_history_chart(csv_path, output_path):
 
     # Налаштовуємо товщину засічок
     ax1.tick_params(width=width, length=6)
+
+    # Вимикаємо проміжні засічки
+    ax1.minorticks_off()
 
     # Використовуємо previous_orders_count для категоризації
     def get_order_category(row):
@@ -140,6 +143,7 @@ def create_customer_history_chart(csv_path, output_path):
     ax3.spines['right'].set_position(('outward', 60))
     ax3.spines["right"].set_linewidth(width)  # Задаємо товщину лінії для правої осі
     ax3.tick_params(width=width, length=6)  # Налаштовуємо товщину засічок для правої осі
+    ax3.minorticks_off()  # Вимикаємо проміжні засічки для правої осі
     # Створюємо стовпчики для замовлень (справа від центру)
     bars2 = ax3.bar(x + width / 2, orders_counts.values, width,
                     color='skyblue', label='Кількість замовлень')
@@ -151,6 +155,7 @@ def create_customer_history_chart(csv_path, output_path):
     ax2.spines["right"].set_linewidth(width)  # Задаємо товщину лінії для правої осі
     ax2.spines['right'].set_position(('outward', 0))
     ax2.tick_params(width=width, length=6)  # Налаштовуємо товщину засічок для правої осі
+    ax2.minorticks_off()  # Вимикаємо проміжні засічки для правої осі
     success_line = ax2.plot(x, success_by_category.values * 100, 'o-',
                             color='gold', linewidth=2, markersize=8)
     ax2.set_ylabel('Відсоток успішності (%)', color='black', fontsize=14)
@@ -175,7 +180,7 @@ def create_customer_history_chart(csv_path, output_path):
     # Додаємо підписи для відсотка успішності
     for i, v in enumerate(success_by_category.values):
         ax2.text(i, v * 100 + 2, f'{v:.1%}',
-                 ha='center', va='bottom', color='black')
+                 ha='center', va='bottom', color='black', fontsize=12)
 
     # Додаємо легенду
     lines1, labels1 = ax1.get_legend_handles_labels()
