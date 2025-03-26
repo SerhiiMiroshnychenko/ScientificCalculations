@@ -9,38 +9,34 @@ from matplotlib.lines import Line2D
 
 
 def _read_csv_data(data_file):
-    # Decode base64 data
-    csv_data = base64.b64decode(data_file).decode('utf-8')
-    print("Successfully decoded CSV data")
-
-    # Read CSV data
-    csv_file = StringIO(csv_data)
-    reader = csv.DictReader(csv_file)
+    # Read CSV data directly
     data = []
-    for row in reader:
-        try:
-            # Обрізаємо мікросекунди з дат
-            if 'date_order' in row:
-                date_str = row['date_order'].split('.')[0]  # Видаляємо мікросекунди
-                row['date_order'] = datetime.strptime(date_str, '%Y-%m-%d %H:%M:%S')
-        except ValueError:
-            continue
+    with open(data_file, 'r', encoding='utf-8') as csv_file:
+        reader = csv.DictReader(csv_file)
+        for row in reader:
+            try:
+                # Обрізаємо мікросекунди з дат
+                if 'date_order' in row:
+                    date_str = row['date_order'].split('.')[0]  # Видаляємо мікросекунди
+                    row['date_order'] = datetime.strptime(date_str, '%Y-%m-%d %H:%M:%S')
+            except ValueError:
+                continue
 
-        try:
-            if 'partner_create_date' in row:
-                date_str = row['partner_create_date'].split('.')[0]  # Видаляємо мікросекунди
-                row['partner_create_date'] = datetime.strptime(date_str, '%Y-%m-%d %H:%M:%S')
-        except ValueError:
-            continue
+            try:
+                if 'partner_create_date' in row:
+                    date_str = row['partner_create_date'].split('.')[0]  # Видаляємо мікросекунди
+                    row['partner_create_date'] = datetime.strptime(date_str, '%Y-%m-%d %H:%M:%S')
+            except ValueError:
+                continue
 
-        # Ensure required fields are present
-        if not all(field in row for field in
-                   ['order_id', 'partner_id', 'date_order', 'state', 'amount_total',
-                    'partner_create_date', 'user_id', 'payment_term_id']):
-            print(f"Missing required fields in row: {row}")
-            continue
+            # Ensure required fields are present
+            if not all(field in row for field in
+                       ['order_id', 'partner_id', 'date_order', 'state', 'amount_total',
+                        'partner_create_date', 'user_id', 'payment_term_id']):
+                print(f"Missing required fields in row: {row}")
+                continue
 
-        data.append(row)
+            data.append(row)
 
     print(f"Successfully read {len(data)} rows from CSV")
     return data
