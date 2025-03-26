@@ -192,13 +192,15 @@ def _create_partner_age_success_chart(data, output_path):
     plt.figure(figsize=(figwidth, figheight))
     ax = plt.gca()
 
-    # Встановлюємо тонкі лінії для осей як у figures.py
-    width = 0.5
+    # Встановлюємо товсті лінії для осей як у figures.py
+    width = 1.0  # Збільшена товщина ліній рамки
     ax.spines["left"].set_linewidth(width)
     ax.spines["bottom"].set_linewidth(width)
     ax.spines["right"].set_linewidth(width)
     ax.spines["top"].set_linewidth(width)
-    ax.tick_params(width=width)
+
+    # Налаштовуємо товщину засічок
+    ax.tick_params(width=width, length=6)
 
     # Фільтруємо точки з нульовою кількістю ордерів
     x_points = []
