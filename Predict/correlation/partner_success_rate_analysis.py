@@ -71,6 +71,10 @@ plt.hist(df['partner_success_rate'], bins=50, color='skyblue', edgecolor='black'
 plt.title('Розподіл значень partner_success_rate')
 plt.xlabel('Значення partner_success_rate')
 plt.ylabel('Кількість замовлень')
+
+# Додаємо мітки на осі X кожні 10 одиниць
+plt.xticks(np.arange(0, df['partner_success_rate'].max() + 1, 10))
+
 plt.grid(True, linestyle='--', alpha=0.7)
 plt.tight_layout()
 plt.savefig(f"{results_dir}/3b_distribution_of_partner_success_rate.png", dpi=300)
