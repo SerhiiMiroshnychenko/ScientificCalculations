@@ -166,7 +166,7 @@ def _prepare_partner_age_success_data(data_file):
         elif max_age >= 30:
             range_str = f'{min_age / 30:.0f}м-{max_age / 30:.0f}м'
         else:
-            range_str = f'{min_age}д-{max_age}д'
+            range_str = f'{min_age}д-{max_age}д' if min_age != max_age else f'{min_age}д'
 
         # Додаємо дані до результату
         result['ranges'].append(range_str)
@@ -274,7 +274,7 @@ def _create_partner_age_success_chart(data, output_path):
     plt.yticks(fontsize=14)
 
     # Додаємо сітку для кращої читабельності
-    plt.grid(True, linestyle='--', alpha=0.3, linewidth=0.3)
+    plt.grid(True, linestyle='--', alpha=0.3, linewidth=1)
 
     # Зберігаємо з більшим dpi для кращої якості
     plt.tight_layout()
