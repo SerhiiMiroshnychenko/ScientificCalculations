@@ -1,6 +1,14 @@
 import csv
 from datetime import datetime
 import matplotlib.pyplot as plt
+import scienceplots
+
+# Налаштування для підтримки спеціальних символів через LaTeX
+plt.rcParams['text.usetex'] = True
+plt.rcParams['text.latex.preamble'] = r'\usepackage{amsmath}'
+
+# Налаштування стилю
+plt.style.use('science')
 
 
 def _read_csv_data(data_file):
@@ -134,11 +142,11 @@ def _prepare_partner_age_success_data(data_file):
 
         # Форматуємо діапазон
         if max_age >= 365:
-            range_str = f'{min_age / 365:.1f}р-{max_age / 365:.1f}р'
+            range_str = f'{min_age / 365:.1f}y-{max_age / 365:.1f}y'
         elif max_age >= 30:
-            range_str = f'{min_age / 30:.0f}м-{max_age / 30:.0f}м'
+            range_str = f'{min_age / 30:.0f}m-{max_age / 30:.0f}m'
         else:
-            range_str = f'{min_age}д-{max_age}д'
+            range_str = f'{min_age}d-{max_age}d'
 
         # Додаємо дані до результату
         result['ranges'].append(range_str)
@@ -177,10 +185,10 @@ def _create_partner_age_success_chart(data, output_path):
     avg_orders = sum(counts) // len(counts) if counts else 0
 
     plt.title(
-        f'Рівень успішності за віком партнера\n(кожна точка представляє ~{avg_orders} замовлень)',
-        pad=20, fontsize=12)
-    plt.xlabel('Вік партнера (д=днів, м=місяців, р=років)', fontsize=10)
-    plt.ylabel('Рівень успішності (%)', fontsize=10)
+        f'Success Rate by Partner Age\n(each point represents ~{avg_orders} orders)',
+        pad=20, fontsize=14)
+    plt.xlabel('Partner Age (d=days, m=months, y=years)', fontsize=14)
+    plt.ylabel(r'Success Rate ($\%$)', fontsize=14)
 
     # Налаштовуємо осі
     plt.ylim(-5, 105)
@@ -188,11 +196,11 @@ def _create_partner_age_success_chart(data, output_path):
     # Показуємо всі мітки, якщо їх менше 10, інакше кожну другу
     if len(data['ranges']) <= 10:
         plt.xticks(range(len(data['ranges'])), data['ranges'],
-                   rotation=45, ha='right')
+                   rotation=45, ha='right', fontsize=14)
     else:
         plt.xticks(range(len(data['ranges']))[::2],
                    [data['ranges'][i] for i in range(0, len(data['ranges']), 2)],
-                   rotation=45, ha='right')
+                   rotation=45, ha='right', fontsize=14)
 
     plt.grid(True, linestyle='--', alpha=0.7)
 
@@ -201,16 +209,19 @@ def _create_partner_age_success_chart(data, output_path):
     plt.axhline(y=50, color='gray', linestyle='--', alpha=0.3)
     plt.axhline(y=100, color='gray', linestyle='-', alpha=0.3)
 
+    # Налаштовуємо розмір шрифту для осі Y
+    plt.yticks(fontsize=14)
+
     # Додаємо легенду
     legend_elements = [
         plt.Line2D([0], [0], marker='o', color='w',
                    markerfacecolor='#ff4d4d', markersize=10,
-                   label='Рівень успішності < 50%'),
+                   label=r'Success Rate $<$ 50\%'),
         plt.Line2D([0], [0], marker='o', color='w',
                    markerfacecolor='#00cc00', markersize=10,
-                   label='Рівень успішності ≥ 50%')
+                   label=r'Success Rate $\geq$ 50\%')
     ]
-    plt.legend(handles=legend_elements, loc='upper right')
+    plt.legend(handles=legend_elements, loc='center', bbox_to_anchor=(0.91, 0.9), fontsize=14)
 
     plt.tight_layout()
 
@@ -221,7 +232,7 @@ def _create_partner_age_success_chart(data, output_path):
                 bbox_inches='tight')
 
     plt.close()
-    print(f"Графік успішно збережено у файли:")
+    print(f"Chart successfully saved to files:")
     print(f"- PNG: {output_path}.png")
     print(f"- SVG: {output_path}.svg")
     return True
