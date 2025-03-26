@@ -2,8 +2,7 @@
 from matplotlib import pyplot as plt
 import numpy as np
 import scienceplots
-
-from matplotlib.pyplot import cm
+import matplotlib.colors as mcolors
 
 # Налаштування для підтримки спеціальних символів через LaTeX
 plt.rcParams['text.usetex'] = True
@@ -12,7 +11,8 @@ plt.rcParams['text.latex.preamble'] = r'\usepackage{amsmath}'
 # Налаштування стилю
 plt.style.use('science')
 
-colors = cm.tab10(np.linspace(0, 1, 10))
+# Отримуємо кольори з Tab10
+colors = list(mcolors.TABLEAU_COLORS.values())
 
 # Data
 N = 200
@@ -24,6 +24,8 @@ std_cos = np.random.rand(*x.shape) * 0.2 + 0.4
 
 
 def fl(p, gamma):
+    # Уникаємо обчислення log(0)
+    p = np.clip(p, 1e-10, 1.0)  # обмежуємо мінімальне значення p
     return -((1 - p) ** gamma) * np.log(p)
 
 
@@ -102,6 +104,9 @@ def make_linewidths():
     plt.savefig("linewidths.png", dpi=240)
 
 def make_pgf():
+    # Закриваємо всі фігури перед зміною бекенду
+    plt.close('all')
+
     import matplotlib
     matplotlib.use("pgf")
     matplotlib.rcParams.update(
@@ -110,7 +115,6 @@ def make_pgf():
             "font.family": "serif",
             "text.usetex": True,
             "pgf.rcfonts": False,
-            # "font.size": 20,
         }
     )
 
@@ -128,6 +132,9 @@ def make_pgf():
     plt.savefig("pgf.pgf")
 
 def make_final():
+    # Закриваємо всі фігури перед зміною бекенду
+    plt.close('all')
+
     textwidth = 3.31314
     aspect_ratio = 6/8
     scale = 1.0
@@ -142,7 +149,6 @@ def make_final():
             "font.family": "serif",
             "text.usetex": True,
             "pgf.rcfonts": False,
-            # "font.size": 20,
         }
     )
 
