@@ -74,7 +74,7 @@ def _prepare_partner_age_success_data(data_file):
             if isinstance(row['date_order'], str):
                 row['date_order'] = datetime.strptime(row['date_order'], '%Y-%m-%d %H:%M:%S')
 
-            partner_age = (row['date_order'] - row['partner_create_date']).days
+            partner_age = max(0, (row['date_order'] - row['partner_create_date']).days)
             partner_age_data.append((partner_age, row['state'] == 'sale'))
             processed_rows += 1
         except Exception as e:
@@ -139,11 +139,11 @@ def _prepare_partner_age_success_data(data_file):
 
         # Форматуємо діапазон
         if max_age >= 365:
-            range_str = f'{min_age / 365:.1f}y-{max_age / 365:.1f}y'
+            range_str = f'{min_age / 365:.1f}р-{max_age / 365:.1f}р'
         elif max_age >= 30:
-            range_str = f'{min_age / 30:.0f}m-{max_age / 30:.0f}m'
+            range_str = f'{min_age / 30:.0f}м-{max_age / 30:.0f}м'
         else:
-            range_str = f'{min_age}d-{max_age}d'
+            range_str = f'{min_age}д-{max_age}д'
 
         # Додаємо дані до результату
         result['ranges'].append(range_str)
@@ -182,10 +182,10 @@ def _create_partner_age_success_chart(data, output_path):
     avg_orders = sum(counts) // len(counts) if counts else 0
 
     plt.title(
-        f'Success Rate by Partner Age\n(each point represents ~{avg_orders} orders, point size shows relative number in range)',
+        f'Рівень успішності за віком партнера\n(кожна точка представляє ~{avg_orders} замовлень)',
         pad=20, fontsize=12)
-    plt.xlabel('Partner Age (d=days, m=months, y=years)', fontsize=10)
-    plt.ylabel('Success Rate (%)', fontsize=10)
+    plt.xlabel('Вік партнера (д=днів, м=місяців, р=років)', fontsize=10)
+    plt.ylabel('Рівень успішності (%)', fontsize=10)
 
     # Налаштовуємо осі
     plt.ylim(-5, 105)
@@ -210,10 +210,10 @@ def _create_partner_age_success_chart(data, output_path):
     legend_elements = [
         plt.Line2D([0], [0], marker='o', color='w',
                    markerfacecolor='#ff4d4d', markersize=10,
-                   label='Success Rate < 50%'),
+                   label='Рівень успішності < 50%'),
         plt.Line2D([0], [0], marker='o', color='w',
                    markerfacecolor='#00cc00', markersize=10,
-                   label='Success Rate ≥ 50%')
+                   label='Рівень успішності ≥ 50%')
     ]
     plt.legend(handles=legend_elements, loc='upper right')
 
