@@ -154,6 +154,9 @@ plt.close()
 # 4. Логістична крива ймовірності
 print("Створюємо логістичну криву ймовірності...")
 
+# Визначаємо межу для 95-го перцентиля
+p95 = df['order_messages'].quantile(0.95)
+
 # Підготовка даних
 X = df[['order_messages']].values
 y = df['is_successful'].values
@@ -167,17 +170,22 @@ model = LogisticRegression(random_state=42)
 model.fit(X_scaled, y)
 
 # Створення даних для кривої
-X_range = np.linspace(0, min(df['order_messages'].max(), p95), 100).reshape(-1, 1)
+X_range = np.linspace(0, p95, 100).reshape(-1, 1)  # Обмежуємо до 95-го перцентиля
 X_range_scaled = scaler.transform(X_range)
 y_proba = model.predict_proba(X_range_scaled)[:, 1]
 
 # Побудова графіку
 plt.figure(figsize=(10, 6))
 
-# Додаємо розсіяні точки з альфа прозорістю (случайна вибірка для кращої наочності)
-sample_size = min(5000, len(df))
-sampled_indices = np.random.choice(len(df), size=sample_size, replace=False)
-plt.scatter(X[sampled_indices], y[sampled_indices], alpha=0.3, c=y[sampled_indices], cmap='coolwarm', edgecolors='none')
+# Додаємо розсіяні точки з альфа прозорістю (вибірка тільки в межах 95-го перцентиля)
+X_filtered = X[X <= p95]
+y_filtered = y[X.flatten() <= p95]
+sample_size = min(5000, len(X_filtered))
+
+if len(X_filtered) > 0:  # Перевіряємо, що є дані після фільтрації
+    sampled_indices = np.random.choice(len(X_filtered), size=min(sample_size, len(X_filtered)), replace=False)
+    plt.scatter(X_filtered[sampled_indices], y_filtered[sampled_indices],
+                alpha=0.3, c=y_filtered[sampled_indices], cmap='coolwarm', edgecolors='none')
 
 # Додаємо криву логістичної регресії
 plt.plot(X_range, y_proba, color='blue', linewidth=3)
@@ -190,18 +198,24 @@ plt.axvline(x=threshold_x, color='green', linestyle='--', alpha=0.7)
 plt.text(threshold_x + 1, 0.3, f'Точка перетину: {threshold_x:.1f} повідомлень', color='green')
 
 # Налаштування графіка
-plt.title('Логістична регресія: ймовірність успішності замовлення за кількістю повідомлень')
+plt.title('Логістична регресія: ймовірність успішності замовлення за кількістю повідомлень\n(до 95-го перцентиля)')
 plt.xlabel('Кількість повідомлень')
 plt.ylabel('Ймовірність успішного замовлення')
 plt.legend()
 plt.grid(True, linestyle='--', alpha=0.7)
-plt.xlim(left=0)  # Починаємо з 0 для наочності
+plt.xlim(0, p95)  # Повертаємо як було (до 95-го перцентиля)
+plt.ylim(-0.05, 1.05)  # Додаємо відступ від нуля знизу та зверху
 
 # Додаємо інформацію про коефіцієнти моделі
 coef = model.coef_[0][0]
 intercept = model.intercept_[0]
-plt.text(0.02, 0.02, f'Коефіцієнт: {coef:.4f}, Перетин: {intercept:.4f}',
-         transform=plt.gca().transAxes, bbox=dict(facecolor='white', alpha=0.7))
+plt.text(0.02, 0.12, f'Коефіцієнт моделі: {coef:.4f}\nЗміщення: {intercept:.4f}',
+         transform=plt.gca().transAxes, bbox=dict(facecolor='white', alpha=0.8))
+
+# Додаємо інформацію про 95-й перцентиль
+plt.text(0.98, 0.12, f"95-й перцентиль: {p95:.1f} повідомлень",
+         transform=plt.gca().transAxes, ha='right',
+         bbox=dict(facecolor='white', alpha=0.8))
 
 plt.tight_layout()
 plt.savefig(f"{results_dir}/4_logistic_regression_curve.png", dpi=300)
