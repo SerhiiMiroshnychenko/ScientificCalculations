@@ -68,8 +68,8 @@ print(category_stats)
 # Додатковий аналіз: Створення гістограми розподілу значень partner_success_rate
 plt.figure(figsize=(12, 6))
 plt.hist(df['partner_success_rate'], bins=50, color='skyblue', edgecolor='black', alpha=0.7)
-plt.title('Розподіл значень partner_success_rate')
-plt.xlabel('Значення partner_success_rate')
+plt.title('Розподіл середнього % успішних замовлень клієнта')
+plt.xlabel('Значення середнього % успішних замовлень клієнта')
 plt.ylabel('Кількість замовлень')
 
 # Додаємо мітки на осі X кожні 10 одиниць
