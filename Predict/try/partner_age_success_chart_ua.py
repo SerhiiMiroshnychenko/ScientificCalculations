@@ -250,6 +250,10 @@ def _create_partner_age_success_chart(data, output_path):
     # Налаштовуємо осі
     plt.ylim(0, 100)
 
+    # Вимикаємо відображення проміжних засічок (minor ticks)
+    ax.tick_params(which='minor', bottom=False, left=False)
+    ax.minorticks_off()  # Повністю вимикаємо проміжні засічки
+
     # Показуємо всі мітки, якщо їх менше 10, інакше кожну другу
     if len(data['ranges']) <= 10:
         plt.xticks(range(len(data['ranges'])), data['ranges'],
@@ -315,4 +319,3 @@ if __name__ == '__main__':
     csv_path = 'data_collector_simple.csv'
     output_path = 'partner_age_success_chart'
     create_partner_age_success_chart(csv_path, output_path)
-
