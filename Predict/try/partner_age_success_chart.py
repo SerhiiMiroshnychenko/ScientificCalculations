@@ -198,9 +198,9 @@ def _create_partner_age_success_chart(data, output_path):
     # Створюємо маркери в стилі figures.py
     markers = ["+", "x", "d", ".", "*"]
 
-    # Використовуємо два кольори для точок (червоний і зелений) залежно від success rate
+    # Використовуємо червоний і зелений кольори для точок залежно від success rate
     color_below_50 = colors[3]  # червоний колір з TABLEAU_COLORS
-    color_above_50 = colors[1]  # зелений колір з TABLEAU_COLORS
+    color_above_50 = '#00cc00'  # зелений колір як у оригінальному скрипті
 
     # Розділяємо точки на групи за рівнем успішності
     below_50_indices = [i for i, rate in enumerate(y_points) if rate < 50]
@@ -228,9 +228,9 @@ def _create_partner_age_success_chart(data, output_path):
 
     plt.title(
         f'Success Rate by Partner Age\n(each point represents $\\sim${avg_orders} orders)',
-        pad=20, fontsize=12)
-    plt.xlabel('Partner Age (d=days, m=months, y=years)', fontsize=10)
-    plt.ylabel(r'Success Rate ($\%$)', fontsize=10)
+        pad=20, fontsize=14)
+    plt.xlabel('Partner Age (d=days, m=months, y=years)', fontsize=14)
+    plt.ylabel(r'Success Rate ($\%$)', fontsize=14)
 
     # Налаштовуємо осі
     plt.ylim(0, 100)
@@ -238,15 +238,18 @@ def _create_partner_age_success_chart(data, output_path):
     # Показуємо всі мітки, якщо їх менше 10, інакше кожну другу
     if len(data['ranges']) <= 10:
         plt.xticks(range(len(data['ranges'])), data['ranges'],
-                   rotation=45, ha='right', fontsize=8)
+                   rotation=45, ha='right', fontsize=14)
     else:
         plt.xticks(range(len(data['ranges']))[::2],
                    [data['ranges'][i] for i in range(0, len(data['ranges']), 2)],
-                   rotation=45, ha='right', fontsize=8)
+                   rotation=45, ha='right', fontsize=14)
 
     # Додаємо легенду в стилі figures.py
-    legend = plt.legend(fancybox=False, edgecolor="black", fontsize=8)
+    legend = plt.legend(fancybox=False, edgecolor="black", fontsize=14)
     legend.get_frame().set_linewidth(0.5)
+
+    # Налаштовуємо розмір шрифту для осі Y
+    plt.yticks(fontsize=14)
 
     # Додаємо сітку для кращої читабельності
     plt.grid(True, linestyle='--', alpha=0.3, linewidth=0.3)
