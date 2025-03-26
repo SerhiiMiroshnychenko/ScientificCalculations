@@ -1,11 +1,6 @@
 import csv
-import base64
-from io import StringIO, BytesIO
-import pandas as pd
 from datetime import datetime
 import matplotlib.pyplot as plt
-import numpy as np
-from matplotlib.lines import Line2D
 
 
 def _read_csv_data(data_file):
