@@ -13,28 +13,16 @@ import matplotlib.dates as mdates
 import matplotlib as mpl
 import scienceplots
 import numpy as np
+from mplfonts import use_font
 
-# Додаємо підтримку українських символів через mplfonts
-try:
-    from mplfonts import use_font
-
-    # Використовуємо шрифт, який підтримує кирилицю
-    use_font('Times New Roman')
-    has_mplfonts = True
-except ImportError:
-    print("Для коректного відображення українських символів потрібно встановити бібліотеку mplfonts:")
-    print("pip install mplfonts")
-    print("mplfonts init")
-    has_mplfonts = False
-
-# Налаштування для наукового стилю
+# Використовуємо науковий стиль із пакету scienceplots
 plt.style.use('science')
 
-# Переконуємося, що LaTeX вимкнено
-plt.rcParams['text.usetex'] = False
-
-# Налаштовуємо безпечне відображення символу мінус
-plt.rcParams['axes.unicode_minus'] = False
+# Налаштовуємо шрифт Times New Roman для українських символів
+use_font('Times New Roman')
+mpl.rcParams['pdf.fonttype'] = 42
+mpl.rcParams['ps.fonttype'] = 42
+mpl.rcParams['text.usetex'] = False  # Вимикаємо LaTeX, щоб уникнути проблем із символами{{ ... }}
 
 def create_monthly_scatter_chart(csv_path, output_path):
     try:
@@ -91,6 +79,17 @@ def create_monthly_scatter_chart(csv_path, output_path):
         ax2 = ax1.twinx()
         ax2.minorticks_off()
 
+        # Встановлюємо товсті лінії для осей
+        width = 1.0  # Збільшена товщина ліній рамки
+        ax1.spines["left"].set_linewidth(width)
+        ax1.spines["bottom"].set_linewidth(width)
+        ax1.spines["right"].set_linewidth(width)
+        ax1.spines["top"].set_linewidth(width)
+
+        # Налаштовуємо товщину засічок
+        ax1.tick_params(width=width, length=6)
+        ax2.tick_params(width=width, length=6)
+
         # Графіки для кількості замовлень (ліва вісь)
         scatter1 = ax1.scatter(dates, orders_data, color='skyblue', s=100, label='Всього замовлень')
         scatter2 = ax1.scatter(dates, successful_data, color='gold', s=100, label='Успішні замовлення')
@@ -101,24 +100,24 @@ def create_monthly_scatter_chart(csv_path, output_path):
         # Форматування осі X
         ax1.xaxis.set_major_locator(mdates.MonthLocator(interval=6))
         ax1.xaxis.set_major_formatter(mdates.DateFormatter('%Y-%m'))
-        plt.setp(ax1.xaxis.get_majorticklabels(), rotation=45, fontsize=12)
+        plt.setp(ax1.xaxis.get_majorticklabels(), rotation=45, fontsize=14)
 
         # Налаштування лівої осі (кількість)
         ax1.set_xlabel('Місяць', fontsize=14)
         ax1.set_ylabel('Кількість', fontsize=14, color='black')
-        ax1.tick_params(axis='y', labelcolor='black', labelsize=12)
+        ax1.tick_params(axis='y', labelcolor='black', labelsize=14)
 
         # Налаштування правої осі (відсотки)
         ax2.set_ylabel('Відсоток успішності (%)', fontsize=14, color='purple')
-        ax2.tick_params(axis='y', labelcolor='purple', labelsize=12)
+        ax2.tick_params(axis='y', labelcolor='purple', labelsize=14)
 
         # Об'єднання легенд з обох осей
         handles = [scatter1, scatter2, scatter3]
         labels = ['Всього замовлень', 'Успішні замовлення', 'Відсоток успішності (%)']
-        ax1.legend(handles, labels, loc='upper left', fontsize=12)
+        ax1.legend(handles, labels, loc='upper left', fontsize=14)
 
         plt.title('Місячний аналіз замовлень (Графік розсіювання)', fontsize=16)
-        plt.grid(True, linestyle='--', alpha=0.7)
+        plt.grid(True, linestyle='dashed', alpha=0.7)
         plt.tight_layout()
 
         # Збереження графіку
