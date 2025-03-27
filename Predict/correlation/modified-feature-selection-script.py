@@ -9,7 +9,7 @@ from sklearn.feature_selection import mutual_info_classif, f_classif, RFE, Selec
 from sklearn.preprocessing import LabelEncoder, StandardScaler
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.linear_model import LogisticRegression
-from sklearn.model_selection import cross_val_score, StratifiedKFold
+from sklearn.model_selection import cross_val_score, StratifiedKFold, cross_val_predict
 from sklearn.impute import SimpleImputer
 from sklearn.tree import DecisionTreeClassifier  # Додано для аналізу точності моделей та важливості ознак
 from tabulate import tabulate
@@ -211,7 +211,7 @@ def evaluate_features(X, y, cv=5):
     return results_df, models_dict
 
 # Функція для оцінки моделей з різною кількістю ознак
-def evaluate_models_with_features(X, y, results_df, top_n_features=[5, 10, 15, 20], cv=5):
+def evaluate_models_with_features(X, y, results_df, top_n_features=None, cv=5):
     """
     Оцінює моделі з різною кількістю найважливіших ознак
 
@@ -219,13 +219,17 @@ def evaluate_models_with_features(X, y, results_df, top_n_features=[5, 10, 15, 2
         X (pd.DataFrame): Повний набір ознак
         y (pd.Series): Цільова змінна
         results_df (pd.DataFrame): DataFrame з результатами оцінки ознак
-        top_n_features (list): Список з кількостями ознак для перевірки
+        top_n_features (list): Список з кількостями ознак для перевірки. Якщо None, тестує всі ознаки від 1 до max
         cv (int): Кількість фолдів для крос-валідації
 
     Returns:
         pd.DataFrame: DataFrame з результатами
     """
-    logger.info(f"Оцінюємо моделі з різною кількістю ознак: {top_n_features}...")
+    # Якщо top_n_features не вказано, тестуємо всі варіанти від 1 до кількості ознак
+    if top_n_features is None:
+        top_n_features = list(range(1, min(len(results_df) + 1, 26)))  # Обмежуємо максимум 25 ознаками
+
+    logger.info(f"Оцінюємо моделі з різною кількістю ознак: від {min(top_n_features)} до {max(top_n_features)}...")
     cv_obj = StratifiedKFold(n_splits=cv, shuffle=True, random_state=42)
     models = {
         'LogisticRegression': LogisticRegression(max_iter=10000, random_state=42,
@@ -237,31 +241,102 @@ def evaluate_models_with_features(X, y, results_df, top_n_features=[5, 10, 15, 2
         'DecisionTree': DecisionTreeClassifier(random_state=42)  # Додано для аналізу точності
     }
 
+    # Метрики, які будемо відстежувати
+    metrics = {
+        'accuracy': 'Accuracy',
+        'precision': 'Precision',
+        'recall': 'Recall',
+        'f1': 'F1 Score',
+        'roc_auc': 'ROC AUC'
+    }
+
     results = []
+    # Отримуємо список ознак, відсортований за важливістю
+    all_features = results_df['Feature'].tolist()
+
     for n in top_n_features:
-        selected_features = results_df['Feature'].head(n).tolist()
+        selected_features = all_features[:n]  # Беремо перші n ознак за важливістю
         X_selected = X[selected_features]
         logger.info(f"Тестуємо моделі з {n} найважливішими ознаками...")
 
         for model_name, model in models.items():
+            # Для логістичної регресії масштабуємо дані
             if model_name == 'LogisticRegression':
-                # Масштабуємо дані для логістичної регресії
                 scaler = StandardScaler()
-                X_selected_scaled = scaler.fit_transform(X_selected)
-                scores = cross_val_score(model, X_selected_scaled, y, cv=cv_obj,
-                                         scoring='accuracy', n_jobs=-1)
+                X_scaled = scaler.fit_transform(X_selected)
             else:
-                scores = cross_val_score(model, X_selected, y, cv=cv_obj,
+                X_scaled = X_selected.copy()
+
+            # Використовуємо cross_validate для отримання різних метрик
+            cv_results = cross_val_score(model, X_scaled, y, cv=cv_obj,
                                          scoring='accuracy', n_jobs=-1)
+            accuracy = cv_results.mean()
+            accuracy_std = cv_results.std()
+
+            # Обчислюємо інші метрики через крос-валідацію
+            from sklearn.metrics import precision_score, recall_score, f1_score, roc_auc_score
+            from sklearn.model_selection import cross_val_predict
+
+            y_pred = cross_val_predict(model, X_scaled, y, cv=cv_obj, n_jobs=-1)
+            precision = precision_score(y, y_pred)
+            recall = recall_score(y, y_pred)
+            f1 = f1_score(y, y_pred)
+
+            # Для ROC AUC потрібні ймовірності, які не всі моделі можуть видати
+            try:
+                if hasattr(model, "predict_proba"):
+                    y_proba = cross_val_predict(model, X_scaled, y, cv=cv_obj,
+                                                method='predict_proba', n_jobs=-1)
+                    roc_auc = roc_auc_score(y, y_proba[:, 1])
+                else:
+                    roc_auc = float('nan')
+            except:
+                roc_auc = float('nan')
 
             results.append({
                 'Model': model_name,
                 'N Features': n,
-                'Accuracy': scores.mean(),
-                'Std': scores.std()
+                'Accuracy': accuracy,
+                'Std': accuracy_std,
+                'Precision': precision,
+                'Recall': recall,
+                'F1 Score': f1,
+                'ROC AUC': roc_auc,
+                'Features': ', '.join(selected_features[:5]) + ('...' if n > 5 else '')
             })
 
-    return pd.DataFrame(results)
+    results_df = pd.DataFrame(results)
+
+    # Створюємо візуалізації для різних метрик
+    for metric_name, metric_label in metrics.items():
+        if metric_name == 'accuracy':
+            metric_col = 'Accuracy'
+        elif metric_name == 'precision':
+            metric_col = 'Precision'
+        elif metric_name == 'recall':
+            metric_col = 'Recall'
+        elif metric_name == 'f1':
+            metric_col = 'F1 Score'
+        elif metric_name == 'roc_auc':
+            metric_col = 'ROC AUC'
+        else:
+            continue
+
+        plt.figure(figsize=(12, 8))
+        for model in models.keys():
+            model_results = results_df[results_df['Model'] == model]
+            plt.plot(model_results['N Features'], model_results[metric_col],
+                     marker='o', linestyle='-', label=model)
+
+        plt.title(f"{metric_label} залежно від кількості ознак")
+        plt.xlabel("Кількість ознак")
+        plt.ylabel(metric_label)
+        plt.grid(True, linestyle='--', alpha=0.7)
+        plt.legend()
+        plt.tight_layout()
+        plt.savefig(f"{results_dir}/{metric_name}_vs_features.png")
+
+    return results_df
 
 # Основна функція
 def main():
