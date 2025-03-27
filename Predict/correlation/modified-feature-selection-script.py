@@ -430,9 +430,53 @@ def main():
         cols.insert(1, 'Feature_UA')
         display_df = display_df[cols]
 
-        logger.info("\nПорівняння впливу всіх факторів за рейтингами:\n")
+        # Створюємо окремі таблиці для кожного методу з 5 найважливішими ознаками
+        print("\nТаблиці з 5 найважливішими ознаками за кожним методом:\n")
+
+        # Словник з назвами методів та відповідними стовпцями
+        methods = {
+            'Mutual Information': 'MI Score',
+            'ANOVA F-test': 'F Score',
+            'Spearman Correlation': 'Spearman Score',
+            'Logistic Regression Coefficients': 'LR Coefficient',
+            'Decision Tree Feature Importance': 'DT Score',
+            'Random Forest Importance': 'RF Score',
+            'XGBoost Feature Importance': 'XGBoost Score'
+        }
+
+        # Створюємо та виводимо окремі таблиці для кожного методу
+        for method_name, method_column in methods.items():
+            # Сортуємо дані за відповідним методом (у порядку спадання, тобто найважливіші ознаки будуть спочатку)
+            if method_name == 'Logistic Regression Coefficients':
+                # Для логістичної регресії сортуємо за абсолютними значеннями, але виводимо оригінальні
+                method_df = results_df.copy()
+                # Створюємо тимчасовий стовпець з абсолютними значеннями для сортування
+                method_df['Abs_LR'] = method_df['LR Coefficient'].abs()
+                # Сортуємо за абсолютними значеннями і беремо топ-5
+                method_df = method_df.sort_values(by='Abs_LR', ascending=False).head(5)
+                # Видаляємо тимчасовий стовпець
+                method_df.drop('Abs_LR', axis=1, inplace=True)
+            else:
+                method_df = results_df.sort_values(by=method_column, ascending=False).head(5)
+
+            # Додаємо українські назви
+            method_df['Feature_UA'] = method_df['Feature'].apply(get_ua_feature_name)
+
+            # Вибираємо та форматуємо дані для виведення
+            display_method_df = method_df[['Feature', 'Feature_UA', method_column]].round(4)
+
+            # Виводимо назву методу та дані через print замість logger.info
+            print(f"\n{method_name} - 5 найважливіших ознак:")
+            method_table = tabulate(display_method_df, headers=['Ознака', 'Назва українською', 'Значення'], tablefmt='fancy_grid')
+            print(f"\n{method_table}")
+
+            # Зберігаємо окрему таблицю у файл
+            method_filename = method_name.lower().replace(' ', '_')
+            display_method_df.to_csv(f"{results_dir}/{method_filename}_top5.csv", index=False)
+
+        print("\nПорівняння впливу всіх факторів за рейтингами:\n")
         print(tabulate(display_df.head(20), headers='keys', tablefmt='fancy_grid'))
-        logger.info(f"\nНайкраща продуктивність моделей:")
+        print(f"\nНайкраща продуктивність моделей:")
         best_performance = performance_df.loc[performance_df.groupby('Model')['Accuracy'].idxmax()]
         print(tabulate(best_performance, headers='keys', tablefmt='fancy_grid'))
         logger.info(f"\nАналіз завершено успішно. Результати збережено у директорії: {results_dir}")
