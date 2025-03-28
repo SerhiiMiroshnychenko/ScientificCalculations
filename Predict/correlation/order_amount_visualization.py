@@ -280,36 +280,43 @@ print("Створюємо гістограму з нормалізацією..."
 
 # Визначаємо межі для групування значень order_amount
 max_amount = min(df['order_amount'].max(), p95)
-bin_width = max_amount / 10  # 10 бінів
+# Зменшуємо кількість бінів для більш широких стовпчиків
+bin_width = max_amount / 7  # 7 бінів замість 10
 bins = np.arange(0, max_amount + bin_width, bin_width)
 
+# Встановлюємо менший розмір шрифту для всього графіка
 plt.figure(figsize=(14, 7))
+plt.rcParams.update({'font.size': 10})  # Зменшуємо базовий розмір шрифту
 
 # Створення гістограми
 df['amount_bins'] = pd.cut(df['order_amount'], bins)
 hist = df.groupby(['amount_bins', 'is_successful'], observed=True).size().unstack()
 hist_norm = hist.div(hist.sum(axis=1), axis=0).fillna(0)
 
-# Побудова графіка
-hist_norm.plot(kind='bar', stacked=True, color=['#FF6B6B', '#4ECDC4'])
+# Побудова графіка з ширшими стовпчиками
+hist_norm.plot(kind='bar', stacked=True, color=['#FF6B6B', '#4ECDC4'], width=0.8)  # Збільшуємо ширину до 0.8
 
-# Налаштування графіка
-plt.title('Відсоток успішних та невдалих замовлень за сумою замовлення')
-plt.xlabel('Сума замовлення (USD)')
-plt.ylabel('Частка від загальної кількості')
-plt.xticks(rotation=45, fontsize=10)  # Зменшено розмір шрифту для підписів осі X
-plt.legend(['Невдалі замовлення', 'Успішні замовлення'])
+# Налаштування графіка з меншим шрифтом
+plt.title('Відсоток успішних та невдалих замовлень за сумою замовлення', fontsize=11)
+plt.xlabel('Сума замовлення (USD)', fontsize=9)
+plt.ylabel('Частка від загальної кількості', fontsize=9)
+plt.xticks(rotation=45, fontsize=8)  # Зменшуємо розмір шрифту для підписів осі X
+plt.yticks(fontsize=8)  # Зменшуємо розмір шрифту для підписів осі Y
+plt.legend(['Невдалі замовлення', 'Успішні замовлення'], fontsize=8, loc='upper right')
 
 # Додаємо підписи відсотків для успішних замовлень з меншим розміром шрифту
 for i, p in enumerate(plt.gca().patches[len(bins)-1:]):  # Тільки для успішних замовлень
     width, height = p.get_width(), p.get_height()
     x, y = p.get_xy()
     if height > 0.05:  # Показуємо підпис тільки якщо стовпчик достатньо великий
-        plt.text(x+width/2, y+height/2, f'{height:.1%}', ha='center', fontsize=8, color='white')  # Зменшено розмір шрифту
+        plt.text(x+width/2, y+height/2, f'{height:.1%}', ha='center', fontsize=7, color='white')  # Зменшено розмір шрифту
 
 plt.tight_layout()
 plt.savefig(f"{results_dir}/5_histogram_normalized_success_by_amount.png", dpi=300)
 plt.close()
+
+# Відновлюємо базовий розмір шрифту для інших графіків
+plt.rcParams.update({'font.size': 12})
 
 # Створюємо власну функцію трансформації для нелінійної шкали
 class CustomScaleTransform(mtransforms.Transform):
