@@ -32,6 +32,13 @@ df = pd.read_csv("cleaned_result.csv")
 print(f"Завантажено {df.shape[0]} рядків та {df.shape[1]} стовпців")
 print(f"Розподіл класів: {df['is_successful'].value_counts().to_dict()}")
 
+# Перевіряємо наявність від'ємних значень і замінюємо їх на нулі
+negative_values = (df['order_amount'] < 0).sum()
+if negative_values > 0:
+    print(f"Виявлено {negative_values} від'ємних значень в order_amount, замінюємо на нулі")
+    df.loc[df['order_amount'] < 0, 'order_amount'] = 0
+    print(f"Після обробки від'ємних значень: мін = {df['order_amount'].min()}, макс = {df['order_amount'].max()}")
+
 # Перевіряємо наявність пропущених значень
 missing_values = df['order_amount'].isnull().sum()
 if missing_values > 0:
@@ -273,6 +280,72 @@ plt.grid(True, alpha=0.3)
 
 plt.tight_layout()
 plt.savefig(f"{results_dir}/4_logistic_regression_roc.png", dpi=300)
+plt.close()
+
+# 4.1 Логістична крива ймовірності (не ROC)
+print("Створюємо логістичну криву ймовірності...")
+
+# Визначаємо межу для 95-го перцентиля
+p95 = df['order_amount'].quantile(0.95)
+
+# Підготовка даних
+X = df[['order_amount']].values
+y = df['is_successful'].values
+
+# Масштабування для кращих результатів
+scaler_curve = StandardScaler()
+X_scaled_curve = scaler_curve.fit_transform(X)
+
+# Навчання логістичної регресії
+model_curve = LogisticRegression(random_state=42)
+model_curve.fit(X_scaled_curve, y)
+
+# Створення даних для кривої
+X_range = np.linspace(0, p95, 100).reshape(-1, 1)  # Обмежуємо до 95-го перцентиля
+X_range_scaled = scaler_curve.transform(X_range)
+y_proba = model_curve.predict_proba(X_range_scaled)[:, 1]
+
+# Побудова графіку
+plt.figure(figsize=(10, 6))
+
+# Додаємо розсіяні точки з альфа прозорістю (вибірка тільки в межах 95-го перцентиля)
+X_filtered = X[X.flatten() <= p95]
+y_filtered = y[X.flatten() <= p95]
+sample_size = min(5000, len(X_filtered))
+
+if len(X_filtered) > 0:  # Перевіряємо, що є дані після фільтрації
+    sampled_indices = np.random.choice(len(X_filtered), size=min(sample_size, len(X_filtered)), replace=False)
+    plt.scatter(X_filtered[sampled_indices], y_filtered[sampled_indices],
+                alpha=0.3, c=y_filtered[sampled_indices], cmap='coolwarm', edgecolors='none')
+
+# Додаємо криву логістичної регресії
+plt.plot(X_range, y_proba, color='blue', linewidth=3)
+plt.axhline(y=0.5, color='red', linestyle='--', alpha=0.7, label='Поріг класифікації (0.5)')
+
+# Знаходимо точку перетину кривої з порогом 0.5
+threshold_idx = np.abs(y_proba - 0.5).argmin()
+threshold_x = X_range[threshold_idx][0]
+plt.axvline(x=threshold_x, color='green', linestyle='--', alpha=0.7)
+plt.text(threshold_x + p95*0.05, 0.3, f'Точка перетину: {threshold_x:.1f} USD', color='green')
+
+# Налаштування графіка
+plt.title('Логістична регресія: ймовірність успішності замовлення за сумою\n(до 95-го перцентиля)')
+plt.xlabel('Сума замовлення (USD)')
+plt.ylabel('Ймовірність успішного замовлення')
+plt.xlim(0, p95)
+plt.ylim(0, 1)
+plt.grid(True, alpha=0.3)
+plt.legend(['Логістична крива', 'Поріг класифікації'])
+
+# Додаємо підпис про коефіцієнти моделі
+intercept = model_curve.intercept_[0]
+coef = model_curve.coef_[0][0]
+plt.text(p95*0.7, 0.9, f'Коефіцієнти моделі:\nIntercept: {intercept:.4f}\nСума: {coef:.6f}',
+         bbox=dict(facecolor='white', alpha=0.8, boxstyle='round,pad=0.5'))
+
+# Зберігаємо графік
+plt.tight_layout()
+plt.savefig(f"{results_dir}/4_logistic_regression_curve.png", dpi=300)
 plt.close()
 
 # 5. Гістограма з нормалізацією - відсоток успішності залежно від суми
