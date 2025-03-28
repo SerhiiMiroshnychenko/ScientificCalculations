@@ -298,6 +298,49 @@ def create_category_histogram(df, column_name):
     plt.close()
 
 
+# Визначаємо функцію для створення віолінового графіка з логарифмічною шкалою
+def create_log_violin_plot(df, column_name):
+    if df[column_name].dtype not in [np.int64, np.float64]:
+        print(f"Колонка {column_name} не є числовою. Пропускаємо віоліновий графік з логарифмічною шкалою.")
+        return
+
+    # Перевіряємо, чи є нульові або від'ємні значення
+    if (df[column_name] <= 0).any():
+        print(
+            f"Колонка {column_name} містить нульові або від'ємні значення, які неможливо відобразити в логарифмічній шкалі.")
+        print(f"Замінюємо їх на мінімальне позитивне значення для відображення.")
+        min_positive = df[df[column_name] > 0][column_name].min()
+        df_plot = df.copy()
+        df_plot.loc[df_plot[column_name] <= 0, column_name] = min_positive / 10
+    else:
+        df_plot = df
+
+    print(f"Створюємо violin plot з логарифмічною шкалою для {column_name}...")
+    plt.figure(figsize=(10, 6))
+    sns.violinplot(x='is_successful', y=column_name, data=df_plot, inner='box', palette='Set3')
+    plt.yscale('log')
+    plt.title(f'Violin Plot для {column_name} з логарифмічною шкалою')
+    plt.xlabel('Успішність')
+    plt.ylabel(f'{column_name} (лог. шкала)')
+    plt.xticks([0, 1], ['Неуспішні', 'Успішні'])
+
+    # Додаємо статистичні показники як текст
+    for i, success in enumerate([0, 1]):
+        subset = df[df['is_successful'] == success][column_name]
+        if len(subset) > 0:
+            median = subset.median()
+            mean = subset.mean()
+
+            # Перевіряємо, що значення не нульові для відображення в логарифмічній шкалі
+            if median > 0 and mean > 0:
+                plt.text(i, median / 1.5, f'Медіана: {median:.1f}', ha='center', fontsize=9)
+                plt.text(i, median * 1.5, f'Середнє: {mean:.1f}', ha='center', fontsize=9)
+
+    # Зберігаємо графік
+    current_date = datetime.now().strftime('%Y%m%d')
+    plt.savefig(f"{results_dir}/log_violin_plot_{column_name}_{current_date}.png", dpi=300, bbox_inches='tight')
+    plt.close()
+
 # Обробка та візуалізація всіх колонок
 numerical_columns = df.select_dtypes(include=[np.int64, np.float64]).columns
 categorical_columns = df.select_dtypes(exclude=[np.int64, np.float64]).columns
@@ -315,6 +358,7 @@ for column in df.columns:
     # Створюємо відповідні графіки залежно від типу даних
     if column in numerical_columns:
         create_violin_plot(df, column)
+        create_log_violin_plot(df, column)
         create_density_plot(df, column)
         create_success_rate_plot(df, column)
     else:
