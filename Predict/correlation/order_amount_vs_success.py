@@ -7,6 +7,7 @@ import datetime
 from matplotlib import scale as mscale
 from matplotlib.transforms import Transform
 import matplotlib.transforms as mtransforms
+from tabulate import tabulate
 
 # Завантаження даних з файлу
 df = pd.read_csv('cleaned_result.csv')
@@ -14,9 +15,78 @@ df = pd.read_csv('cleaned_result.csv')
 # Перетворення стовпця 'is_successful' на числовий тип (0 або 1), якщо це ще не зроблено
 df['is_successful'] = df['is_successful'].astype(int)
 
+# Розрахунок статистичних показників для різних груп
+# Групуємо дані за ознакою is_successful та розраховуємо статистики для order_amount
+stats = df.groupby('is_successful')['order_amount'].agg([
+    ('Середнє', 'mean'),
+    ('Медіана', 'median'),
+    ('Стандартне відхилення', 'std'),
+    ('Мінімум', 'min'),
+    ('Максимум', 'max'),
+    ('Квартиль 25%', lambda x: x.quantile(0.25)),
+    ('Квартиль 75%', lambda x: x.quantile(0.75))
+])
+
+# Перетворюємо індекс на більш читабельні назви
+stats.index = ['Неуспішні', 'Успішні']
+
 # Отримуємо поточну дату і час для унікальних імен файлів
-# date_time = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
 date_time = datetime.datetime.now().strftime("%Y%m%d")
+
+# Зберігаємо статистики у CSV файл
+stats.to_csv(f'order_amount_statistics_{date_time}.csv')
+
+# Також розраховуємо кількість спостережень у кожній групі
+count_by_group = df.groupby('is_successful').size()
+count_by_group_df = pd.DataFrame({
+    'Група': ['Неуспішні', 'Успішні', 'Всього'],
+    'Кількість': [count_by_group[0], count_by_group[1], count_by_group.sum()]
+})
+
+# Створюємо форматовані таблиці
+print("\n" + "="*80)
+print("СТАТИСТИЧНИЙ АНАЛІЗ СУМ ЗАМОВЛЕНЬ".center(80))
+print("="*80)
+
+# Форматуємо та виводимо основну таблицю статистик
+stats_table = stats.copy()
+for col in stats_table.columns:
+    if col == 'Середнє' or col == 'Стандартне відхилення' or col == 'Медіана':
+        stats_table[col] = stats_table[col].map(lambda x: f"{x:,.2f}")
+    else:
+        stats_table[col] = stats_table[col].map(lambda x: f"{x:,.2f}")
+
+print("\nОсновні статистичні показники сум замовлень за групами:")
+print(tabulate(stats_table, headers='keys', tablefmt='grid', showindex=True))
+
+# Виводимо кількість спостережень
+print("\nРозподіл кількості спостережень за групами:")
+print(tabulate(count_by_group_df, headers='keys', tablefmt='grid', showindex=False))
+
+# Додаємо порівняльну статистику
+comparison_data = []
+for stat in stats.columns:
+    ratio = stats.loc['Неуспішні', stat] / stats.loc['Успішні', stat] if stats.loc['Успішні', stat] != 0 else float('inf')
+    diff = stats.loc['Неуспішні', stat] - stats.loc['Успішні', stat]
+    comparison_data.append({
+        'Статистика': stat,
+        'Неуспішні': f"{stats.loc['Неуспішні', stat]:,.2f}",
+        'Успішні': f"{stats.loc['Успішні', stat]:,.2f}",
+        'Різниця': f"{diff:,.2f}",
+        'Відношення': f"{ratio:.2f}"
+    })
+
+comparison_df = pd.DataFrame(comparison_data)
+print("\nПорівняльний аналіз статистичних показників:")
+print(tabulate(comparison_df, headers='keys', tablefmt='grid', showindex=False))
+
+print("\nВисновок:")
+if stats.loc['Неуспішні', 'Середнє'] > stats.loc['Успішні', 'Середнє']:
+    print(f"⚠ Неуспішні замовлення мають БІЛЬШУ середню суму (в {stats.loc['Неуспішні', 'Середнє']/stats.loc['Успішні', 'Середнє']:.2f} рази)")
+else:
+    print(f"⚠ Успішні замовлення мають БІЛЬШУ середню суму (в {stats.loc['Успішні', 'Середнє']/stats.loc['Неуспішні', 'Середнє']:.2f} рази)")
+
+print("="*80)
 
 # Створюємо власну функцію трансформації для нелінійної шкали
 class CustomScaleTransform(mtransforms.Transform):
