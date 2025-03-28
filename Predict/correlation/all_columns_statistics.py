@@ -133,12 +133,6 @@ def perform_statistical_tests(df, column_name, group_column='is_successful', alp
     except:
         mw_stat, mw_pvalue = np.nan, np.nan
 
-    # Тест Колмогорова-Смирнова
-    try:
-        ks_stat, ks_pvalue = stats.ks_2samp(group_0, group_1)
-    except:
-        ks_stat, ks_pvalue = np.nan, np.nan
-
     # Розрахунок довірчих інтервалів
     try:
         ci_0 = stats.t.interval(1-alpha, len(group_0)-1, loc=group_0.mean(), scale=stats.sem(group_0))
@@ -149,12 +143,12 @@ def perform_statistical_tests(df, column_name, group_column='is_successful', alp
 
     # Створення датафрейму із результатами
     tests_results = pd.DataFrame({
-        'Тест': ['t-тест (Welch)', 'Тест Манна-Уітні', 'Тест Колмогорова-Смирнова'],
-        'Статистика': [t_stat, mw_stat, ks_stat],
-        'p-значення': [t_pvalue, mw_pvalue, ks_pvalue],
+        'Тест': ['t-тест (Welch)', 'Тест Манна-Уітні'],
+        'Статистика': [t_stat, mw_stat],
+        'p-значення': [t_pvalue, mw_pvalue],
         'Значущість': [
             "Значуща різниця" if p < alpha and not np.isnan(p) else "Немає значущої різниці"
-            for p in [t_pvalue, mw_pvalue, ks_pvalue]
+            for p in [t_pvalue, mw_pvalue]
         ]
     })
 
@@ -228,9 +222,12 @@ def is_column_significant(tests_results):
     if tests_results is None or tests_results.empty:
         return False
 
-    # Перевіряємо, чи хоча б один тест показує значущу різницю
-    significant_tests = tests_results['p-значення'].apply(lambda p: p < 0.05 if not np.isnan(p) else False)
-    return significant_tests.any()
+    # Перевіряємо p-значення для t-тесту та тесту Манна-Уітні
+    t_test_pvalue = tests_results.loc[tests_results['Тест'] == 't-тест (Welch)', 'p-значення'].values[0]
+    mw_test_pvalue = tests_results.loc[tests_results['Тест'] == 'Тест Манна-Уітні', 'p-значення'].values[0]
+
+    # Якщо хоча б один тест показує значущу різницю (p < 0.05), вважаємо колонку значущою
+    return (t_test_pvalue < 0.05 and not np.isnan(t_test_pvalue)) or (mw_test_pvalue < 0.05 and not np.isnan(mw_test_pvalue))
 
 def is_practical_difference(mean_0, mean_1, threshold=0.05):
     """
@@ -436,8 +433,7 @@ def analyze_column(df, column_name, group_column='is_successful', output_dir='.'
         'relative_diff_percent': abs(mean_diff) / max(abs(mean_0), abs(mean_1)) * 100 if not pd.isna(mean_diff) and max(abs(mean_0), abs(mean_1)) > 0 else np.nan,
         'p_values': {
             't_test': tests_results.iloc[0]['p-значення'] if tests_results is not None else np.nan,
-            'mann_whitney': tests_results.iloc[1]['p-значення'] if tests_results is not None else np.nan,
-            'ks_test': tests_results.iloc[2]['p-значення'] if tests_results is not None else np.nan
+            'mann_whitney': tests_results.iloc[1]['p-значення'] if tests_results is not None else np.nan
         },
         'basic_stats': basic_stats_dict
     }
