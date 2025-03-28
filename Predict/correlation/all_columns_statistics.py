@@ -232,6 +232,25 @@ def is_column_significant(tests_results):
     significant_tests = tests_results['p-значення'].apply(lambda p: p < 0.05 if not np.isnan(p) else False)
     return significant_tests.any()
 
+def is_practical_difference(mean_0, mean_1, threshold=0.05):
+    """
+    Визначає, чи є практична різниця між середніми значеннями
+
+    Args:
+        mean_0 (float): Середнє значення для першої групи
+        mean_1 (float): Середнє значення для другої групи
+        threshold (float): Поріг мінімальної відносної різниці (0.05 = 5%)
+
+    Returns:
+        bool: True якщо є практична різниця, False інакше
+    """
+    if pd.isna(mean_0) or pd.isna(mean_1) or mean_0 == 0 or mean_1 == 0:
+        return False
+
+    # Обчислюємо відносну різницю
+    relative_diff = abs(mean_0 - mean_1) / max(mean_0, mean_1)
+    return relative_diff > threshold
+
 def format_value(value):
     """Форматує числове значення для відображення"""
     if pd.isna(value):
@@ -301,17 +320,35 @@ def display_column_analysis(column_name, basic_stats, tests_results, ci_results,
     # Виведення висновку
     print("\nВисновок:")
     if is_significant:
-        print(f"⚠ Виявлено СТАТИСТИЧНО ЗНАЧУЩУ різницю в значеннях колонки '{column_name}' між успішними та неуспішними замовленнями.")
+        # Отримання середніх значень
+        mean_0 = basic_stats.loc['Неуспішні', 'Середнє'] if 'Неуспішні' in basic_stats.index else np.nan
+        mean_1 = basic_stats.loc['Успішні', 'Середнє'] if 'Успішні' in basic_stats.index else np.nan
 
-        if basic_stats is not None:
-            mean_0 = basic_stats.loc['Неуспішні', 'Середнє'] if 'Неуспішні' in basic_stats.index else np.nan
-            mean_1 = basic_stats.loc['Успішні', 'Середнє'] if 'Успішні' in basic_stats.index else np.nan
+        # Перевірка на наявність практичної різниці
+        if is_practical_difference(mean_0, mean_1):
+            print(f"⚠ Виявлено СТАТИСТИЧНО ЗНАЧУЩУ різницю в значеннях колонки '{column_name}' між успішними та неуспішними замовленнями.")
 
-            if not pd.isna(mean_0) and not pd.isna(mean_1):
+            if not pd.isna(mean_0) and not pd.isna(mean_1) and mean_1 != 0 and mean_0 != 0:
                 if mean_0 > mean_1:
-                    print(f"   • Неуспішні замовлення мають більше значення '{column_name}' (в {mean_0/mean_1:.2f} рази)")
+                    print(f"   • Неуспішні замовлення мають більше значення '{column_name}' (в {mean_0/mean_1:.6f} рази)")
                 else:
-                    print(f"   • Успішні замовлення мають більше значення '{column_name}' (в {mean_1/mean_0:.2f} рази)")
+                    print(f"   • Успішні замовлення мають більше значення '{column_name}' (в {mean_1/mean_0:.6f} рази)")
+
+                # Відображення абсолютної різниці
+                abs_diff = abs(mean_0 - mean_1)
+                print(f"   • Абсолютна різниця: {abs_diff:.6f}")
+
+                # Відносна різниця у відсотках
+                rel_diff = abs_diff / max(mean_0, mean_1) * 100
+                print(f"   • Відносна різниця: {rel_diff:.4f}%")
+
+                if abs(rel_diff) < 5:
+                    print(f"   • Відносна різниця близька до нуля ({rel_diff:.4f}%), що вказує на відсутність практичної різниці.")
+        else:
+            print(f"⚠ Виявлено СТАТИСТИЧНО ЗНАЧУЩУ, але ПРАКТИЧНО НЕЗНАЧНУ різницю в значеннях колонки '{column_name}'.")
+            print(f"   • p-значення показують статистичну значущість, але абсолютні значення майже однакові:")
+            print(f"   • Неуспішні: {mean_0:.6f}, Успішні: {mean_1:.6f}")
+            print(f"   • Відносна різниця: {abs(mean_0 - mean_1) / max(mean_0, mean_1) * 100:.4f}% (менше порогового значення 5%)")
     else:
         print(f"ℹ Не виявлено статистично значущої різниці в значеннях колонки '{column_name}' між групами.")
 
@@ -370,6 +407,9 @@ def analyze_column(df, column_name, group_column='is_successful', output_dir='.'
         mean_diff = np.nan
         mean_ratio = np.nan
 
+    # Перевірка на практичну значущість
+    practical_significance = is_practical_difference(mean_0, mean_1)
+
     # Збереження результатів у файли
     basic_stats.to_csv(f'{output_dir}/column_stats/{column_name}_basic_stats.csv')
     if tests_results is not None:
@@ -389,9 +429,11 @@ def analyze_column(df, column_name, group_column='is_successful', output_dir='.'
     summary = {
         'column': column_name,
         'is_significant': is_significant,
+        'practical_significance': practical_significance,
         'significance_marker': significance_marker,
         'mean_diff': mean_diff,
         'mean_ratio': mean_ratio,
+        'relative_diff_percent': abs(mean_diff) / max(abs(mean_0), abs(mean_1)) * 100 if not pd.isna(mean_diff) and max(abs(mean_0), abs(mean_1)) > 0 else np.nan,
         'p_values': {
             't_test': tests_results.iloc[0]['p-значення'] if tests_results is not None else np.nan,
             'mann_whitney': tests_results.iloc[1]['p-значення'] if tests_results is not None else np.nan,
@@ -429,11 +471,11 @@ def analyze_all_columns(file_path, group_column='is_successful', output_dir='.')
         column_result = analyze_column(df, column, group_column, output_dir)
         if column_result:
             all_results.append(column_result)
-            if column_result['is_significant']:
+            if column_result['is_significant'] and column_result['practical_significance']:
                 significant_columns.append((column, column_result['p_values']['t_test']))
 
     # Сортуємо значущі колонки за p-значенням (від найменшого до найбільшого)
-    significant_columns.sort(key=lambda x: x[1] if not np.isnan(x[1]) else float('inf'))
+    significant_columns.sort(key=lambda x: x[1] if not pd.isna(x[1]) else float('inf'))
 
     # Створюємо зведену таблицю значущих колонок
     significant_summary = []
@@ -446,20 +488,21 @@ def analyze_all_columns(file_path, group_column='is_successful', output_dir='.')
                 'Середнє (Неуспішні)': format_value(column_data['basic_stats']['Неуспішні']['Середнє']),
                 'Середнє (Успішні)': format_value(column_data['basic_stats']['Успішні']['Середнє']),
                 'Різниця середніх': format_value(column_data['mean_diff']),
-                'Відношення середніх': format_value(column_data['mean_ratio'])
+                'Відношення середніх': format_value(column_data['mean_ratio']),
+                'Відносна різниця, %': format_value(column_data['relative_diff_percent'])
             })
 
     significant_df = pd.DataFrame(significant_summary)
 
     # Виведення підсумкової таблиці
     print("\n" + "="*80)
-    print("КОЛОНКИ ЗІ СТАТИСТИЧНО ЗНАЧУЩОЮ РІЗНИЦЕЮ".center(80))
+    print("КОЛОНКИ ЗІ СТАТИСТИЧНО ТА ПРАКТИЧНО ЗНАЧУЩОЮ РІЗНИЦЕЮ".center(80))
     print("="*80)
 
     if significant_df.empty:
-        print("\nНе знайдено колонок зі статистично значущою різницею.")
+        print("\nНе знайдено колонок зі статистично та практично значущою різницею.")
     else:
-        print("\nКолонки зі статистично значущою різницею (відсортовані за p-значенням):")
+        print("\nКолонки зі статистично та практично значущою різницею (відсортовані за p-значенням):")
         print(tabulate(significant_df, headers='keys', tablefmt='grid', showindex=False))
 
         # Зберігаємо підсумкову таблицю у CSV
