@@ -437,6 +437,29 @@ print(f"  Стандартне відхилення: {df[df['is_successful'] == 
 print(f"  Мінімум: {df[df['is_successful'] == 0]['order_amount'].min():.2f} USD")
 print(f"  Максимум: {df[df['is_successful'] == 0]['order_amount'].max():.2f} USD")
 
+# Додаємо violin plot з логарифмічною шкалою
+print("Створюємо violin plot з логарифмічною шкалою...")
+plt.figure(figsize=(10, 6))
+sns.violinplot(x='is_successful', y='order_amount', data=df, inner='box', palette='Set3')
+plt.yscale('log')
+plt.title('Violin Plot з логарифмічною шкалою')
+plt.xlabel('Успішність')
+plt.ylabel('Сума замовлення (USD, лог. шкала)')
+plt.xticks([0, 1], ['Неуспішні', 'Успішні'])
+
+# Додаємо статистичні показники як текст
+for i, success in enumerate([0, 1]):
+    subset = df[df['is_successful'] == success]['order_amount']
+    median = subset.median()
+    mean = subset.mean()
+    plt.text(i, median/1.5, f'Медіана: {median:.1f}', ha='center', fontsize=9)
+    plt.text(i, median*1.5, f'Середнє: {mean:.1f}', ha='center', fontsize=9)
+
+# Зберігаємо графік
+current_date = datetime.now().strftime('%Y%m%d')
+plt.savefig(f"{results_dir}/violin_plot_{current_date}.png", dpi=300, bbox_inches='tight')
+plt.close()
+
 # Обчислюємо та виводимо коефіцієнти моделі
 print(f"\nКоефіцієнти логістичної регресії:")
 print(f"Перехват (Intercept): {model.intercept_[0]:.4f}")
