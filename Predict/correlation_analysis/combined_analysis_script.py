@@ -429,33 +429,37 @@ def display_column_analysis(column_name, basic_stats, tests_results, ci_results,
     header = f"\n{stars}{'='*50}{stars}\n"
     header += f"{stars}АНАЛІЗ КОЛОНКИ: {column_name}{stars}\n"
     header += f"{stars}{'='*50}{stars}\n"
+    print(header)
     logger.info(header)
 
     # Виводимо базові статистики
     if basic_stats is not None and not basic_stats.empty:
+        print("\nБазові статистичні показники:")
+        print(tabulate(basic_stats, headers='keys', tablefmt='pipe', floatfmt='.4f'))
         logger.info("\nБазові статистичні показники:")
-        logger.info(tabulate(basic_stats, headers='keys', tablefmt='pipe', floatfmt='.4f'))
 
     # Виводимо результати порівняльного аналізу
     if comparison_df is not None and not comparison_df.empty:
+        print("\nПорівняльний аналіз між групами:")
+        print(tabulate(comparison_df, headers='keys', tablefmt='pipe', floatfmt='.4f', showindex=False))
         logger.info("\nПорівняльний аналіз між групами:")
-        logger.info(tabulate(comparison_df, headers='keys', tablefmt='pipe', floatfmt='.4f', showindex=False))
 
     # Виводимо результати тестів
     if tests_results is not None and not tests_results.empty:
+        print("\nРезультати статистичних тестів:")
+        print(tabulate(tests_results, headers='keys', tablefmt='pipe', floatfmt='.4f', showindex=False))
         logger.info("\nРезультати статистичних тестів:")
-        logger.info(tabulate(tests_results, headers='keys', tablefmt='pipe', floatfmt='.4f', showindex=False))
 
     # Виводимо довірчі інтервали
     if ci_results is not None and not ci_results.empty:
+        print("\nДовірчі інтервали (95%):")
+        print(tabulate(ci_results, headers='keys', tablefmt='pipe', floatfmt='.4f', showindex=False))
         logger.info("\nДовірчі інтервали (95%):")
-        logger.info(tabulate(ci_results, headers='keys', tablefmt='pipe', floatfmt='.4f', showindex=False))
 
     # Виводимо висновок
-    if is_significant:
-        logger.info("\nВИСНОВОК: Виявлено статистично значущу різницю між групами")
-    else:
-        logger.info("\nВИСНОВОК: Не виявлено статистично значущої різниці між групами")
+    conclusion = "\nВИСНОВОК: Виявлено статистично значущу різницю між групами" if is_significant else "\nВИСНОВОК: Не виявлено статистично значущої різниці між групами"
+    print(conclusion)
+    logger.info(conclusion)
 
 def analyze_column(df, column_name, group_column='is_successful', output_dir='.'):
     """
@@ -1240,8 +1244,9 @@ def evaluate_models_with_features(X, y, results_df, top_n_features=None, cv=5):
     # Виводимо таблицю з найкращими результатами по метриці AUC для кожної моделі
     logger.info("\nНайкращі результати за ROC AUC для кожної моделі:")
     best_results = results_df.loc[results_df.groupby('Model')['ROC AUC'].idxmax()]
-    logger.info(tabulate(best_results[['Model', 'N Features', 'ROC AUC', 'Accuracy', 'F1 Score']],
-                         headers='keys', tablefmt='pipe', showindex=False, floatfmt='.4f'))
+    print("\nНайкращі результати за ROC AUC для кожної моделі:")
+    print(tabulate(best_results[['Model', 'N Features', 'ROC AUC', 'Accuracy', 'F1 Score']],
+                   headers='keys', tablefmt='pipe', showindex=False, floatfmt='.4f'))
 
     return results_df
 
