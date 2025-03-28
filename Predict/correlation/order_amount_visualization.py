@@ -228,7 +228,7 @@ ax2.bar(success_rates['order_amount'], success_rates['count'],
 ax2.set_ylim(0, success_rates['count'].max() * 1.2)
 ax2.tick_params(axis='y', colors='gray')
 
-# Налаштування основного графіку
+# Налаштування основного графіка
 ax1.grid(True, alpha=0.3)
 ax1.set_ylim(0, 1)
 ax1.set_xlim(0, p95)
@@ -236,116 +236,6 @@ ax1.set_xlim(0, p95)
 plt.title('Вірогідність успіху залежно від суми замовлення')
 plt.tight_layout()
 plt.savefig(f"{results_dir}/3_success_probability_by_amount.png", dpi=300)
-plt.close()
-
-# 4. Логістична регресія та ROC-крива
-print("Будуємо логістичну регресію та ROC-криву...")
-
-# Беремо тільки order_amount як незалежну змінну для моделі
-X = df[['order_amount']].values
-y = df['is_successful'].values
-
-# Розділяємо дані на навчальну та тестову вибірки
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25, random_state=42)
-
-# Стандартизуємо дані
-scaler = StandardScaler()
-X_train_scaled = scaler.fit_transform(X_train)
-X_test_scaled = scaler.transform(X_test)
-
-# Навчаємо логістичну регресію
-model = LogisticRegression(random_state=42)
-model.fit(X_train_scaled, y_train)
-
-# Отримуємо прогнози вірогідностей
-y_score = model.predict_proba(X_test_scaled)[:, 1]
-
-# Обчислюємо ROC-криву та AUC
-fpr, tpr, thresholds = roc_curve(y_test, y_score)
-roc_auc = auc(fpr, tpr)
-
-# Створюємо візуалізацію ROC-кривої
-plt.figure(figsize=(10, 8))
-plt.plot(fpr, tpr, color='darkorange', lw=2,
-         label=f'ROC крива (AUC = {roc_auc:.3f})')
-plt.plot([0, 1], [0, 1], color='navy', lw=2, linestyle='--',
-         label='Випадкова модель')
-plt.xlim([0.0, 1.0])
-plt.ylim([0.0, 1.05])
-plt.xlabel('False Positive Rate (1 - Специфічність)')
-plt.ylabel('True Positive Rate (Чутливість)')
-plt.title('ROC-крива для прогнозування успішності замовлення за сумою')
-plt.legend(loc="lower right")
-plt.grid(True, alpha=0.3)
-
-plt.tight_layout()
-plt.savefig(f"{results_dir}/4_logistic_regression_roc.png", dpi=300)
-plt.close()
-
-# 4.1 Логістична крива ймовірності (не ROC)
-print("Створюємо логістичну криву ймовірності...")
-
-# Визначаємо межу для 95-го перцентиля
-p95 = df['order_amount'].quantile(0.95)
-
-# Підготовка даних
-X = df[['order_amount']].values
-y = df['is_successful'].values
-
-# Масштабування для кращих результатів
-scaler_curve = StandardScaler()
-X_scaled_curve = scaler_curve.fit_transform(X)
-
-# Навчання логістичної регресії
-model_curve = LogisticRegression(random_state=42)
-model_curve.fit(X_scaled_curve, y)
-
-# Створення даних для кривої
-X_range = np.linspace(0, p95, 100).reshape(-1, 1)  # Обмежуємо до 95-го перцентиля
-X_range_scaled = scaler_curve.transform(X_range)
-y_proba = model_curve.predict_proba(X_range_scaled)[:, 1]
-
-# Побудова графіку
-plt.figure(figsize=(10, 6))
-
-# Додаємо розсіяні точки з альфа прозорістю (вибірка тільки в межах 95-го перцентиля)
-X_filtered = X[X.flatten() <= p95]
-y_filtered = y[X.flatten() <= p95]
-sample_size = min(5000, len(X_filtered))
-
-if len(X_filtered) > 0:  # Перевіряємо, що є дані після фільтрації
-    sampled_indices = np.random.choice(len(X_filtered), size=min(sample_size, len(X_filtered)), replace=False)
-    plt.scatter(X_filtered[sampled_indices], y_filtered[sampled_indices],
-                alpha=0.3, c=y_filtered[sampled_indices], cmap='coolwarm', edgecolors='none')
-
-# Додаємо криву логістичної регресії
-plt.plot(X_range, y_proba, color='blue', linewidth=3)
-plt.axhline(y=0.5, color='red', linestyle='--', alpha=0.7, label='Поріг класифікації (0.5)')
-
-# Знаходимо точку перетину кривої з порогом 0.5
-threshold_idx = np.abs(y_proba - 0.5).argmin()
-threshold_x = X_range[threshold_idx][0]
-plt.axvline(x=threshold_x, color='green', linestyle='--', alpha=0.7)
-plt.text(threshold_x + p95*0.05, 0.3, f'Точка перетину: {threshold_x:.1f} USD', color='green')
-
-# Налаштування графіка
-plt.title('Логістична регресія: ймовірність успішності замовлення за сумою\n(до 95-го перцентиля)')
-plt.xlabel('Сума замовлення (USD)')
-plt.ylabel('Ймовірність успішного замовлення')
-plt.xlim(0, p95)
-plt.ylim(0, 1)
-plt.grid(True, alpha=0.3)
-plt.legend(['Логістична крива', 'Поріг класифікації'])
-
-# Додаємо підпис про коефіцієнти моделі
-intercept = model_curve.intercept_[0]
-coef = model_curve.coef_[0][0]
-plt.text(p95*0.7, 0.9, f'Коефіцієнти моделі:\nIntercept: {intercept:.4f}\nСума: {coef:.6f}',
-         bbox=dict(facecolor='white', alpha=0.8, boxstyle='round,pad=0.5'))
-
-# Зберігаємо графік
-plt.tight_layout()
-plt.savefig(f"{results_dir}/4_logistic_regression_curve.png", dpi=300)
 plt.close()
 
 # 5. Гістограма з нормалізацією - відсоток успішності залежно від суми
@@ -532,21 +422,6 @@ for i, success in enumerate([0, 1]):
 current_date = datetime.now().strftime('%Y%m%d')
 plt.savefig(f"{results_dir}/violin_plot_{current_date}.png", dpi=300, bbox_inches='tight')
 plt.close()
-
-# Обчислюємо та виводимо коефіцієнти моделі
-print(f"\nКоефіцієнти логістичної регресії:")
-print(f"Перехват (Intercept): {model.intercept_[0]:.4f}")
-print(f"Коефіцієнт для order_amount: {model.coef_[0][0]:.4f}")
-
-# Інтерпретація
-if model.coef_[0][0] > 0:
-    print("\nІнтерпретація: Збільшення суми замовлення ПІДВИЩУЄ вірогідність успішного замовлення.")
-else:
-    print("\nІнтерпретація: Збільшення суми замовлення ЗНИЖУЄ вірогідність успішного замовлення.")
-
-# Обчислюємо точність моделі
-accuracy = model.score(X_test_scaled, y_test)
-print(f"Точність моделі (accuracy): {accuracy:.4f}")
 
 print(f"\nУсі візуалізації збережено в директорії: {results_dir}")
 print("Для аналізу впливу суми замовлення на успішність замовлення ви можете переглянути створені графіки.")
