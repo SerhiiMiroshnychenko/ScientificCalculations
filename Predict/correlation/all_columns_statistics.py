@@ -243,6 +243,80 @@ def format_value(value):
     else:
         return f"{value:.4f}"
 
+def display_column_analysis(column_name, basic_stats, tests_results, ci_results, comparison_df, is_significant):
+    """
+    Виводить результати аналізу колонки в консоль у форматованому вигляді
+
+    Args:
+        column_name (str): Назва колонки
+        basic_stats (pd.DataFrame): Базові статистичні показники
+        tests_results (pd.DataFrame): Результати статистичних тестів
+        ci_results (pd.DataFrame): Довірчі інтервали
+        comparison_df (pd.DataFrame): Результати порівняльного аналізу
+        is_significant (bool): Чи є значуща різниця
+    """
+    print("\n" + "="*80)
+    print(f"СТАТИСТИЧНИЙ АНАЛІЗ КОЛОНКИ: {column_name}".center(80))
+    print("="*80)
+
+    # Форматування таблиці базових статистик
+    if basic_stats is not None:
+        basic_stats_formatted = basic_stats.copy()
+        for col in basic_stats_formatted.columns:
+            if col == 'Кількість':
+                continue
+            basic_stats_formatted[col] = basic_stats_formatted[col].map(lambda x: f"{x:,.4f}" if not pd.isna(x) else "N/A")
+
+        print("\nОсновні статистичні показники за групами:")
+        print(tabulate(basic_stats_formatted, headers='keys', tablefmt='grid', showindex=True))
+
+    # Форматування таблиці результатів тестів
+    if tests_results is not None:
+        tests_formatted = tests_results.copy()
+        tests_formatted['p-значення'] = tests_formatted['p-значення'].map(lambda x: f"{x:.8f}" if not pd.isna(x) else "N/A")
+        tests_formatted['Статистика'] = tests_formatted['Статистика'].map(lambda x: f"{x:.4f}" if not pd.isna(x) else "N/A")
+
+        print("\nРезультати статистичних тестів:")
+        print(tabulate(tests_formatted, headers='keys', tablefmt='grid', showindex=False))
+
+    # Форматування таблиці довірчих інтервалів
+    if ci_results is not None:
+        ci_formatted = ci_results.copy()
+        numeric_cols = ['Середнє', 'Нижня межа CI', 'Верхня межа CI']
+        for col in numeric_cols:
+            ci_formatted[col] = ci_formatted[col].map(lambda x: f"{x:,.4f}" if not pd.isna(x) else "N/A")
+
+        print("\nДовірчі інтервали для середніх значень (95%):")
+        print(tabulate(ci_formatted, headers='keys', tablefmt='grid', showindex=False))
+
+    # Форматування порівняльної таблиці
+    if comparison_df is not None:
+        comparison_formatted = comparison_df.copy()
+        for col in ['Неуспішні', 'Успішні', 'Різниця', 'Відношення']:
+            comparison_formatted[col] = comparison_formatted[col].map(lambda x: f"{x:,.4f}" if not pd.isna(x) else "N/A")
+
+        print("\nПорівняльний аналіз статистичних показників:")
+        print(tabulate(comparison_formatted, headers='keys', tablefmt='grid', showindex=False))
+
+    # Виведення висновку
+    print("\nВисновок:")
+    if is_significant:
+        print(f"⚠ Виявлено СТАТИСТИЧНО ЗНАЧУЩУ різницю в значеннях колонки '{column_name}' між успішними та неуспішними замовленнями.")
+
+        if basic_stats is not None:
+            mean_0 = basic_stats.loc['Неуспішні', 'Середнє'] if 'Неуспішні' in basic_stats.index else np.nan
+            mean_1 = basic_stats.loc['Успішні', 'Середнє'] if 'Успішні' in basic_stats.index else np.nan
+
+            if not pd.isna(mean_0) and not pd.isna(mean_1):
+                if mean_0 > mean_1:
+                    print(f"   • Неуспішні замовлення мають більше значення '{column_name}' (в {mean_0/mean_1:.2f} рази)")
+                else:
+                    print(f"   • Успішні замовлення мають більше значення '{column_name}' (в {mean_1/mean_0:.2f} рази)")
+    else:
+        print(f"ℹ Не виявлено статистично значущої різниці в значеннях колонки '{column_name}' між групами.")
+
+    print("="*80)
+
 def analyze_column(df, column_name, group_column='is_successful', output_dir='.'):
     """
     Проводить повний аналіз для однієї колонки
@@ -281,12 +355,8 @@ def analyze_column(df, column_name, group_column='is_successful', output_dir='.'
     is_significant = is_column_significant(tests_results)
     significance_marker = "✓" if is_significant else "✗"
 
-    # Форматування результатів
-    formatted_basic_stats = basic_stats.copy()
-    for col in formatted_basic_stats.columns:
-        if col == 'Кількість':
-            continue
-        formatted_basic_stats[col] = formatted_basic_stats[col].map(format_value)
+    # Виведення результатів аналізу в консоль
+    display_column_analysis(column_name, basic_stats, tests_results, ci_results, comparison_df, is_significant)
 
     # Отримання середніх значень для кожної групи
     mean_0 = basic_stats.loc['Неуспішні', 'Середнє'] if 'Неуспішні' in basic_stats.index else np.nan
