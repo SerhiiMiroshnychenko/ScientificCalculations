@@ -25,6 +25,12 @@ def load_data(file_path, column_name, group_column='is_successful'):
     # Завантаження даних
     df = pd.read_csv(file_path)
 
+    # Заміна від'ємних значень на 0
+    negative_count = (df[column_name] < 0).sum()
+    if negative_count > 0:
+        print(f"Знайдено {negative_count} від'ємних значень у колонці {column_name}. Замінюємо їх на 0.")
+        df[column_name] = df[column_name].apply(lambda x: max(0, x))
+
     # Перетворення стовпця групування на числовий тип (0 або 1), якщо це ще не зроблено
     df[group_column] = df[group_column].astype(int)
 
