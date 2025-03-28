@@ -1389,6 +1389,75 @@ def feature_selection_analysis(df, output_dir='.'):
     plt.savefig(f"{output_dir}/correlation_matrix.png", dpi=300)
     plt.close()
 
+    # Створюємо окремі таблиці для кожного методу з 5 найважливішими ознаками
+    print("\nТаблиці з 5 найважливішими ознаками за кожним методом:\n")
+
+    # Словник з назвами методів та відповідними стовпцями
+    methods = {
+        'Mutual Information': 'MI Score',
+        'ANOVA F-test': 'F Score',
+        'Spearman Correlation': 'Spearman Score',
+        'Logistic Regression Coefficients': 'LR Coefficient',
+        'Decision Tree Feature Importance': 'DT Score',
+        'Random Forest Importance': 'RF Score',
+        'XGBoost Feature Importance': 'XGBoost Score'
+    }
+
+    # Створюємо та виводимо окремі таблиці для кожного методу
+    for method_name, method_column in methods.items():
+        # Перевіряємо чи є стовпець у DataFrame
+        if method_column not in results_df.columns:
+            logger.warning(f"Стовпець {method_column} відсутній у результатах. Пропускаємо метод {method_name}.")
+            continue
+
+        # Сортуємо дані за відповідним методом (у порядку спадання, тобто найважливіші ознаки будуть спочатку)
+        if method_name == 'Logistic Regression Coefficients':
+            # Для логістичної регресії сортуємо за абсолютними значеннями, але виводимо оригінальні
+            method_df = results_df.copy()
+            # Створюємо тимчасовий стовпець з абсолютними значеннями для сортування
+            method_df['Abs_LR'] = method_df['LR Coefficient'].abs()
+            # Сортуємо за абсолютними значеннями і беремо топ-5
+            method_df = method_df.sort_values(by='Abs_LR', ascending=False).head(5)
+            # Видаляємо тимчасовий стовпець
+            method_df.drop('Abs_LR', axis=1, inplace=True)
+        else:
+            method_df = results_df.sort_values(by=method_column, ascending=False).head(5)
+
+        # Додаємо українські назви
+        method_df['Feature_UA'] = method_df['Feature'].apply(get_ua_feature_name)
+
+        # Вибираємо та форматуємо дані для виведення
+        display_method_df = method_df[['Feature', 'Feature_UA', method_column]].round(4)
+
+        # Виводимо назву методу та дані через print
+        print(f"\n{method_name} - 5 найважливіших ознак:")
+        method_table = tabulate(display_method_df, headers=['Ознака', 'Назва українською', 'Значення'], tablefmt='fancy_grid')
+        print(f"\n{method_table}")
+
+    # Виводимо загальну таблицю з топ-20 ознаками
+    print("\nПорівняння впливу всіх факторів за рейтингами:\n")
+
+    # Вибираємо і готуємо дані для відображення
+    display_columns = ['Feature', 'MI Score', 'F Score', 'Spearman Score',
+                       'LR Coefficient', 'DT Score', 'RF Score', 'XGBoost Score', 'Total Importance Rank']
+
+    # Додаємо українські назви ознак
+    results_df['Feature_UA'] = results_df['Feature'].apply(get_ua_feature_name)
+
+    # Переставляємо стовпець з українською назвою на друге місце
+    display_columns.insert(1, 'Feature_UA')
+
+    # Відфільтровуємо лише ті стовпці, які дійсно є у DataFrame
+    display_columns = [col for col in display_columns if col in results_df.columns]
+    display_df = results_df[display_columns].head(20).round(4)
+
+    print(tabulate(display_df, headers='keys', tablefmt='fancy_grid'))
+
+    # Виводимо інформацію про найкращу продуктивність моделей
+    print(f"\nНайкраща продуктивність моделей:")
+    best_performance = performance_df.loc[performance_df.groupby('Model')['Accuracy'].idxmax()]
+    print(tabulate(best_performance, headers='keys', tablefmt='fancy_grid'))
+
     logger.info("Аналіз та відбір найважливіших ознак завершено")
 
     return results_df
