@@ -222,13 +222,13 @@ def plot_feature_importance(results_df, top_n=15, title='Важливість о
         save_path (str): Шлях для збереження графіка, якщо None - не зберігати
     """
     plt.figure(figsize=(12, 8))
-    
+
     # Вибираємо топ-N ознак
     plot_df = results_df.head(top_n).copy()
-    
+
     # Додаємо українські назви для ознак
     plot_df['Feature_UA'] = plot_df['Feature'].apply(get_ua_feature_name)
-    
+
     # Будуємо графік
     plt.barh(plot_df['Feature_UA'], plot_df['Total Importance Rank'], color='skyblue')
     plt.xlabel('Відносна важливість (%)')
@@ -236,17 +236,17 @@ def plot_feature_importance(results_df, top_n=15, title='Важливість о
     plt.title(title)
     plt.grid(axis='x', linestyle='--', alpha=0.7)
     plt.gca().invert_yaxis()  # Найважливіша ознака зверху
-    
+
     # Додаємо значення на графіку
     for i, v in enumerate(plot_df['Total Importance Rank']):
         plt.text(v + 1, i, f"{v:.0f}%", va='center')
-    
+
     plt.tight_layout()
-    
+
     if save_path:
         plt.savefig(save_path, bbox_inches='tight', dpi=300)
         logger.info(f"Графік збережено: {save_path}")
-    
+
     plt.close()
 
 # Функція для виведення рейтингів
@@ -261,13 +261,13 @@ def print_importance_rankings(results_df, top_n=20):
     # Створюємо копію та додаємо українські назви
     display_df = results_df.head(top_n).copy()
     display_df['Feature_UA'] = display_df['Feature'].apply(get_ua_feature_name)
-    
+
     # Виводимо загальний рейтинг
-    logger.info("\n=== Загальний рейтинг важливості ознак ===")
-    table_data = display_df[['Feature_UA', 'Total Importance Rank']].values.tolist()
-    headers = ['Ознака', 'Загальна важливість (%)']
-    logger.info("\n" + tabulate(table_data, headers=headers, tablefmt='pretty'))
-    
+    print("\n=== Загальний рейтинг важливості ознак ===")
+    table_data = display_df[['Feature', 'Feature_UA', 'Total Importance Rank']].values.tolist()
+    headers = ['Ознака', 'Назва українською', 'Загальна важливість (%)']
+    print("\n" + tabulate(table_data, headers=headers, tablefmt='fancy_grid'))
+
     # Виводимо додаткові рейтинги для різних методів
     methods = [
         ('MI Score', 'Mutual Information'),
@@ -278,18 +278,18 @@ def print_importance_rankings(results_df, top_n=20):
         ('RF Score', 'Random Forest'),
         ('XGBoost Score', 'XGBoost')
     ]
-    
+
     # Створюємо окремі таблиці для кожного методу
     for score_col, method_name in methods:
         # Сортуємо за поточним показником
         method_df = results_df.sort_values(by=score_col, ascending=False).head(top_n).copy()
         method_df['Feature_UA'] = method_df['Feature'].apply(get_ua_feature_name)
         method_df['Rank'] = range(1, len(method_df) + 1)
-        
-        logger.info(f"\n=== Рейтинг за методом: {method_name} ===")
-        method_table = method_df[['Rank', 'Feature_UA', score_col]].values.tolist()
-        method_headers = ['Ранг', 'Ознака', 'Оцінка']
-        logger.info("\n" + tabulate(method_table, headers=method_headers, tablefmt='pretty', floatfmt=".4f"))
+
+        print(f"\n=== Рейтинг за методом: {method_name} ===")
+        method_table = method_df[['Rank', 'Feature', 'Feature_UA', score_col]].values.tolist()
+        method_headers = ['Ранг', 'Ознака', 'Назва українською', 'Оцінка']
+        print("\n" + tabulate(method_table, headers=method_headers, tablefmt='fancy_grid', floatfmt=".4f"))
 
 # Головна функція
 def main():
@@ -297,77 +297,77 @@ def main():
     Головна функція програми
     """
     logger.info("Початок роботи програми розрахунку важливості ознак")
-    
+
     # Запитуємо шлях до файлу даних
     data_file = 'cleaned_result.csv'
-    
+
     try:
         # Завантаження даних
         logger.info(f"Завантаження даних з {data_file}...")
         data = pd.read_csv(data_file)
         logger.info(f"Завантажено {data.shape[0]} рядків та {data.shape[1]} колонок")
-        
+
         # Перевірка наявності цільової змінної
         target_column = 'is_successful'
         if target_column not in data.columns:
             target_column = input(f"Колонку '{target_column}' не знайдено. Введіть назву цільової колонки: ")
-        
+
         # Підготовка даних
         logger.info("Підготовка даних...")
-        
+
         # Обробка цільової змінної
         y = data[target_column].copy()
         logger.info(f"Розподіл цільової змінної: {y.value_counts().to_dict()}")
-        
+
         # Видалення цільової змінної та інших неінформативних колонок з набору ознак
         exclude_columns = [target_column, 'id', 'order_id', 'partner_id', 'date', 'timestamp']
         feature_columns = [col for col in data.columns if col not in exclude_columns]
-        
+
         # Видалення колонок-ідентифікаторів та дат
         X = data[feature_columns].copy()
         logger.info(f"Використовуємо {X.shape[1]} ознак для аналізу")
-        
+
         # Обробка категоріальних ознак
         categorical_features = X.select_dtypes(include=['object', 'category']).columns.tolist()
         if categorical_features:
             logger.info(f"Знайдено {len(categorical_features)} категоріальних ознак")
-            
+
             # Створюємо та застосовуємо LabelEncoder для кожної категоріальної ознаки
             for feature in categorical_features:
                 logger.info(f"Кодування категоріальної ознаки: {feature}")
                 X[feature] = LabelEncoder().fit_transform(X[feature].astype(str))
-        
+
         # Обробка пропущених значень
         if X.isnull().sum().sum() > 0:
             logger.info("Заповнення пропущених значень...")
             numeric_columns = X.select_dtypes(include=['number']).columns
             X[numeric_columns] = SimpleImputer(strategy='median').fit_transform(X[numeric_columns])
-            
+
             # Якщо залишились пропущені значення в нечислових колонках
             if X.isnull().sum().sum() > 0:
                 # Заповнюємо їх найчастішими значеннями
                 X = SimpleImputer(strategy='most_frequent').fit_transform(X)
                 X = pd.DataFrame(X, columns=feature_columns)
-        
+
         # Оцінка важливості ознак
         results_df, models_dict = evaluate_features(X, y)
-        
+
         # Зберігаємо результати оцінки важливості ознак
         results_path = f"{results_dir}/feature_importance_rankings.csv"
         results_df.to_csv(results_path, index=False)
         logger.info(f"Збережено результати рейтингу важливості ознак: {results_path}")
-        
-        # Виводимо рейтинги
+
+        # Виводимо загальний рейтинг
         print_importance_rankings(results_df)
-        
+
         # Будуємо та зберігаємо графіки
         # Загальний рейтинг
         plot_feature_importance(
-            results_df, 
+            results_df,
             title='Загальний рейтинг важливості ознак',
             save_path=f"{results_dir}/overall_importance.png"
         )
-        
+
         # Будуємо графіки для кожного методу
         methods = [
             ('MI Score', 'Mutual Information'),
@@ -378,35 +378,35 @@ def main():
             ('RF Score', 'Random Forest'),
             ('XGBoost Score', 'XGBoost')
         ]
-        
+
         for score_col, method_name in methods:
             # Сортуємо за поточним показником
             method_df = results_df.sort_values(by=score_col, ascending=False).copy()
             plot_feature_importance(
-                method_df, 
+                method_df,
                 title=f'Важливість ознак за методом: {method_name}',
                 save_path=f"{results_dir}/{score_col.replace(' ', '_').lower()}_importance.png"
             )
-        
+
         # Зберігаємо моделі
         models_path = f"{results_dir}/models.joblib"
         joblib.dump(models_dict, models_path)
         logger.info(f"Збережено натреновані моделі: {models_path}")
-        
+
         # Зберігаємо кореляційну матрицю
         plt.figure(figsize=(16, 14))
         corr_matrix = X.corr()
         mask = np.triu(np.ones_like(corr_matrix, dtype=bool))
-        sns.heatmap(corr_matrix, mask=mask, cmap='coolwarm', annot=False, center=0, 
-                   square=True, linewidths=.5, vmin=-1, vmax=1)
+        sns.heatmap(corr_matrix, mask=mask, cmap='coolwarm', annot=False, center=0,
+                    square=True, linewidths=.5, vmin=-1, vmax=1)
         plt.xticks(rotation=45, ha='right')
         plt.title('Кореляційна матриця ознак')
         plt.tight_layout()
         plt.savefig(f"{results_dir}/correlation_matrix.png", bbox_inches='tight', dpi=300)
         plt.close()
-        
+
         logger.info(f"Завершено аналіз важливості ознак. Всі результати збережено в директорії: {results_dir}")
-        
+
     except Exception as e:
         logger.error(f"Помилка: {str(e)}", exc_info=True)
         return
