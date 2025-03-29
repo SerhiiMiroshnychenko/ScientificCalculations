@@ -739,7 +739,7 @@ def print_importance_table(rankings_df, top_n=20):
         'mann_whitney': 'p-значення Манна-Уітні',
         'cohen_d': 'd Коена',
         'auc': 'AUC',
-        'iv': 'IV',
+        'iv': 'Інформаційна цінність',
         'mutual_info': 'Mutual Information',
         'f_statistic': 'F-статистика',
         'spearman': 'Кореляція Спірмана',
@@ -861,13 +861,29 @@ def plot_metrics_comparison(rankings_df, feature, save_path=None):
 
 def plot_heatmap(rankings_df, top_n=15, save_path=None):
     """
-    Будує теплову карту важливості ознак за різними метриками
+    Будує теплову карту рангів важливості ознак за різними метриками
 
     Args:
         rankings_df (pd.DataFrame): DataFrame з результатами рейтингу
         top_n (int): Кількість найважливіших ознак для відображення
         save_path (str): Шлях для збереження графіка, якщо None - не зберігати
     """
+    # Визначення назв методів українською
+    method_names_ua = {
+        't_test': 'p-значення t-тесту',
+        'mann_whitney': 'p-значення Манна-Уітні',
+        'cohen_d': 'd Коена',
+        'auc': 'AUC',
+        'iv': 'Інформаційна цінність',
+        'mutual_info': 'Mutual Information',
+        'f_statistic': 'F-статистика',
+        'spearman': 'Кореляція Спірмана',
+        'logistic': 'Коеф. Логіст. регресії',
+        'decision_tree': 'Decision Tree',
+        'random_forest': 'Random Forest',
+        'xgboost': 'XGBoost'
+    }
+
     # Вибираємо топ-N ознак за загальним рейтингом
     top_features = rankings_df.head(top_n).index.tolist()
 
@@ -877,27 +893,46 @@ def plot_heatmap(rankings_df, top_n=15, save_path=None):
                        and col not in ['avg_rank', 'importance_score']]
 
     # Створюємо новий DataFrame для теплової карти
-    heatmap_df = rankings_df.loc[top_features, metrics_to_plot].copy()
+    rank_df = pd.DataFrame(index=top_features, columns=metrics_to_plot)
 
-    # Нормалізуємо значення для кожної метрики окремо
-    for metric in metrics_to_plot:
-        if metric in ['t_test', 'mann_whitney']:
-            # Для p-значень: менше = краще, інвертуємо
-            max_val = heatmap_df[metric].max()
-            heatmap_df[metric] = 1 - (heatmap_df[metric] / max_val)
+    # Обчислюємо ранги для кожного методу
+    for method in metrics_to_plot:
+        if method in ['t_test', 'mann_whitney']:
+            # Для p-значень, менше = краще
+            rank_df[method] = rankings_df[method].rank(method='min')
         else:
-            # Для решти метрик: більше = краще
-            max_val = heatmap_df[metric].max()
-            if max_val > 0:
-                heatmap_df[metric] = heatmap_df[metric] / max_val
+            # Для інших метрик, більше = краще
+            rank_df[method] = rankings_df[method].rank(method='min', ascending=False)
 
-    # Додаємо українські назви
-    heatmap_df.index = [f"{idx} ({get_ua_feature_name(idx)})" for idx in heatmap_df.index]
+    # Обмежуємося вибраними ознаками
+    rank_df = rank_df.loc[top_features]
+
+    # Перейменовуємо колонки на українські назви
+    rank_df.columns = [method_names_ua[col] for col in rank_df.columns]
+
+    # Перейменовуємо індекси на українські назви
+    ua_index = [get_ua_feature_name(idx) for idx in rank_df.index]
+    rank_df.index = ua_index
+
+    # Інвертуємо кольорову схему для рангів (1 = найтемніший)
+    max_rank = rank_df.max().max()
 
     # Створення теплової карти
     plt.figure(figsize=(14, 10))
-    sns.heatmap(heatmap_df, annot=True, cmap='YlGnBu', fmt='.2f', linewidths=.5)
-    plt.title('Важливість ознак за різними метриками (нормалізовано)')
+
+    # Використовуємо інвертовану кольорову палітру, щоб менші ранги (1, 2, 3...) були темнішими
+    cmap = plt.cm.get_cmap('YlGnBu_r')
+
+    # Відображаємо теплову карту з рангами
+    heatmap = sns.heatmap(rank_df, annot=True, cmap=cmap, fmt='.0f', linewidths=.5,
+                          vmin=1, vmax=max_rank)
+
+    # Налаштовуємо colorbar: 1 вгорі (темніший), max_rank внизу (світліший)
+    cbar = heatmap.collections[0].colorbar
+    cbar.set_ticks([1, max_rank])
+    cbar.set_ticklabels(['1 (найважливіша)', f'{int(max_rank)} (найменш важлива)'])
+
+    plt.title('Ранги ознак за різними метриками')
     plt.xticks(rotation=45, ha='right')
     plt.tight_layout()
 
@@ -933,10 +968,10 @@ def print_method_rankings(rankings_df, method, top_n=10):
         't_test': 'p-значення t-тесту',
         'mann_whitney': 'p-значення тесту Манна-Уітні',
         'cohen_d': 'Розмір ефекту d Коена',
-        'auc': 'Area Under Curve (AUC)',
-        'iv': 'Information Value (IV)',
+        'auc': 'AUC',
+        'iv': 'Інформаційна цінність',
         'mutual_info': 'Mutual Information',
-        'f_statistic': 'ANOVA F-тест',
+        'f_statistic': 'ANOVA F-test',
         'spearman': 'Кореляція Спірмана',
         'logistic': 'Логістична регресія',
         'decision_tree': 'Decision Tree',
@@ -1065,7 +1100,7 @@ def main():
                 'mann_whitney': 'p-значення тесту Манна-Уітні',
                 'cohen_d': 'Розмір ефекту d Коена',
                 'auc': 'AUC',
-                'iv': 'IV',
+                'iv': 'Інформаційна цінність',
                 'mutual_info': 'Mutual Information',
                 'f_statistic': 'ANOVA F-test',
                 'spearman': 'Кореляція Спірмана',
