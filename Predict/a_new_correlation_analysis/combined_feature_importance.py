@@ -692,6 +692,83 @@ def calculate_combined_ranking(all_metrics_results):
     logger.info("Завершено обчислення комбінованого рейтингу ознак")
     return rankings_df
 
+def print_importance_table(rankings_df, top_n=20):
+    """
+    Виводить таблицю важливості ознак
+
+    Args:
+        rankings_df (pd.DataFrame): DataFrame з результатами рейтингу
+        top_n (int): Кількість найважливіших ознак для відображення
+    """
+    print("\n=== Загальний рейтинг важливості ознак ===")
+
+    # Підготовка даних для таблиці
+    display_df = rankings_df.head(top_n).copy()
+    display_df.index.name = 'Feature'
+    display_df.reset_index(inplace=True)
+
+    # Додаємо українські назви
+    display_df['Feature_UA'] = display_df['Feature'].apply(get_ua_feature_name)
+
+    # Додаємо ранг
+    display_df.insert(0, 'Rank', range(1, len(display_df) + 1))
+
+    # Вибираємо лише потрібні колонки
+    display_columns = ['Rank', 'Feature', 'Feature_UA', 'importance_score', 'avg_rank']
+
+    # Додаємо всі методи для відображення
+    display_metrics = [
+        't_test', 'mann_whitney',  # Статистичні тести
+        'cohen_d', 'auc', 'iv',     # Метрики ефекту
+        'mutual_info', 'f_statistic', 'spearman',  # Статистичні взаємозв'язки
+        'logistic', 'decision_tree', 'random_forest', 'xgboost'  # Методи машинного навчання
+    ]
+    display_columns.extend(display_metrics)
+
+    # Створюємо копію для відображення
+    table_df = display_df[display_columns].copy()
+
+    # Перейменовуємо колонки для зручності
+    column_names = {
+        'Rank': 'Ранг',
+        'Feature': 'Ознака',
+        'Feature_UA': 'Назва українською',
+        'importance_score': 'Важливість (%)',
+        'avg_rank': 'Середній ранг',
+        't_test': 'p-значення t-тесту',
+        'mann_whitney': 'p-значення Манна-Уітні',
+        'cohen_d': 'd Коена',
+        'auc': 'AUC',
+        'iv': 'IV',
+        'mutual_info': 'Mutual Information',
+        'f_statistic': 'F-статистика',
+        'spearman': 'Кореляція Спірмана',
+        'logistic': 'Коеф. Логіст. регресії',
+        'decision_tree': 'Decision Tree',
+        'random_forest': 'Random Forest',
+        'xgboost': 'XGBoost'
+    }
+    table_df = table_df.rename(columns=column_names)
+
+    # Форматуємо значення - спеціальний підхід для p-значень
+    formatted_table = table_df.copy()
+
+    # Перетворюємо p-значення в науковий формат
+    p_value_columns = ['p-значення t-тесту', 'p-значення Манна-Уітні']
+    for col in p_value_columns:
+        if col in formatted_table.columns:
+            formatted_table[col] = formatted_table[col].apply(
+                lambda x: f"{x:.2e}" if not pd.isna(x) else "N/A")
+
+    # Інші колонки форматуємо звичайним чином
+    for col in formatted_table.columns:
+        if col not in ['Ранг', 'Ознака', 'Назва українською'] + p_value_columns:
+            formatted_table[col] = formatted_table[col].apply(
+                lambda x: f"{x:.4f}" if not pd.isna(x) else "N/A")
+
+    # Виведення таблиці з використанням форматованих значень
+    print(tabulate(formatted_table, headers='keys', tablefmt='fancy_grid', showindex=False))
+
 def plot_feature_importance(rankings_df, top_n=15, title='Важливість ознак', save_path=None):
     """
     Будує графік важливості ознак
@@ -829,70 +906,6 @@ def plot_heatmap(rankings_df, top_n=15, save_path=None):
         logger.info(f"Теплову карту збережено: {save_path}")
 
     plt.close()
-
-def print_importance_table(rankings_df, top_n=20):
-    """
-    Виводить таблицю важливості ознак
-
-    Args:
-        rankings_df (pd.DataFrame): DataFrame з результатами рейтингу
-        top_n (int): Кількість найважливіших ознак для відображення
-    """
-    print("\n=== Загальний рейтинг важливості ознак ===")
-
-    # Підготовка даних для таблиці
-    display_df = rankings_df.head(top_n).copy()
-    display_df.index.name = 'Feature'
-    display_df.reset_index(inplace=True)
-
-    # Додаємо українські назви
-    display_df['Feature_UA'] = display_df['Feature'].apply(get_ua_feature_name)
-
-    # Додаємо ранг
-    display_df.insert(0, 'Rank', range(1, len(display_df) + 1))
-
-    # Вибираємо лише потрібні колонки
-    display_columns = ['Rank', 'Feature', 'Feature_UA', 'importance_score', 'avg_rank']
-
-    # Додаємо вибрані метрики для відображення
-    display_metrics = ['t_test', 'cohen_d', 'auc', 'iv', 'random_forest', 'xgboost']
-    display_columns.extend(display_metrics)
-
-    # Створюємо копію для відображення
-    table_df = display_df[display_columns].copy()
-
-    # Перейменовуємо колонки для зручності
-    column_names = {
-        'Rank': 'Ранг',
-        'Feature': 'Ознака',
-        'Feature_UA': 'Назва українською',
-        'importance_score': 'Важливість (%)',
-        'avg_rank': 'Середній ранг',
-        't_test': 'p-значення t-тесту',
-        'cohen_d': 'd Коена',
-        'auc': 'AUC',
-        'iv': 'IV',
-        'random_forest': 'Random Forest',
-        'xgboost': 'XGBoost'
-    }
-    table_df = table_df.rename(columns=column_names)
-
-    # Форматуємо значення - спеціальний підхід для p-значень
-    formatted_table = table_df.copy()
-
-    # Перетворюємо p-значення в науковий формат
-    if 'p-значення t-тесту' in formatted_table.columns:
-        formatted_table['p-значення t-тесту'] = formatted_table['p-значення t-тесту'].apply(
-            lambda x: f"{x:.2e}" if not pd.isna(x) else "N/A")
-
-    # Інші колонки форматуємо звичайним чином
-    for col in formatted_table.columns:
-        if col not in ['Ранг', 'Ознака', 'Назва українською', 'p-значення t-тесту']:
-            formatted_table[col] = formatted_table[col].apply(
-                lambda x: f"{x:.4f}" if not pd.isna(x) else "N/A")
-
-    # Виведення таблиці з використанням форматованих значень
-    print(tabulate(formatted_table, headers='keys', tablefmt='fancy_grid', showindex=False))
 
 def print_method_rankings(rankings_df, method, top_n=10):
     """
