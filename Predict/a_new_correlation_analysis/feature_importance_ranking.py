@@ -386,23 +386,6 @@ def main():
                 save_path=f"{results_dir}/{score_col.replace(' ', '_').lower()}_importance.png"
             )
 
-        # Зберігаємо моделі
-        models_path = f"{results_dir}/models.joblib"
-        joblib.dump(models_dict, models_path)
-        logger.info(f"Збережено натреновані моделі: {models_path}")
-
-        # Зберігаємо кореляційну матрицю
-        plt.figure(figsize=(16, 14))
-        corr_matrix = X.corr()
-        mask = np.triu(np.ones_like(corr_matrix, dtype=bool))
-        sns.heatmap(corr_matrix, mask=mask, cmap='coolwarm', annot=False, center=0,
-                    square=True, linewidths=.5, vmin=-1, vmax=1)
-        plt.xticks(rotation=45, ha='right')
-        plt.title('Кореляційна матриця ознак')
-        plt.tight_layout()
-        plt.savefig(f"{results_dir}/correlation_matrix.png", bbox_inches='tight', dpi=300)
-        plt.close()
-
         logger.info(f"Завершено аналіз важливості ознак. Всі результати збережено в директорії: {results_dir}")
 
     except Exception as e:
