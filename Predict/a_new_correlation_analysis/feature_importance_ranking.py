@@ -1,20 +1,18 @@
 import pandas as pd
 import numpy as np
 import xgboost as xgb
-import seaborn as sns
 import matplotlib
 matplotlib.use('Agg')  # Встановлюємо Agg бекенд
 import matplotlib.pyplot as plt
-from sklearn.feature_selection import mutual_info_classif, f_classif, RFE, SelectKBest
+from sklearn.feature_selection import mutual_info_classif, f_classif
 from sklearn.preprocessing import LabelEncoder, StandardScaler
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.linear_model import LogisticRegression
-from sklearn.model_selection import cross_val_score, StratifiedKFold, cross_val_predict
+from sklearn.model_selection import StratifiedKFold
 from sklearn.impute import SimpleImputer
 from sklearn.tree import DecisionTreeClassifier
 from tabulate import tabulate
 import os
-import joblib
 
 # Створюємо директорію для збереження результатів
 results_dir = f"feature_importance_results"
@@ -131,16 +129,7 @@ def evaluate_features(X, y, cv=5):
     models_dict['LogisticRegression'] = model_lr
     models_dict['Scaler'] = scaler
 
-    # 5. Recursive Feature Elimination (RFE)
-    logger.info("Запускаємо Recursive Feature Elimination (RFE)...")
-    n_features_to_select = max(10, n_features // 3)
-    rfe_selector = RFE(estimator=model_lr, n_features_to_select=n_features_to_select, step=1)
-    rfe_selector.fit(X_scaled, y)
-    rfe_selected = rfe_selector.support_
-    results_dict['RFE Selected'] = dict(zip(features, rfe_selected))
-    models_dict['RFE'] = rfe_selector
-
-    # 6. Decision Tree Feature Importance з крос-валідацією
+    # 5. Decision Tree Feature Importance з крос-валідацією
     logger.info("Обчислюємо Decision Tree Feature Importance з крос-валідацією...")
     model_dt = DecisionTreeClassifier(random_state=42)
     dt_importances = []
@@ -153,7 +142,7 @@ def evaluate_features(X, y, cv=5):
     results_dict['DT Score'] = dict(zip(features, dt_importance))
     models_dict['DecisionTree'] = model_dt
 
-    # 7. Random Forest Importance з крос-валідацією
+    # 6. Random Forest Importance з крос-валідацією
     logger.info("Обчислюємо Random Forest Importance з крос-валідацією...")
     model_rf = RandomForestClassifier(n_estimators=100, random_state=42, n_jobs=-1)
     importances = []
@@ -166,7 +155,7 @@ def evaluate_features(X, y, cv=5):
     results_dict['RF Score'] = dict(zip(features, rf_importance))
     models_dict['RandomForest'] = model_rf
 
-    # 8. XGBoost Feature Importance з крос-валідацією
+    # 7. XGBoost Feature Importance з крос-валідацією
     logger.info("Обчислюємо XGBoost Feature Importance з крос-валідацією...")
     model_xgb = xgb.XGBClassifier(eval_metric="logloss", random_state=42, n_jobs=-1,
                                   scale_pos_weight=(len(y) - sum(y)) / sum(y))
@@ -190,12 +179,9 @@ def evaluate_features(X, y, cv=5):
     for col in rank_columns:
         results_df[f'{col} Rank'] = results_df[col].rank(method='average')
 
-    # Ранг для RFE: вибрані ознаки отримують більше значення
-    results_df['RFE Rank'] = results_df['RFE Selected'] * n_features
-
     # Обчислюємо загальний рейтинг (сума всіх рангів)
     results_df['Total Importance Score'] = results_df[[
-        'MI Score Rank', 'F Score Rank', 'Spearman Score Rank', 'RFE Rank',
+        'MI Score Rank', 'F Score Rank', 'Spearman Score Rank',
         'Absolute Coefficient Rank', 'DT Score Rank', 'RF Score Rank', 'XGBoost Score Rank'
     ]].sum(axis=1)
 
@@ -260,12 +246,6 @@ def print_importance_rankings(results_df, top_n=20):
     display_df = results_df.head(top_n).copy()
     display_df['Feature_UA'] = display_df['Feature'].apply(get_ua_feature_name)
 
-    # Виводимо загальний рейтинг
-    print("\n=== Загальний рейтинг важливості ознак ===")
-    table_data = display_df[['Feature', 'Feature_UA', 'Total Importance Rank']].values.tolist()
-    headers = ['Ознака', 'Назва українською', 'Загальна важливість (%)']
-    print("\n" + tabulate(table_data, headers=headers, tablefmt='fancy_grid'))
-
     # Виводимо додаткові рейтинги для різних методів
     methods = [
         ('MI Score', 'Mutual Information'),
@@ -288,6 +268,12 @@ def print_importance_rankings(results_df, top_n=20):
         method_table = method_df[['Rank', 'Feature', 'Feature_UA', score_col]].values.tolist()
         method_headers = ['Ранг', 'Ознака', 'Назва українською', 'Оцінка']
         print("\n" + tabulate(method_table, headers=method_headers, tablefmt='fancy_grid', floatfmt=".4f"))
+
+    # Виводимо загальний рейтинг в кінці
+    print("\n=== Загальний рейтинг важливості ознак ===")
+    table_data = display_df[['Feature', 'Feature_UA', 'Total Importance Rank']].values.tolist()
+    headers = ['Ознака', 'Назва українською', 'Загальна важливість (%)']
+    print("\n" + tabulate(table_data, headers=headers, tablefmt='fancy_grid'))
 
 # Головна функція
 def main():
