@@ -114,26 +114,26 @@ def load_data(file_path, group_column='is_successful'):
     # Видалення ідентифікаторів та дат з набору ознак
     exclude_columns = [group_column, 'id', 'order_id', 'partner_id', 'date', 'timestamp']
     feature_columns = [col for col in numeric_columns if col not in exclude_columns]
-    
+
     logger.info(f"Після фільтрації залишилось {len(feature_columns)} ознак для аналізу.")
 
     # Обробка категоріальних ознак
     categorical_features = df.select_dtypes(include=['object', 'category']).columns.tolist()
     categorical_features = [col for col in categorical_features if col not in exclude_columns]
-    
+
     if categorical_features:
         logger.info(f"Знайдено {len(categorical_features)} категоріальних ознак")
         for feature in categorical_features:
             logger.info(f"Кодування категоріальної ознаки: {feature}")
             df[feature] = LabelEncoder().fit_transform(df[feature].astype(str))
         feature_columns.extend(categorical_features)
-    
+
     # Обробка пропущених значень
     if df[feature_columns].isnull().sum().sum() > 0:
         logger.info("Заповнення пропущених значень...")
         numeric_features = df[feature_columns].select_dtypes(include=['number']).columns
         df[numeric_features] = SimpleImputer(strategy='median').fit_transform(df[numeric_features])
-        
+
         # Якщо залишились пропущені значення в нечислових колонках
         non_numeric_features = [col for col in feature_columns if col not in numeric_features]
         if non_numeric_features and df[non_numeric_features].isnull().sum().sum() > 0:
@@ -465,11 +465,11 @@ def calculate_logistic_regression(X, y):
         # Стандартизація даних
         scaler = StandardScaler()
         X_scaled = scaler.fit_transform(X)
-        
+
         # Логістична регресія
         model_lr = LogisticRegression(max_iter=10000, random_state=42, solver='liblinear', class_weight='balanced')
         model_lr.fit(X_scaled, y)
-        
+
         # Абсолютні значення коефіцієнтів
         abs_coefficients = np.abs(model_lr.coef_[0])
         return pd.Series(abs_coefficients, index=X.columns)
@@ -493,13 +493,13 @@ def calculate_decision_tree(X, y, cv=5):
     try:
         model_dt = DecisionTreeClassifier(random_state=42)
         dt_importances = []
-        
+
         cv_obj = StratifiedKFold(n_splits=cv, shuffle=True, random_state=42)
         for train_idx, val_idx in cv_obj.split(X, y):
             X_train, y_train = X.iloc[train_idx], y.iloc[train_idx]
             model_dt.fit(X_train, y_train)
             dt_importances.append(model_dt.feature_importances_)
-            
+
         dt_importance = np.mean(dt_importances, axis=0)
         return pd.Series(dt_importance, index=X.columns)
     except Exception as e:
@@ -522,13 +522,13 @@ def calculate_random_forest(X, y, cv=5):
     try:
         model_rf = RandomForestClassifier(n_estimators=100, random_state=42, n_jobs=-1)
         importances = []
-        
+
         cv_obj = StratifiedKFold(n_splits=cv, shuffle=True, random_state=42)
         for train_idx, val_idx in cv_obj.split(X, y):
             X_train, y_train = X.iloc[train_idx], y.iloc[train_idx]
             model_rf.fit(X_train, y_train)
             importances.append(model_rf.feature_importances_)
-            
+
         rf_importance = np.mean(importances, axis=0)
         return pd.Series(rf_importance, index=X.columns)
     except Exception as e:
@@ -550,15 +550,15 @@ def calculate_xgboost(X, y, cv=5):
     logger.info("Обчислюємо XGBoost Feature Importance з крос-валідацією...")
     try:
         model_xgb = xgb.XGBClassifier(eval_metric="logloss", random_state=42, n_jobs=-1,
-                                     scale_pos_weight=(len(y) - sum(y)) / sum(y))
+                                      scale_pos_weight=(len(y) - sum(y)) / sum(y))
         importances = []
-        
+
         cv_obj = StratifiedKFold(n_splits=cv, shuffle=True, random_state=42)
         for train_idx, val_idx in cv_obj.split(X, y):
             X_train, y_train = X.iloc[train_idx], y.iloc[train_idx]
             model_xgb.fit(X_train, y_train)
             importances.append(model_xgb.feature_importances_)
-            
+
         xgb_importance = np.mean(importances, axis=0)
         return pd.Series(xgb_importance, index=X.columns)
     except Exception as e:
@@ -580,31 +580,31 @@ def calculate_all_importance_metrics(df, features, target_column='is_successful'
         dict: Словник з результатами для кожної метрики
     """
     logger.info("Початок розрахунку всіх метрик важливості ознак...")
-    
+
     X = df[features]
     y = df[target_column]
-    
+
     # Словник для зберігання результатів
     results = {}
-    
+
     # 1. Статистичні тести
     for column in features:
         # Розрахунок статистичних тестів для кожної колонки
         _, _, t_pvalue, mw_pvalue = perform_statistical_tests(df, column, target_column)
-        
+
         # Збереження p-значень
         if 't_test' not in results:
             results['t_test'] = {}
         if 'mann_whitney' not in results:
             results['mann_whitney'] = {}
-        
+
         results['t_test'][column] = t_pvalue
         results['mann_whitney'][column] = mw_pvalue
-    
+
     # Перетворення на Series
     results['t_test'] = pd.Series(results['t_test'])
     results['mann_whitney'] = pd.Series(results['mann_whitney'])
-    
+
     # 2. Метрики ефекту
     results['cohen_d'] = pd.Series({
         column: calculate_cohen_d(
@@ -612,15 +612,15 @@ def calculate_all_importance_metrics(df, features, target_column='is_successful'
             df[df[target_column] == 1][column].dropna()
         ) for column in features
     })
-    
+
     results['auc'] = pd.Series({
         column: calculate_auc(df, column, target_column) for column in features
     })
-    
+
     results['iv'] = pd.Series({
         column: calculate_iv(df, column, target_column) for column in features
     })
-    
+
     # 3. Методи машинного навчання
     results['mutual_info'] = calculate_mutual_information(X, y)
     results['f_statistic'] = calculate_f_statistics(X, y)
@@ -629,7 +629,7 @@ def calculate_all_importance_metrics(df, features, target_column='is_successful'
     results['decision_tree'] = calculate_decision_tree(X, y)
     results['random_forest'] = calculate_random_forest(X, y)
     results['xgboost'] = calculate_xgboost(X, y)
-    
+
     logger.info("Завершено розрахунок всіх метрик важливості ознак")
     return results
 
@@ -644,51 +644,51 @@ def calculate_combined_ranking(all_metrics_results):
         pd.DataFrame: Датафрейм з комбінованим рейтингом
     """
     logger.info("Обчислення комбінованого рейтингу ознак...")
-    
+
     # Створюємо DataFrame для зберігання результатів
     results_df = pd.DataFrame(index=all_metrics_results[list(all_metrics_results.keys())[0]].index)
-    
+
     # Додаємо результати кожної метрики як окрему колонку
     for metric_name, metric_results in all_metrics_results.items():
         results_df[metric_name] = metric_results
-    
+
     # Замінюємо NaN на значення, які не впливатимуть на рейтинг
     for metric in ['t_test', 'mann_whitney']:
         results_df[metric] = results_df[metric].fillna(1.0)  # p-значення, менше краще, max = 1.0
-    
-    for metric in ['cohen_d', 'auc', 'iv', 'mutual_info', 'f_statistic', 'spearman', 
-                  'logistic', 'decision_tree', 'random_forest', 'xgboost']:
+
+    for metric in ['cohen_d', 'auc', 'iv', 'mutual_info', 'f_statistic', 'spearman',
+                   'logistic', 'decision_tree', 'random_forest', 'xgboost']:
         results_df[metric] = results_df[metric].fillna(0.0)  # решта метрик, більше краще, min = 0.0
-    
+
     # Розраховуємо ранги для кожної метрики (1 = найкраща ознака)
     rankings_df = pd.DataFrame(index=results_df.index)
-    
+
     # Для метрик, де менше значення краще (p-значення)
     for metric in ['t_test', 'mann_whitney']:
         rankings_df[f'{metric}_rank'] = results_df[metric].rank(method='average')
-    
+
     # Для метрик, де більше значення краще
-    for metric in ['cohen_d', 'auc', 'iv', 'mutual_info', 'f_statistic', 'spearman', 
-                  'logistic', 'decision_tree', 'random_forest', 'xgboost']:
+    for metric in ['cohen_d', 'auc', 'iv', 'mutual_info', 'f_statistic', 'spearman',
+                   'logistic', 'decision_tree', 'random_forest', 'xgboost']:
         rankings_df[f'{metric}_rank'] = results_df[metric].rank(method='average', ascending=False)
-    
+
     # Обчислюємо середній ранг
     rank_columns = [col for col in rankings_df.columns if col.endswith('_rank')]
     rankings_df['avg_rank'] = rankings_df[rank_columns].mean(axis=1)
-    
+
     # Нормалізуємо до 100%
     min_avg_rank = rankings_df['avg_rank'].min()
     max_avg_rank = rankings_df['avg_rank'].max()
-    rankings_df['importance_score'] = 100 - ((rankings_df['avg_rank'] - min_avg_rank) / 
-                                       (max_avg_rank - min_avg_rank) * 100)
-    
+    rankings_df['importance_score'] = 100 - ((rankings_df['avg_rank'] - min_avg_rank) /
+                                             (max_avg_rank - min_avg_rank) * 100)
+
     # Сортуємо за важливістю (більше = важливіше)
     rankings_df = rankings_df.sort_values('importance_score', ascending=False)
-    
+
     # Додаємо оригінальні значення метрик для аналізу
     for metric in all_metrics_results.keys():
         rankings_df[metric] = results_df[metric]
-    
+
     logger.info("Завершено обчислення комбінованого рейтингу ознак")
     return rankings_df
 
@@ -740,10 +740,10 @@ def plot_metrics_comparison(rankings_df, feature, save_path=None):
         save_path (str): Шлях для збереження графіка, якщо None - не зберігати
     """
     # Вибираємо метрики для відображення (без рангів)
-    metrics_to_plot = [col for col in rankings_df.columns 
-                     if not col.endswith('_rank') 
-                     and col not in ['avg_rank', 'importance_score']]
-    
+    metrics_to_plot = [col for col in rankings_df.columns
+                       if not col.endswith('_rank')
+                       and col not in ['avg_rank', 'importance_score']]
+
     # Нормалізуємо значення для порівняння
     normalized_values = {}
     for metric in metrics_to_plot:
@@ -758,28 +758,28 @@ def plot_metrics_comparison(rankings_df, feature, save_path=None):
                 normalized_values[metric] = rankings_df.loc[feature, metric] / max_val
             else:
                 normalized_values[metric] = 0
-    
+
     # Створення графіка
     plt.figure(figsize=(12, 6))
     metrics_names = list(normalized_values.keys())
     values = list(normalized_values.values())
-    
+
     plt.bar(metrics_names, values, color='lightblue')
     plt.xticks(rotation=45, ha='right')
     plt.ylabel('Нормалізована важливість')
     plt.title(f'Важливість ознаки "{feature}" за різними метриками')
     plt.grid(axis='y', linestyle='--', alpha=0.7)
-    
+
     # Додаємо значення на графіку
     for i, v in enumerate(values):
         plt.text(i, v + 0.02, f"{v:.2f}", ha='center')
-    
+
     plt.tight_layout()
-    
+
     if save_path:
         plt.savefig(save_path, bbox_inches='tight', dpi=300)
         logger.info(f"Графік метрик для {feature} збережено: {save_path}")
-    
+
     plt.close()
 
 def plot_heatmap(rankings_df, top_n=15, save_path=None):
@@ -793,15 +793,15 @@ def plot_heatmap(rankings_df, top_n=15, save_path=None):
     """
     # Вибираємо топ-N ознак за загальним рейтингом
     top_features = rankings_df.head(top_n).index.tolist()
-    
+
     # Вибираємо метрики для відображення (без рангів)
-    metrics_to_plot = [col for col in rankings_df.columns 
-                     if not col.endswith('_rank') 
-                     and col not in ['avg_rank', 'importance_score']]
-    
+    metrics_to_plot = [col for col in rankings_df.columns
+                       if not col.endswith('_rank')
+                       and col not in ['avg_rank', 'importance_score']]
+
     # Створюємо новий DataFrame для теплової карти
     heatmap_df = rankings_df.loc[top_features, metrics_to_plot].copy()
-    
+
     # Нормалізуємо значення для кожної метрики окремо
     for metric in metrics_to_plot:
         if metric in ['t_test', 'mann_whitney']:
@@ -813,21 +813,21 @@ def plot_heatmap(rankings_df, top_n=15, save_path=None):
             max_val = heatmap_df[metric].max()
             if max_val > 0:
                 heatmap_df[metric] = heatmap_df[metric] / max_val
-    
+
     # Додаємо українські назви
     heatmap_df.index = [f"{idx} ({get_ua_feature_name(idx)})" for idx in heatmap_df.index]
-    
+
     # Створення теплової карти
     plt.figure(figsize=(14, 10))
     sns.heatmap(heatmap_df, annot=True, cmap='YlGnBu', fmt='.2f', linewidths=.5)
     plt.title('Важливість ознак за різними метриками (нормалізовано)')
     plt.xticks(rotation=45, ha='right')
     plt.tight_layout()
-    
+
     if save_path:
         plt.savefig(save_path, bbox_inches='tight', dpi=300)
         logger.info(f"Теплову карту збережено: {save_path}")
-    
+
     plt.close()
 
 def print_importance_table(rankings_df, top_n=20):
@@ -839,28 +839,28 @@ def print_importance_table(rankings_df, top_n=20):
         top_n (int): Кількість найважливіших ознак для відображення
     """
     print("\n=== Загальний рейтинг важливості ознак ===")
-    
+
     # Підготовка даних для таблиці
     display_df = rankings_df.head(top_n).copy()
     display_df.index.name = 'Feature'
     display_df.reset_index(inplace=True)
-    
+
     # Додаємо українські назви
     display_df['Feature_UA'] = display_df['Feature'].apply(get_ua_feature_name)
-    
+
     # Додаємо ранг
     display_df.insert(0, 'Rank', range(1, len(display_df) + 1))
-    
+
     # Вибираємо лише потрібні колонки
     display_columns = ['Rank', 'Feature', 'Feature_UA', 'importance_score', 'avg_rank']
-    
+
     # Додаємо вибрані метрики для відображення
     display_metrics = ['t_test', 'cohen_d', 'auc', 'iv', 'random_forest', 'xgboost']
     display_columns.extend(display_metrics)
-    
+
     # Створюємо копію для відображення
     table_df = display_df[display_columns].copy()
-    
+
     # Перейменовуємо колонки для зручності
     column_names = {
         'Rank': 'Ранг',
@@ -876,10 +876,23 @@ def print_importance_table(rankings_df, top_n=20):
         'xgboost': 'XGBoost'
     }
     table_df = table_df.rename(columns=column_names)
-    
-    # Виведення таблиці
-    print(tabulate(table_df, headers='keys', tablefmt='fancy_grid', showindex=False, 
-                 floatfmt=".4f"))
+
+    # Форматуємо значення - спеціальний підхід для p-значень
+    formatted_table = table_df.copy()
+
+    # Перетворюємо p-значення в науковий формат
+    if 'p-значення t-тесту' in formatted_table.columns:
+        formatted_table['p-значення t-тесту'] = formatted_table['p-значення t-тесту'].apply(
+            lambda x: f"{x:.2e}" if not pd.isna(x) else "N/A")
+
+    # Інші колонки форматуємо звичайним чином
+    for col in formatted_table.columns:
+        if col not in ['Ранг', 'Ознака', 'Назва українською', 'p-значення t-тесту']:
+            formatted_table[col] = formatted_table[col].apply(
+                lambda x: f"{x:.4f}" if not pd.isna(x) else "N/A")
+
+    # Виведення таблиці з використанням форматованих значень
+    print(tabulate(formatted_table, headers='keys', tablefmt='fancy_grid', showindex=False))
 
 def print_method_rankings(rankings_df, method, top_n=10):
     """
@@ -892,16 +905,16 @@ def print_method_rankings(rankings_df, method, top_n=10):
     """
     # Вибираємо правильний порядок сортування
     ascending = True if method in ['t_test', 'mann_whitney'] else False
-    
+
     # Створюємо копію та сортуємо за вказаним методом
     method_df = rankings_df.sort_values(by=method, ascending=ascending).head(top_n).copy()
     method_df.index.name = 'Feature'
     method_df.reset_index(inplace=True)
-    
+
     # Додаємо українські назви та ранг
     method_df['Feature_UA'] = method_df['Feature'].apply(get_ua_feature_name)
     method_df.insert(0, 'Rank', range(1, len(method_df) + 1))
-    
+
     # Визначення назви методу для відображення
     method_names = {
         't_test': 'p-значення t-тесту',
@@ -917,14 +930,14 @@ def print_method_rankings(rankings_df, method, top_n=10):
         'random_forest': 'Random Forest',
         'xgboost': 'XGBoost'
     }
-    
+
     method_title = method_names.get(method, method)
     print(f"\n=== Рейтинг за методом: {method_title} ===")
-    
+
     # Вибираємо колонки для відображення
     display_columns = ['Rank', 'Feature', 'Feature_UA', method]
     table_df = method_df[display_columns].copy()
-    
+
     # Перейменовуємо колонки
     column_names = {
         'Rank': 'Ранг',
@@ -933,10 +946,17 @@ def print_method_rankings(rankings_df, method, top_n=10):
         method: method_title
     }
     table_df = table_df.rename(columns=column_names)
-    
+
     # Виведення таблиці
-    print(tabulate(table_df, headers='keys', tablefmt='fancy_grid', showindex=False, 
-                 floatfmt=".4f"))
+    # Використовуємо різний формат для p-значень та інших метрик
+    if method in ['t_test', 'mann_whitney']:
+        # Для p-значень використовуємо науковий формат з більшою точністю
+        print(tabulate(table_df, headers='keys', tablefmt='fancy_grid', showindex=False,
+                       floatfmt=".2e"))
+    else:
+        # Для інших метрик використовуємо звичайний формат
+        print(tabulate(table_df, headers='keys', tablefmt='fancy_grid', showindex=False,
+                       floatfmt=".4f"))
 
 def main():
     """
@@ -952,10 +972,10 @@ def main():
         # Завантаження даних
         logger.info(f"Завантаження даних з {data_file}...")
         df, features = load_data(data_file, target_column)
-        
+
         # Додаткова інформація про цільову змінну
         logger.info(f"Розподіл цільової змінної: {df[target_column].value_counts().to_dict()}")
-        
+
         # Аналіз кореляцій між ознаками
         logger.info("Аналіз кореляцій між ознаками...")
         correlation_matrix = df[features].corr().abs()
@@ -969,48 +989,48 @@ def main():
                 logger.warning(f"  {pair[0]} <-> {pair[1]}: {correlation_matrix.loc[pair[0], pair[1]]:.3f}")
             if len(high_corr_pairs) > 5:
                 logger.warning(f"  ... та {len(high_corr_pairs)-5} інших пар")
-        
+
         # Розрахунок всіх метрик важливості ознак
         logger.info(f"Початок аналізу {len(features)} ознак...")
         all_metrics = calculate_all_importance_metrics(df, features, target_column)
-        
+
         # Обчислення комбінованого рейтингу
         rankings_df = calculate_combined_ranking(all_metrics)
-        
+
         # Збереження результатів
         rankings_path = f"{results_dir}/feature_importance_rankings.csv"
         rankings_df.to_csv(rankings_path)
         logger.info(f"Збережено результати рейтингу важливості ознак: {rankings_path}")
-        
+
         # Виведення загального рейтингу
         print_importance_table(rankings_df, top_n=20)
-        
+
         # Виведення рейтингів за окремими методами
         methods = [
-            't_test', 'mann_whitney', 'cohen_d', 'auc', 'iv', 
-            'mutual_info', 'f_statistic', 'spearman', 
+            't_test', 'mann_whitney', 'cohen_d', 'auc', 'iv',
+            'mutual_info', 'f_statistic', 'spearman',
             'logistic', 'decision_tree', 'random_forest', 'xgboost'
         ]
-        
+
         for method in methods:
             print_method_rankings(rankings_df, method, top_n=10)
-        
+
         # Створення візуалізацій
-        
+
         # 1. Загальний рейтинг
         plot_feature_importance(
-            rankings_df, 
+            rankings_df,
             title='Загальний рейтинг важливості ознак',
             save_path=f"{results_dir}/overall_importance.png"
         )
-        
+
         # 2. Теплова карта
         plot_heatmap(
             rankings_df,
             top_n=15,
             save_path=f"{results_dir}/importance_heatmap.png"
         )
-        
+
         # 3. Графіки для топ-5 ознак
         top_features = rankings_df.head(5).index.tolist()
         for feature in top_features:
@@ -1019,14 +1039,14 @@ def main():
                 feature,
                 save_path=f"{results_dir}/{feature}_metrics_comparison.png"
             )
-        
+
         # 4. Графіки для кожного методу
         for method in methods:
             method_df = rankings_df.sort_values(
-                by=method, 
+                by=method,
                 ascending=(method in ['t_test', 'mann_whitney'])
             ).copy()
-            
+
             method_names = {
                 't_test': 'p-значення t-тесту',
                 'mann_whitney': 'p-значення тесту Манна-Уітні',
@@ -1041,15 +1061,15 @@ def main():
                 'random_forest': 'Random Forest',
                 'xgboost': 'XGBoost'
             }
-            
+
             plot_feature_importance(
                 method_df,
                 title=f'Важливість ознак за методом: {method_names.get(method, method)}',
                 save_path=f"{results_dir}/{method}_importance.png"
             )
-        
+
         logger.info(f"Аналіз завершено. Всі результати збережено в директорії: {results_dir}")
-        
+
     except Exception as e:
         logger.error(f"Помилка: {str(e)}", exc_info=True)
         return
