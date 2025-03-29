@@ -850,6 +850,22 @@ def plot_metrics_comparison(rankings_df, feature, save_path=None):
         feature (str): Назва ознаки для аналізу
         save_path (str): Шлях для збереження графіка, якщо None - не зберігати
     """
+    # Визначення назв методів українською
+    method_names_ua = {
+        't_test': 'p-значення t-тесту',
+        'mann_whitney': 'p-значення Манна-Уітні',
+        'cohen_d': 'd Коена',
+        'auc': 'AUC',
+        'iv': 'Інформаційна цінність',
+        'mutual_info': 'Mutual Information',
+        'f_statistic': 'F-статистика',
+        'spearman': 'Кореляція Спірмана',
+        'logistic': 'Коеф. Логіст. регресії',
+        'decision_tree': 'Decision Tree',
+        'random_forest': 'Random Forest',
+        'xgboost': 'XGBoost'
+    }
+
     # Вибираємо метрики для відображення (без рангів)
     metrics_to_plot = [col for col in rankings_df.columns
                        if not col.endswith('_rank')
@@ -870,26 +886,61 @@ def plot_metrics_comparison(rankings_df, feature, save_path=None):
             else:
                 normalized_values[metric] = 0
 
-    # Створення графіка
-    plt.figure(figsize=(12, 6))
-    metrics_names = list(normalized_values.keys())
-    values = list(normalized_values.values())
+    # Перетворюємо ключі на українські назви методів
+    normalized_values_ua = {method_names_ua[k]: v for k, v in normalized_values.items()}
 
-    plt.bar(metrics_names, values, color='lightblue')
+    # Створення графіка
+    plt.figure(figsize=(14, 7))
+    metrics_names = list(normalized_values_ua.keys())
+    values = list(normalized_values_ua.values())
+
+    # Створюємо кольорову карту для стовпців, темніші для більших значень
+    cmap = plt.cm.get_cmap('YlGnBu_r')
+
+    # Інвертуємо значення для кольорів, щоб більші значення були темнішими
+    norm = plt.Normalize(0, 1)
+    colors = [cmap(norm(1-v)) for v in values]  # Інвертуємо, щоб більші значення були темнішими
+
+    # Будуємо стовпці з кольоровим градієнтом і сірою окантовкою
+    bars = plt.bar(metrics_names, values, color=colors, edgecolor='gray', linewidth=0.5)
     plt.xticks(rotation=45, ha='right')
     plt.ylabel('Нормалізована важливість')
-    plt.title(f'Важливість ознаки "{feature}" за різними метриками')
+
+    # Отримуємо українську назву ознаки
+    feature_ua = get_ua_feature_name(feature)
+    plt.title(f'Важливість ознаки "{feature_ua}" за різними метриками')
     plt.grid(axis='y', linestyle='--', alpha=0.7)
 
     # Додаємо значення на графіку
     for i, v in enumerate(values):
         plt.text(i, v + 0.02, f"{v:.2f}", ha='center')
 
+    # Додаємо colorbar для відображення шкали кольорів
+    sm = plt.cm.ScalarMappable(cmap=cmap, norm=norm)
+    sm.set_array([])
+    cbar = plt.colorbar(sm, ax=plt.gca())
+    cbar.set_label('Важливість')
+
+    # Налаштовуємо шкалу кольорів
+    cbar.set_ticks([0, 1])
+    cbar.set_ticklabels(['0%', '100%'])
+
+    # Інвертуємо шкалу кольорів, щоб вища важливість була зверху
+    cbar.ax.invert_yaxis()
+
     plt.tight_layout()
 
     if save_path:
+        # Зберігаємо файл з оригінальним іменем для сумісності
         plt.savefig(save_path, bbox_inches='tight', dpi=300)
-        logger.info(f"Графік метрик для {feature} збережено: {save_path}")
+
+        # Також зберігаємо файл з українською назвою ознаки (без технічного імені)
+        save_dir = os.path.dirname(save_path)
+        ua_feature_name = feature_ua.replace('"', '').replace(' ', '_').lower()
+        ua_save_path = f"{save_dir}/{ua_feature_name}_metrics_comparison.png"
+        plt.savefig(ua_save_path, bbox_inches='tight', dpi=300)
+
+        logger.info(f"Графік метрик для ознаки '{feature_ua}' збережено")
 
     plt.close()
 
@@ -1118,9 +1169,10 @@ def main():
             save_path=f"{results_dir}/importance_heatmap.png"
         )
 
-        # 3. Графіки для топ-5 ознак
-        top_features = rankings_df.head(5).index.tolist()
-        for feature in top_features:
+        # 3. Графіки для всіх ознак
+        logger.info("Створення графіків порівняння метрик для всіх ознак...")
+        all_features = rankings_df.index.tolist()
+        for feature in all_features:
             plot_metrics_comparison(
                 rankings_df,
                 feature,
