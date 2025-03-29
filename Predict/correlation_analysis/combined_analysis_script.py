@@ -26,6 +26,47 @@ from matplotlib import scale as mscale
 from matplotlib.transforms import Transform
 import matplotlib.transforms as mtransforms
 import logging
+import sys
+
+# Клас для одночасного запису в консоль та файл
+class TeeOutput:
+    """
+    Клас для перенаправлення виводу в консоль та файл одночасно
+    """
+    def __init__(self, file_path, mode='a'):
+        """
+        Ініціалізує об'єкт перенаправлення виводу
+
+        Args:
+            file_path (str): Шлях до файлу для запису
+            mode (str): Режим відкриття файлу ('a' - додавання, 'w' - перезапис)
+        """
+        self.file = open(file_path, mode, encoding='utf-8')
+        self.stdout = sys.stdout
+
+    def write(self, data):
+        """
+        Записує дані в консоль та файл
+
+        Args:
+            data (str): Дані для запису
+        """
+        self.file.write(data)
+        self.stdout.write(data)
+
+    def flush(self):
+        """
+        Очищує буфери виводу
+        """
+        self.file.flush()
+        self.stdout.flush()
+
+    def close(self):
+        """
+        Закриває файл виводу
+        """
+        if self.file:
+            self.file.close()
 
 # Створюємо директорії для збереження результатів
 timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
@@ -1137,6 +1178,7 @@ def evaluate_features(X, y, cv=5):
 
     # Обчислюємо ранги (чим більше значення – тим важливіше)
     rank_columns = ['MI Score', 'F Score', 'Spearman Score', 'Absolute Coefficient', 'DT Score', 'RF Score', 'XGBoost Score']
+
     for col in rank_columns:
         if col in results_df.columns:
             # Нормалізуємо на максимальне значення
@@ -1486,6 +1528,16 @@ def main(file_path="cleaned_result.csv", output_dir=None):
         os.makedirs(vis_dir, exist_ok=True)
         os.makedirs(feature_dir, exist_ok=True)
 
+    # Перенаправляємо вивід print у файл та консоль одночасно
+    console_output_file = f"{output_dir}/console_output.txt"
+    original_stdout = sys.stdout
+    sys.stdout = TeeOutput(console_output_file, 'w')
+
+    print(f"Починаємо повний аналіз даних з файлу {file_path}")
+    print(f"Результати будуть збережені в {output_dir}")
+    print(f"Цей вивід також зберігається у файлі: {console_output_file}")
+    print("="*80)
+
     logger.info(f"Починаємо повний аналіз даних з файлу {file_path}")
     logger.info(f"Результати будуть збережені в {output_dir}")
 
@@ -1514,6 +1566,12 @@ def main(file_path="cleaned_result.csv", output_dir=None):
     logger.info("АНАЛІЗ ЗАВЕРШЕНО")
     logger.info("="*50)
     logger.info(f"Усі результати збережено в {output_dir}")
+
+    # Повертаємо оригінальний stdout
+    sys.stdout.close()
+    sys.stdout = original_stdout
+    print(f"Аналіз завершено. Результати збережено в {output_dir}")
+    print(f"Вивід консолі збережено у файлі: {console_output_file}")
 
 
 if __name__ == "__main__":
