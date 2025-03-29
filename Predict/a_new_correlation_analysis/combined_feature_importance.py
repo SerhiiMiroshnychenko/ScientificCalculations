@@ -828,10 +828,7 @@ def plot_feature_importance(rankings_df, top_n=15, title='Важливість �
 
     # Налаштовуємо шкалу кольорів
     cbar.set_ticks([0, 100])
-    cbar.set_ticklabels(['100%', '0%'])  # Інвертуємо підписи
-
-    # Інвертуємо вісь Y на шкалі кольорів, щоб 100% було зверху
-    cbar.ax.invert_yaxis()
+    cbar.set_ticklabels(['Найбільша', 'Найменша'])
 
     plt.tight_layout()
 
@@ -894,12 +891,12 @@ def plot_metrics_comparison(rankings_df, feature, save_path=None):
     metrics_names = list(normalized_values_ua.keys())
     values = list(normalized_values_ua.values())
 
-    # Створюємо кольорову карту для стовпців, темніші для більших значень
+    # Створюємо кольорову карту для стовпців
     cmap = plt.cm.get_cmap('YlGnBu_r')
 
-    # Інвертуємо значення для кольорів, щоб більші значення були темнішими
+    # Задаємо кольори для стовпців - більші значення мають бути темнішими
     norm = plt.Normalize(0, 1)
-    colors = [cmap(norm(1-v)) for v in values]  # Інвертуємо, щоб більші значення були темнішими
+    colors = [cmap(norm(1-v)) for v in values]  # Інвертуємо значення: 1-v, щоб більші були темними
 
     # Будуємо стовпці з кольоровим градієнтом і сірою окантовкою
     bars = plt.bar(metrics_names, values, color=colors, edgecolor='gray', linewidth=0.5)
@@ -923,7 +920,7 @@ def plot_metrics_comparison(rankings_df, feature, save_path=None):
 
     # Налаштовуємо шкалу кольорів
     cbar.set_ticks([0, 1])
-    cbar.set_ticklabels(['0%', '100%'])
+    cbar.set_ticklabels(['Найбільша', 'Найменша'])
 
     # Інвертуємо шкалу кольорів, щоб вища важливість була зверху
     cbar.ax.invert_yaxis()
@@ -940,7 +937,7 @@ def plot_metrics_comparison(rankings_df, feature, save_path=None):
         ua_save_path = f"{save_dir}/{ua_feature_name}_metrics_comparison.png"
         plt.savefig(ua_save_path, bbox_inches='tight', dpi=300)
 
-        logger.info(f"Графік метрик для ознаки '{feature_ua}' збережено")
+        logger.info(f"Графік метрик для ознаки '{feature_ua}' збережено: {save_path} та {ua_save_path}")
 
     plt.close()
 
