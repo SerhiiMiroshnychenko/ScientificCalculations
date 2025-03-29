@@ -15,10 +15,9 @@ from sklearn.tree import DecisionTreeClassifier
 from tabulate import tabulate
 import os
 import joblib
-from datetime import datetime
 
 # Створюємо директорію для збереження результатів
-results_dir = f"feature_importance_results_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+results_dir = f"feature_importance_results"
 os.makedirs(results_dir, exist_ok=True)
 
 # Налаштування логування
@@ -27,7 +26,6 @@ logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(levelname)s - %(message)s',
     handlers=[
-        logging.FileHandler(f"{results_dir}/feature_importance.log"),
         logging.StreamHandler()
     ]
 )
