@@ -830,6 +830,9 @@ def plot_feature_importance(rankings_df, top_n=15, title='Важливість �
     cbar.set_ticks([0, 100])
     cbar.set_ticklabels(['Найбільша', 'Найменша'])
 
+    # Інвертуємо шкалу кольорів, щоб "Найбільша" була зверху
+    cbar.ax.invert_yaxis()
+
     plt.tight_layout()
 
     if save_path:
