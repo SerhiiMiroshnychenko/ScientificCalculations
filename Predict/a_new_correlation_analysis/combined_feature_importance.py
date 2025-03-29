@@ -787,8 +787,29 @@ def plot_feature_importance(rankings_df, top_n=15, title='Важливість �
     # Додаємо українські назви для ознак
     plot_df['Feature_UA'] = plot_df.index.map(get_ua_feature_name)
 
-    # Будуємо графік
-    plt.barh(plot_df['Feature_UA'], plot_df['importance_score'], color='skyblue')
+    # Оновлюємо заголовок, щоб вказати кількість відображених ознак
+    if 'топ' not in title.lower() and top_n < len(rankings_df):
+        title = f"{title} (топ-{top_n} з {len(rankings_df)} ознак)"
+
+    # Створюємо кольорову карту яка відповідає тепловій карті
+    cmap = plt.cm.get_cmap('YlGnBu_r')
+
+    # Важливо: інвертуємо значення для кольорової гами, щоб найвище значення (100%)
+    # отримало найтемніший колір, а найнижче - найсвітліший
+    # Для цього використовуємо max - value замість value
+    max_value = 100  # Максимально можливе значення importance_score
+    inverted_values = [max_value - value for value in plot_df['importance_score']]
+
+    # Нормалізуємо інвертовані значення
+    if max(inverted_values) != min(inverted_values):  # Уникаємо ділення на нуль
+        norm = plt.Normalize(min(inverted_values), max(inverted_values))
+        colors = [cmap(norm(value)) for value in inverted_values]
+    else:
+        # Якщо всі значення однакові, використовуємо один колір (найтемніший)
+        colors = [cmap(0.0)] * len(plot_df)
+
+    # Будуємо графік з кольорами з градієнтом
+    bars = plt.barh(plot_df['Feature_UA'], plot_df['importance_score'], color=colors, edgecolor='gray', linewidth=0.5)
     plt.xlabel('Відносна важливість (%)')
     plt.ylabel('Ознака')
     plt.title(title)
@@ -798,6 +819,19 @@ def plot_feature_importance(rankings_df, top_n=15, title='Важливість �
     # Додаємо значення на графіку
     for i, v in enumerate(plot_df['importance_score']):
         plt.text(v + 1, i, f"{v:.1f}%", va='center')
+
+    # Додаємо colorbar для відображення шкали
+    sm = plt.cm.ScalarMappable(cmap=cmap, norm=plt.Normalize(0, 100))
+    sm.set_array([])
+    cbar = plt.colorbar(sm, ax=plt.gca())
+    cbar.set_label('Важливість ознак')
+
+    # Налаштовуємо шкалу кольорів
+    cbar.set_ticks([0, 100])
+    cbar.set_ticklabels(['100%', '0%'])  # Інвертуємо підписи
+
+    # Інвертуємо вісь Y на шкалі кольорів, щоб 100% було зверху
+    cbar.ax.invert_yaxis()
 
     plt.tight_layout()
 
@@ -932,7 +966,12 @@ def plot_heatmap(rankings_df, top_n=15, save_path=None):
     cbar.set_ticks([1, max_rank])
     cbar.set_ticklabels(['1 (найважливіша)', f'{int(max_rank)} (найменш важлива)'])
 
-    plt.title('Ранги ознак за різними метриками')
+    # Обертаємо шкалу, щоб 1 був зверху, а max_rank знизу
+    cbar.ax.invert_yaxis()
+
+    # Додаємо інформацію про кількість відображених ознак
+    title = f'Ранги ознак за різними метриками (топ-{top_n} з {len(rankings_df)} ознак)'
+    plt.title(title)
     plt.xticks(rotation=45, ha='right')
     plt.tight_layout()
 
