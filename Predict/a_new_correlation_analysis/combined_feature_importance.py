@@ -692,7 +692,7 @@ def calculate_combined_ranking(all_metrics_results):
     logger.info("Завершено обчислення комбінованого рейтингу ознак")
     return rankings_df
 
-def print_importance_table(rankings_df, top_n=20):
+def print_importance_table(rankings_df, top_n=23):
     """
     Виводить таблицю важливості ознак
 
@@ -704,6 +704,7 @@ def print_importance_table(rankings_df, top_n=20):
 
     # Підготовка даних для таблиці
     display_df = rankings_df.head(top_n).copy()
+    print(f"{display_df = }")
     display_df.index.name = 'Feature'
     display_df.reset_index(inplace=True)
 
@@ -1141,7 +1142,7 @@ def main():
         logger.info(f"Збережено результати рейтингу важливості ознак: {rankings_path}")
 
         # Виведення загального рейтингу
-        print_importance_table(rankings_df, top_n=20)
+        print_importance_table(rankings_df, top_n=23)
 
         # Виведення рейтингів за окремими методами
         methods = [
