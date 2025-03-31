@@ -458,7 +458,7 @@ def calculate_logistic_regression(X, y):
         y (pd.Series): Цільова змінна
 
     Returns:
-        pd.Series: Абсолютні значення коефіцієнтів для кожної ознаки
+        dict: Словник з оригінальними та абсолютними значеннями коефіцієнтів
     """
     logger.info("Обчислюємо Logistic Regression Coefficients...")
     try:
@@ -470,12 +470,18 @@ def calculate_logistic_regression(X, y):
         model_lr = LogisticRegression(max_iter=10000, random_state=42, solver='liblinear', class_weight='balanced')
         model_lr.fit(X_scaled, y)
 
-        # Абсолютні значення коефіцієнтів
-        abs_coefficients = np.abs(model_lr.coef_[0])
-        return pd.Series(abs_coefficients, index=X.columns)
+        # Зберігаємо оригінальні коефіцієнти зі знаком та абсолютні значення
+        original_coefficients = model_lr.coef_[0]
+        abs_coefficients = np.abs(original_coefficients)
+
+        return {
+            'original': pd.Series(original_coefficients, index=X.columns),
+            'absolute': pd.Series(abs_coefficients, index=X.columns)
+        }
     except Exception as e:
         logger.error(f"Помилка при обчисленні Logistic Regression Coefficients: {str(e)}")
-        return pd.Series(np.nan, index=X.columns)
+        empty_series = pd.Series(np.nan, index=X.columns)
+        return {'original': empty_series.copy(), 'absolute': empty_series.copy()}
 
 def calculate_decision_tree(X, y, cv=5):
     """
@@ -625,7 +631,14 @@ def calculate_all_importance_metrics(df, features, target_column='is_successful'
     results['mutual_info'] = calculate_mutual_information(X, y)
     results['f_statistic'] = calculate_f_statistics(X, y)
     results['spearman'] = calculate_spearman_correlation(X, y)
-    results['logistic'] = calculate_logistic_regression(X, y)
+
+    # Отримуємо результати логістичної регресії
+    logistic_results = calculate_logistic_regression(X, y)
+    # Зберігаємо абсолютні значення для ранжування
+    results['logistic'] = logistic_results['absolute']
+    # Зберігаємо оригінальні значення для відображення
+    results['logistic_original'] = logistic_results['original']
+
     results['decision_tree'] = calculate_decision_tree(X, y)
     results['random_forest'] = calculate_random_forest(X, y)
     results['xgboost'] = calculate_xgboost(X, y)
@@ -692,19 +705,19 @@ def calculate_combined_ranking(all_metrics_results):
     logger.info("Завершено обчислення комбінованого рейтингу ознак")
     return rankings_df
 
-def print_importance_table(rankings_df, top_n=23):
+def print_importance_table(rankings_df, all_metrics_results, top_n=20):
     """
     Виводить таблицю важливості ознак
 
     Args:
         rankings_df (pd.DataFrame): DataFrame з результатами рейтингу
+        all_metrics_results (dict): Словник з усіма метриками
         top_n (int): Кількість найважливіших ознак для відображення
     """
     print("\n=== Загальний рейтинг важливості ознак ===")
 
     # Підготовка даних для таблиці
     display_df = rankings_df.head(top_n).copy()
-    print(f"{display_df = }")
     display_df.index.name = 'Feature'
     display_df.reset_index(inplace=True)
 
@@ -728,6 +741,13 @@ def print_importance_table(rankings_df, top_n=23):
 
     # Створюємо копію для відображення
     table_df = display_df[display_columns].copy()
+
+    # Замінюємо значення для логістичної регресії на оригінальні (зі знаком)
+    if 'logistic_original' in all_metrics_results:
+        for idx, row in table_df.iterrows():
+            feature = row['Feature']
+            if feature in all_metrics_results['logistic_original']:
+                table_df.at[idx, 'logistic'] = all_metrics_results['logistic_original'][feature]
 
     # Перейменовуємо колонки для зручності
     column_names = {
@@ -870,7 +890,7 @@ def plot_metrics_comparison(rankings_df, feature, save_path=None):
     # Вибираємо метрики для відображення (без рангів)
     metrics_to_plot = [col for col in rankings_df.columns
                        if not col.endswith('_rank')
-                       and col not in ['avg_rank', 'importance_score']]
+                       and col not in ['avg_rank', 'importance_score', 'logistic_original']]
 
     # Нормалізуємо значення для порівняння
     normalized_values = {}
@@ -976,7 +996,7 @@ def plot_heatmap(rankings_df, top_n=15, save_path=None):
     # Вибираємо метрики для відображення (без рангів)
     metrics_to_plot = [col for col in rankings_df.columns
                        if not col.endswith('_rank')
-                       and col not in ['avg_rank', 'importance_score']]
+                       and col not in ['avg_rank', 'importance_score', 'logistic_original']]
 
     # Створюємо новий DataFrame для теплової карти
     rank_df = pd.DataFrame(index=top_features, columns=metrics_to_plot)
@@ -1033,13 +1053,14 @@ def plot_heatmap(rankings_df, top_n=15, save_path=None):
 
     plt.close()
 
-def print_method_rankings(rankings_df, method, top_n=10):
+def print_method_rankings(rankings_df, method, all_metrics_results=None, top_n=10):
     """
     Виводить рейтинг ознак за окремим методом
 
     Args:
         rankings_df (pd.DataFrame): DataFrame з результатами рейтингу
         method (str): Назва методу
+        all_metrics_results (dict): Словник з усіма метриками (необхідний для логістичної регресії)
         top_n (int): Кількість найважливіших ознак для відображення
     """
     # Вибираємо правильний порядок сортування
@@ -1076,6 +1097,13 @@ def print_method_rankings(rankings_df, method, top_n=10):
     # Вибираємо колонки для відображення
     display_columns = ['Rank', 'Feature', 'Feature_UA', method]
     table_df = method_df[display_columns].copy()
+
+    # Якщо це логістична регресія і є оригінальні значення, використовуємо їх замість абсолютних
+    if method == 'logistic' and all_metrics_results is not None and 'logistic_original' in all_metrics_results:
+        for idx, row in table_df.iterrows():
+            feature = row['Feature']
+            if feature in all_metrics_results['logistic_original']:
+                table_df.at[idx, 'logistic'] = all_metrics_results['logistic_original'][feature]
 
     # Перейменовуємо колонки
     column_names = {
@@ -1141,8 +1169,8 @@ def main():
         rankings_df.to_csv(rankings_path)
         logger.info(f"Збережено результати рейтингу важливості ознак: {rankings_path}")
 
-        # Виведення загального рейтингу
-        print_importance_table(rankings_df, top_n=23)
+        # Виведення загального рейтингу для всіх ознак
+        print_importance_table(rankings_df, all_metrics, top_n=len(rankings_df))
 
         # Виведення рейтингів за окремими методами
         methods = [
@@ -1152,7 +1180,7 @@ def main():
         ]
 
         for method in methods:
-            print_method_rankings(rankings_df, method, top_n=10)
+            print_method_rankings(rankings_df, method, all_metrics_results=all_metrics, top_n=10)
 
         # Створення візуалізацій
 
