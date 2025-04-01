@@ -16,7 +16,7 @@ from matplotlib.transforms import Transform
 import matplotlib.transforms as mtransforms
 
 # Створюємо директорію для збереження графіків
-results_dir = f"all_columns_analysis_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+results_dir = f"all_columns_analysis"
 os.makedirs(results_dir, exist_ok=True)
 
 # Встановлюємо українську локаль для графіків
@@ -29,7 +29,7 @@ except:
 
 # Завантаження даних
 print("Завантажуємо дані з CSV-файлу...")
-df = pd.read_csv("cleaned_result.csv")
+df = pd.read_csv("cleanest_data.csv")
 print(f"Завантажено {df.shape[0]} рядків та {df.shape[1]} стовпців")
 print(f"Розподіл класів: {df['is_successful'].value_counts().to_dict()}")
 
