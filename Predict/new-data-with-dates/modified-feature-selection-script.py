@@ -18,7 +18,7 @@ import joblib
 from datetime import datetime
 
 # Створюємо директорію для збереження результатів
-results_dir = f"feature_selection_results_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+results_dir = f"feature_selection_results"
 os.makedirs(results_dir, exist_ok=True)
 
 # Налаштування логування
@@ -27,7 +27,6 @@ logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(levelname)s - %(message)s',
     handlers=[
-        logging.FileHandler(f"{results_dir}/feature_selection.log"),
         logging.StreamHandler()
     ]
 )
@@ -186,13 +185,32 @@ def evaluate_features(X, y, cv=5):
                                   scale_pos_weight=(len(y) - sum(y)) / sum(y))
     importances = []
     cv_obj = StratifiedKFold(n_splits=cv, shuffle=True, random_state=42)
-    for train_idx, val_idx in cv_obj.split(X, y):
-        X_train, y_train = X.iloc[train_idx], y.iloc[train_idx]
-        model_xgb.fit(X_train, y_train)
-        importances.append(model_xgb.feature_importances_)
-    xgb_importance = np.mean(importances, axis=0)
-    results_dict['XGBoost Score'] = dict(zip(features, xgb_importance))
-    models_dict['XGBoost'] = model_xgb
+
+    try:
+        for train_idx, val_idx in cv_obj.split(X, y):
+            X_train, y_train = X.iloc[train_idx], y.iloc[train_idx]
+            # Переконуємося, що X_train - це DataFrame, а не Series
+            if isinstance(X_train, pd.Series):
+                X_train = X_train.to_frame()
+
+            # Перевірка чи не потрапили до X_train цілі DataFrame'и замість колонок
+            for col in X_train.columns:
+                if isinstance(X_train[col].iloc[0], pd.DataFrame):
+                    logger.warning(f"Колонка {col} містить DataFrame. Конвертуємо її")
+                    X_train[col] = X_train[col].apply(lambda x: x.iloc[0, 0] if isinstance(x, pd.DataFrame) else x)
+
+            # Явно конвертуємо X_train в numpy array для уникнення помилок з типами даних
+            model_xgb.fit(X_train.values, y_train)
+            importances.append(model_xgb.feature_importances_)
+
+        xgb_importance = np.mean(importances, axis=0)
+        results_dict['XGBoost Score'] = dict(zip(features, xgb_importance))
+        models_dict['XGBoost'] = model_xgb
+    except Exception as e:
+        logger.error(f"Помилка при обчисленні XGBoost Feature Importance: {e}")
+        logger.warning("Пропускаємо XGBoost Feature Importance через помилку")
+        # Створюємо заглушку для важливості ознак
+        results_dict['XGBoost Score'] = dict(zip(features, np.zeros_like(rf_importance)))
 
     # Створюємо DataFrame з результатами
     results_df = pd.DataFrame({col: pd.Series(results_dict[col]) for col in results_dict})
