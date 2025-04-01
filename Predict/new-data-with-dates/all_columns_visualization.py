@@ -893,6 +893,110 @@ def create_time_series_plots(df, date_column):
     plt.savefig(f"{column_dir}/daily_orders.png", dpi=300)
     plt.close()
 
+    # Додаємо новий графік, що показує і щоденні дані з ковзним середнім, і місячну агрегацію
+    # для відсотка успішних замовлень
+    plt.figure(figsize=(14, 8))
+
+    # Створюємо новий датафрейм з щоденними даними
+    df_daily_rate = df.copy()
+    # Додаємо фільтр, щоб виключити 2025 рік
+    df_daily_rate = df_daily_rate[df_daily_rate[date_column].dt.year < 2025]
+    df_daily_rate['date'] = df_daily_rate[date_column].dt.date
+    df_daily_rate['year_month'] = df_daily_rate[date_column].dt.strftime('%Y-%m')
+
+    # Групуємо дані по днях для щоденного відсотка успішності
+    daily_counts = df_daily_rate.groupby(['date', 'is_successful']).size().unstack(fill_value=0)
+
+    if 1 not in daily_counts.columns:
+        daily_counts[1] = 0
+    if 0 not in daily_counts.columns:
+        daily_counts[0] = 0
+
+    # Обчислюємо щоденний відсоток успішних замовлень
+    daily_counts['total'] = daily_counts[0] + daily_counts[1]
+    daily_counts['success_rate'] = (daily_counts[1] / daily_counts['total'] * 100).fillna(0)
+
+    # Сортуємо за датою
+    daily_counts = daily_counts.sort_index()
+
+    # Обчислюємо ковзне середнє за 30 днів
+    window = 30
+    rolling_avg = daily_counts['success_rate'].rolling(window=window).mean()
+
+    # Групуємо по місяцях для місячного відсотка успішності
+    monthly_data = df_daily_rate.groupby(['year_month', 'is_successful']).size().unstack(fill_value=0)
+
+    if 1 not in monthly_data.columns:
+        monthly_data[1] = 0
+    if 0 not in monthly_data.columns:
+        monthly_data[0] = 0
+
+    monthly_data['total'] = monthly_data[0] + monthly_data[1]
+    monthly_data['success_rate'] = (monthly_data[1] / monthly_data['total'] * 100).fillna(0)
+
+    # Створюємо графік
+    fig, ax = plt.subplots(figsize=(14, 8))
+
+    # Малюємо щоденні дані напівпрозорими точками
+    ax.scatter(daily_counts.index, daily_counts['success_rate'],
+               color='blue', alpha=0.1, s=10, label='Щоденні дані')
+
+    # Малюємо ковзне середнє як лінію
+    ax.plot(daily_counts.index, rolling_avg,
+            color='red', linewidth=2.5, label=f'Ковзне середнє ({window} днів)')
+
+    # Підготовка дат для місячних даних
+    month_dates = []
+    # Конвертуємо рядки 'YYYY-MM' в об'єкти дати (беремо середину місяця)
+    for ym in monthly_data.index:
+        year, month = map(int, ym.split('-'))
+        month_dates.append(pd.Timestamp(year=year, month=month, day=15))
+
+    # Малюємо місячну агрегацію як окремі точки з лінією
+    ax.plot(month_dates, monthly_data['success_rate'],
+            'o-', color='green', linewidth=2, markersize=8, label='Місячна агрегація')
+
+    # Форматуємо дати на осі X
+    # Створюємо локатор для позначок по роках
+    import matplotlib.dates as mdates
+    years = mdates.YearLocator()   # кожен рік
+    months = mdates.MonthLocator()  # кожен місяць
+    years_fmt = mdates.DateFormatter('%Y')
+
+    # Форматування осі X
+    ax.xaxis.set_major_locator(years)
+    ax.xaxis.set_major_formatter(years_fmt)
+    ax.xaxis.set_minor_locator(months)
+
+    # Форматуємо мітки на осі Y для відображення відсотків
+    formatter = ticker.FuncFormatter(lambda x, pos: f'{x:.0f}%')
+    ax.yaxis.set_major_formatter(formatter)
+
+    # Встановлюємо діапазон осі Y від 0 до 100 відсотків
+    ax.set_ylim(0, 100)
+
+    # Додаємо середній рівень успішності
+    mean_rate = daily_counts['success_rate'].mean()
+    ax.axhline(y=mean_rate, color='gray', linestyle='--', alpha=0.7,
+               label=f'Середній % успіху: {mean_rate:.1f}%')
+
+    # Налаштування графіка
+    plt.title('Порівняння методів агрегації відсотка успішних замовлень', fontsize=14)
+    plt.xlabel('Дата', fontsize=12)
+    plt.ylabel('Відсоток успішних замовлень', fontsize=12)
+    plt.grid(True, linestyle='--', alpha=0.7)
+
+    # Додаємо легенду
+    plt.legend(fontsize=10, loc='lower right')
+
+    # Додаємо ефекти для виділення тренду
+    ax.spines['top'].set_visible(False)
+    ax.spines['right'].set_visible(False)
+
+    plt.tight_layout()
+    plt.savefig(f"{column_dir}/success_rate_comparison.png", dpi=300)
+    plt.close()
+
 # Обробка та візуалізація всіх колонок
 numerical_columns = df.select_dtypes(include=[np.int64, np.float64]).columns
 categorical_columns = df.select_dtypes(exclude=[np.int64, np.float64]).columns
