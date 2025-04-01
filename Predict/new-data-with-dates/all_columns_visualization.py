@@ -291,17 +291,24 @@ def create_category_histogram(df, column_name):
     # Підрахунок успішних/неуспішних замовлень для кожної категорії
     category_counts = df.groupby([column_name, 'is_successful']).size().unstack(fill_value=0)
 
-    # Якщо колонка має менше 20 унікальних значень, показуємо всі категорії
-    # В іншому випадку, показуємо тільки 20 найчастіших категорій
-    if df[column_name].nunique() <= 20:
-        categories_to_show = category_counts
+    # Особлива обробка для днів тижня
+    if column_name == 'day_of_week':
+        # Порядок днів тижня від Понеділка до Неділі
+        days_order = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
+        # Перевпорядковуємо індекси для днів тижня
+        categories_to_show = category_counts.reindex(days_order)
     else:
-        top_categories = df[column_name].value_counts().nlargest(20).index
-        categories_to_show = category_counts.loc[top_categories]
+        # Якщо колонка має менше 20 унікальних значень, показуємо всі категорії
+        # В іншому випадку, показуємо тільки 20 найчастіших категорій
+        if df[column_name].nunique() <= 20:
+            categories_to_show = category_counts
+        else:
+            top_categories = df[column_name].value_counts().nlargest(20).index
+            categories_to_show = category_counts.loc[top_categories]
 
     # Створюємо гістограму
     plt.figure(figsize=(14, 8))
-    categories_to_show.plot(kind='bar', stacked=True, color=['forestgreen', 'crimson'])
+    categories_to_show.plot(kind='bar', stacked=True, color=['blue', 'orange'])
 
     # Налаштування графіка
     plt.title(f'Розподіл {column_name} за успішністю замовлення')
