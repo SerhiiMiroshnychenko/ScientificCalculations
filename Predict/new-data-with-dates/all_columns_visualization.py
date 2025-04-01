@@ -15,7 +15,7 @@ from matplotlib import scale as mscale
 from matplotlib.transforms import Transform
 import matplotlib.transforms as mtransforms
 
-# Створюємо директорію для збереження графіків
+# Створюємо головну директорію для збереження графіків
 results_dir = f"all_columns_analysis"
 os.makedirs(results_dir, exist_ok=True)
 
@@ -36,6 +36,24 @@ print(f"Розподіл класів: {df['is_successful'].value_counts().to_di
 # Налаштовуємо загальний стиль графіків
 sns.set_style("whitegrid")
 plt.rcParams.update({'font.size': 12})
+
+
+# Функція для створення директорії для колонки
+def ensure_column_dir(column_name):
+    """
+    Створює директорію для збереження графіків конкретної колонки
+
+    Args:
+        column_name (str): Назва колонки
+
+    Returns:
+        str: Шлях до директорії
+    """
+    # Замінюємо недопустимі символи у назві колонки
+    safe_column_name = "".join([c if c.isalnum() or c in ['-', '_'] else '_' for c in column_name])
+    column_dir = os.path.join(results_dir, safe_column_name)
+    os.makedirs(column_dir, exist_ok=True)
+    return column_dir
 
 
 # Функція для обробки пропущених та від'ємних значень
@@ -99,7 +117,9 @@ def create_violin_plot(df, column_name):
              ha='center', bbox=dict(facecolor='white', alpha=0.8))
 
     plt.tight_layout()
-    plt.savefig(f"{results_dir}/violin_plot_{column_name}.png", dpi=300)
+    # Створюємо директорію для колонки
+    column_dir = ensure_column_dir(column_name)
+    plt.savefig(f"{column_dir}/violin_plot_{column_name}.png", dpi=300)
     plt.close()
 
 
@@ -157,7 +177,9 @@ def create_density_plot(df, column_name):
     plt.legend(loc='upper right')
 
     plt.tight_layout()
-    plt.savefig(f"{results_dir}/density_{column_name}_by_success.png", dpi=300)
+    # Створюємо директорію для колонки
+    column_dir = ensure_column_dir(column_name)
+    plt.savefig(f"{column_dir}/density_{column_name}_by_success.png", dpi=300)
     plt.close()
 
 
@@ -252,7 +274,9 @@ def create_success_rate_plot(df, column_name):
 
     plt.legend(loc='upper center')
     plt.tight_layout()
-    plt.savefig(f"{results_dir}/success_rate_{column_name}.png", dpi=300)
+    # Створюємо директорію для колонки
+    column_dir = ensure_column_dir(column_name)
+    plt.savefig(f"{column_dir}/success_rate_{column_name}.png", dpi=300)
     plt.close()
 
 
@@ -294,7 +318,9 @@ def create_category_histogram(df, column_name):
         plt.text(i, total + 0.5, f"{success_rate:.1%}", ha='center')
 
     plt.tight_layout()
-    plt.savefig(f"{results_dir}/category_histogram_{column_name}.png", dpi=300)
+    # Створюємо директорію для колонки
+    column_dir = ensure_column_dir(column_name)
+    plt.savefig(f"{column_dir}/category_histogram_{column_name}.png", dpi=300)
     plt.close()
 
 
@@ -337,8 +363,9 @@ def create_log_violin_plot(df, column_name):
                 plt.text(i, median * 1.5, f'Середнє: {mean:.1f}', ha='center', fontsize=9)
 
     # Зберігаємо графік
-    current_date = datetime.now().strftime('%Y%m%d')
-    plt.savefig(f"{results_dir}/log_violin_plot_{column_name}_{current_date}.png", dpi=300, bbox_inches='tight')
+    # Створюємо директорію для колонки
+    column_dir = ensure_column_dir(column_name)
+    plt.savefig(f"{column_dir}/log_violin_plot_{column_name}.png", dpi=300, bbox_inches='tight')
     plt.close()
 
 # Обробка та візуалізація всіх колонок
