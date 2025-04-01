@@ -997,6 +997,112 @@ def create_time_series_plots(df, date_column):
     plt.savefig(f"{column_dir}/success_rate_comparison.png", dpi=300)
     plt.close()
 
+    # Додаємо новий графік, що показує тільки ковзне середнє для відсотка успішних замовлень
+    plt.figure(figsize=(14, 8))
+
+    # Створюємо новий датафрейм з щоденними даними
+    df_daily_rate = df.copy()
+    # Додаємо фільтр, щоб виключити 2025 рік
+    df_daily_rate = df_daily_rate[df_daily_rate[date_column].dt.year < 2025]
+    df_daily_rate['date'] = df_daily_rate[date_column].dt.date
+
+    # Групуємо дані по днях для щоденного відсотка успішності
+    daily_counts = df_daily_rate.groupby(['date', 'is_successful']).size().unstack(fill_value=0)
+
+    if 1 not in daily_counts.columns:
+        daily_counts[1] = 0
+    if 0 not in daily_counts.columns:
+        daily_counts[0] = 0
+
+    # Обчислюємо щоденний відсоток успішних замовлень
+    daily_counts['total'] = daily_counts[0] + daily_counts[1]
+    daily_counts['success_rate'] = (daily_counts[1] / daily_counts['total'] * 100).fillna(0)
+
+    # Сортуємо за датою
+    daily_counts = daily_counts.sort_index()
+
+    # Обчислюємо ковзне середнє за 30 днів
+    window = 30
+    rolling_avg = daily_counts['success_rate'].rolling(window=window).mean()
+
+    # Створюємо графік
+    fig, ax = plt.subplots(figsize=(14, 8))
+
+    # Малюємо тільки ковзне середнє як лінію
+    ax.plot(daily_counts.index, rolling_avg,
+            color='red', linewidth=2.5, label=f'Ковзне середнє ({window} днів)')
+
+    # Форматуємо дати на осі X
+    import matplotlib.dates as mdates
+    years = mdates.YearLocator()   # кожен рік
+    months = mdates.MonthLocator()  # кожен місяць
+    years_fmt = mdates.DateFormatter('%Y')
+
+    # Форматування осі X
+    ax.xaxis.set_major_locator(years)
+    ax.xaxis.set_major_formatter(years_fmt)
+    ax.xaxis.set_minor_locator(months)
+
+    # Форматуємо мітки на осі Y для відображення відсотків
+    formatter = ticker.FuncFormatter(lambda x, pos: f'{x:.0f}%')
+    ax.yaxis.set_major_formatter(formatter)
+
+    # Регулюємо масштаб осі Y для кращого відображення тренду
+    # Знаходимо мінімальне та максимальне значення ковзного середнього з невеликим запасом
+    min_rolling = rolling_avg.min()
+    max_rolling = rolling_avg.max()
+    margin = (max_rolling - min_rolling) * 0.1  # 10% запас
+
+    # Встановлюємо межі по Y з запасом
+    ax.set_ylim(max(0, min_rolling - margin), min(100, max_rolling + margin))
+
+    # Додаємо середній рівень успішності
+    mean_rate = daily_counts['success_rate'].mean()
+    ax.axhline(y=mean_rate, color='gray', linestyle='--', alpha=0.7,
+               label=f'Середній % успіху: {mean_rate:.1f}%')
+
+    # Знаходимо максимальні і мінімальні значення ковзного середнього
+    max_idx = rolling_avg.idxmax()
+    min_idx = rolling_avg.idxmin()
+    max_val = rolling_avg.max()
+    min_val = rolling_avg.min()
+
+    # Підписуємо максимальне і мінімальне значення
+    if not pd.isna(max_val):
+        ax.annotate(f'Макс: {max_val:.1f}%',
+                    xy=(max_idx, max_val),
+                    xytext=(0, 10),  # зсув тексту від точки
+                    textcoords="offset points",
+                    ha='center', va='bottom',
+                    fontweight='bold',
+                    bbox=dict(boxstyle='round,pad=0.3', fc='yellow', alpha=0.7))
+
+    if not pd.isna(min_val):
+        ax.annotate(f'Мін: {min_val:.1f}%',
+                    xy=(min_idx, min_val),
+                    xytext=(0, -10),  # зсув тексту від точки
+                    textcoords="offset points",
+                    ha='center', va='top',
+                    fontweight='bold',
+                    bbox=dict(boxstyle='round,pad=0.3', fc='yellow', alpha=0.7))
+
+    # Налаштування графіка
+    plt.title('Тренд відсотка успішних замовлень (30-денне ковзне середнє)', fontsize=14)
+    plt.xlabel('Дата', fontsize=12)
+    plt.ylabel('Відсоток успішних замовлень', fontsize=12)
+    plt.grid(True, linestyle='--', alpha=0.7)
+
+    # Додаємо легенду
+    plt.legend(fontsize=10, loc='lower right')
+
+    # Додаємо ефекти для виділення тренду
+    ax.spines['top'].set_visible(False)
+    ax.spines['right'].set_visible(False)
+
+    plt.tight_layout()
+    plt.savefig(f"{column_dir}/success_rate_trend.png", dpi=300)
+    plt.close()
+
 # Обробка та візуалізація всіх колонок
 numerical_columns = df.select_dtypes(include=[np.int64, np.float64]).columns
 categorical_columns = df.select_dtypes(exclude=[np.int64, np.float64]).columns
