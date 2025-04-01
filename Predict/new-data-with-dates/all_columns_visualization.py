@@ -389,79 +389,205 @@ def create_time_series_plots(df, date_column):
     # Створюємо директорію для колонки
     column_dir = ensure_column_dir(date_column)
 
-    # 1. Графік кількості замовлень по днях
+    # 1. Графік кількості замовлень по місяцях
     plt.figure(figsize=(14, 8))
 
-    # Створюємо новий датафрейм з кількістю замовлень по днях
-    df_daily = df.copy()
-    df_daily['date'] = df_daily[date_column].dt.date
-    daily_orders = df_daily.groupby(['date', 'is_successful']).size().unstack(fill_value=0)
+    # Створюємо новий датафрейм з групуванням по місяцях замість днів
+    df_monthly = df.copy()
+    df_monthly['year_month'] = df_monthly[date_column].dt.strftime('%Y-%m')
+    monthly_orders = df_monthly.groupby(['year_month', 'is_successful']).size().unstack(fill_value=0)
 
-    if 1 not in daily_orders.columns:
-        daily_orders[1] = 0
-    if 0 not in daily_orders.columns:
-        daily_orders[0] = 0
+    if 1 not in monthly_orders.columns:
+        monthly_orders[1] = 0
+    if 0 not in monthly_orders.columns:
+        monthly_orders[0] = 0
 
     # Обчислюємо загальну кількість замовлень
-    daily_orders['total'] = daily_orders[0] + daily_orders[1]
+    monthly_orders['total'] = monthly_orders[0] + monthly_orders[1]
 
     # Сортуємо за датою
-    daily_orders = daily_orders.sort_index()
+    monthly_orders = monthly_orders.sort_index()
 
-    # Малюємо графік
-    ax = daily_orders[[0, 1]].plot(kind='bar', stacked=True, figsize=(14, 8),
-                                   color=['forestgreen', 'crimson'])
+    # Створюємо графік
+    fig, ax = plt.subplots(figsize=(14, 8))
 
-    # Налаштування графіка
-    plt.title('Кількість замовлень по днях')
-    plt.xlabel('Дата')
-    plt.ylabel('Кількість замовлень')
-    plt.legend(['Неуспішні', 'Успішні'])
-    plt.grid(axis='y', linestyle='--', alpha=0.7)
+    # Малюємо стовпці для обох категорій
+    ax.bar(range(len(monthly_orders)), monthly_orders[0], width=0.8,
+           color='blue', alpha=0.7, label='Неуспішні')
+    ax.bar(range(len(monthly_orders)), monthly_orders[1], width=0.8,
+           bottom=monthly_orders[0], color='orange', alpha=0.7, label='Успішні')
 
-    # Обертаємо мітки дат для кращої читабельності
-    plt.xticks(rotation=45, ha='right')
+    # Робимо красиві мітки на осі X з відображенням років
+    plt.xticks(range(len(monthly_orders)), monthly_orders.index, rotation=45, ha='right')
 
-    # Форматуємо мітки осі X, щоб відображалися тільки кожні N днів
-    n_days = max(1, len(daily_orders) // 20)  # Виводимо не більше 20 міток
-    for i, tick in enumerate(ax.xaxis.get_ticklabels()):
-        if i % n_days != 0:
-            tick.set_visible(False)
+    # Відображаємо тільки кожну N-ту мітку, щоб уникнути перекриття
+    n = max(1, len(monthly_orders) // 12)  # Відображаємо приблизно 12 міток
+    for i, label in enumerate(ax.get_xticklabels()):
+        if i % n != 0:
+            label.set_visible(False)
+
+    # Форматуємо мітки на осі Y для відображення тисяч
+    import matplotlib.ticker as ticker
+    formatter = ticker.FuncFormatter(lambda x, pos: '{:,.0f}'.format(x))
+    ax.yaxis.set_major_formatter(formatter)
+
+    # Додаємо заголовок і підписи до осей
+    plt.title('Кількість замовлень по місяцях', fontsize=14)
+    plt.xlabel('Рік-Місяць', fontsize=12)
+    plt.ylabel('Кількість замовлень', fontsize=12)
+
+    # Додаємо сітку для кращого сприйняття
+    plt.grid(True, linestyle='--', alpha=0.7)
+    plt.grid(axis='x', alpha=0.3)
+
+    # Додаємо легенду
+    plt.legend(fontsize=10)
+
+    # Додаємо ефекти для виділення тренду
+    ax.spines['top'].set_visible(False)
+    ax.spines['right'].set_visible(False)
 
     plt.tight_layout()
-    plt.savefig(f"{column_dir}/daily_orders.png", dpi=300)
+    plt.savefig(f"{column_dir}/monthly_orders.png", dpi=300)
     plt.close()
 
-    # 2. Графік відсотка успішних замовлень по днях
+    # 2. Графік відсотка успішних замовлень по місяцях
     plt.figure(figsize=(14, 8))
 
     # Обчислюємо відсоток успішних замовлень
-    success_rate = (daily_orders[1] / daily_orders['total'] * 100).fillna(0)
+    success_rate = (monthly_orders[1] / monthly_orders['total'] * 100).fillna(0)
 
-    # Малюємо графік
-    ax = success_rate.plot(kind='line', marker='o', figsize=(14, 8), color='blue')
+    # Створюємо графік
+    fig, ax = plt.subplots(figsize=(14, 8))
 
-    # Додаємо середню лінію
+    # Малюємо графік з маркерами для покращення візуалізації
+    ax.plot(range(len(success_rate)), success_rate, 'o-', color='crimson', linewidth=2.5, markersize=6)
+
+    # Додаємо горизонтальну лінію середнього значення
     mean_rate = success_rate.mean()
-    plt.axhline(y=mean_rate, color='r', linestyle='--', label=f'Середній % успіху: {mean_rate:.1f}%')
+    ax.axhline(y=mean_rate, color='blue', linestyle='--', alpha=0.7,
+               label=f'Середній % успіху: {mean_rate:.1f}%')
 
-    # Налаштування графіка
-    plt.title('Відсоток успішних замовлень по днях')
-    plt.xlabel('Дата')
-    plt.ylabel('Відсоток успішних замовлень (%)')
+    # Робимо красиві мітки на осі X з відображенням років
+    plt.xticks(range(len(success_rate)), success_rate.index, rotation=45, ha='right')
+
+    # Відображаємо тільки кожну N-ту мітку, щоб уникнути перекриття
+    n = max(1, len(success_rate) // 12)  # Відображаємо приблизно 12 міток
+    for i, label in enumerate(ax.get_xticklabels()):
+        if i % n != 0:
+            label.set_visible(False)
+
+    # Встановлюємо діапазон осі Y від 0 до 100 відсотків
+    ax.set_ylim(0, 100)
+
+    # Форматуємо мітки на осі Y для відображення відсотків
+    formatter = ticker.FuncFormatter(lambda x, pos: f'{x:.0f}%')
+    ax.yaxis.set_major_formatter(formatter)
+
+    # Додаємо заголовок і підписи до осей
+    plt.title('Відсоток успішних замовлень по місяцях', fontsize=14)
+    plt.xlabel('Рік-Місяць', fontsize=12)
+    plt.ylabel('Відсоток успішних замовлень', fontsize=12)
+
+    # Додаємо сітку для кращого сприйняття
     plt.grid(True, linestyle='--', alpha=0.7)
-    plt.legend()
 
-    # Обертаємо мітки дат для кращої читабельності
-    plt.xticks(rotation=45, ha='right')
+    # Додаємо легенду
+    plt.legend(fontsize=10)
 
-    # Форматуємо мітки осі X, щоб відображалися тільки кожні N днів
-    for i, tick in enumerate(ax.xaxis.get_ticklabels()):
-        if i % n_days != 0:
-            tick.set_visible(False)
+    # Додаємо ефекти для виділення тренду
+    ax.spines['top'].set_visible(False)
+    ax.spines['right'].set_visible(False)
+
+    # Додаємо підписи для важливих точок
+    # Знаходимо максимум та мінімум
+    max_idx = success_rate.idxmax()
+    min_idx = success_rate.idxmin()
+    max_val = success_rate.max()
+    min_val = success_rate.min()
+
+    # Підписуємо максимальне і мінімальне значення
+    max_pos = success_rate.index.get_loc(max_idx)
+    min_pos = success_rate.index.get_loc(min_idx)
+
+    # Підписи до важливих точок
+    if not pd.isna(max_val):
+        ax.annotate(f'Макс: {max_val:.1f}%',
+                    xy=(max_pos, max_val),
+                    xytext=(max_pos, max_val + 5),
+                    ha='center', va='bottom',
+                    bbox=dict(boxstyle='round,pad=0.3', fc='yellow', alpha=0.3))
+
+    if not pd.isna(min_val):
+        ax.annotate(f'Мін: {min_val:.1f}%',
+                    xy=(min_pos, min_val),
+                    xytext=(min_pos, min_val - 10),
+                    ha='center', va='top',
+                    bbox=dict(boxstyle='round,pad=0.3', fc='yellow', alpha=0.3))
 
     plt.tight_layout()
-    plt.savefig(f"{column_dir}/daily_success_rate.png", dpi=300)
+    plt.savefig(f"{column_dir}/monthly_success_rate.png", dpi=300)
+    plt.close()
+
+    # Також додаємо стовпчиковий графік кількості замовлень по рокам
+    plt.figure(figsize=(12, 8))
+
+    # Додаємо стовпець для року
+    df_yearly = df.copy()
+    df_yearly['year'] = df_yearly[date_column].dt.year
+
+    # Групуємо дані по роках та успішності
+    yearly_orders = df_yearly.groupby(['year', 'is_successful']).size().unstack(fill_value=0)
+
+    if 1 not in yearly_orders.columns:
+        yearly_orders[1] = 0
+    if 0 not in yearly_orders.columns:
+        yearly_orders[0] = 0
+
+    # Обчислюємо загальну кількість та відсоток
+    yearly_orders['total'] = yearly_orders[0] + yearly_orders[1]
+    yearly_orders['success_rate'] = (yearly_orders[1] / yearly_orders['total'] * 100).fillna(0)
+
+    # Рисуємо стовпчиковий графік по рокам
+    x = np.arange(len(yearly_orders.index))
+    width = 0.8
+
+    fig, ax = plt.subplots(figsize=(12, 8))
+
+    # Рисуємо стовпці для неуспішних і успішних замовлень
+    p1 = ax.bar(x, yearly_orders[0], width, label='Неуспішні', color='blue', alpha=0.7)
+    p2 = ax.bar(x, yearly_orders[1], width, bottom=yearly_orders[0],
+                label='Успішні', color='orange', alpha=0.7)
+
+    # Додаємо підписи та налаштування
+    ax.set_xlabel('Рік', fontsize=12)
+    ax.set_ylabel('Кількість замовлень', fontsize=12)
+    ax.set_title('Розподіл замовлень по роках', fontsize=14)
+    ax.set_xticks(x)
+    ax.set_xticklabels(yearly_orders.index)
+
+    # Форматуємо числа з розділювачами тисяч
+    formatter = ticker.FuncFormatter(lambda x, pos: '{:,.0f}'.format(x))
+    ax.yaxis.set_major_formatter(formatter)
+
+    # Додаємо сітку та легенду
+    ax.grid(axis='y', linestyle='--', alpha=0.7)
+    ax.spines['top'].set_visible(False)
+    ax.spines['right'].set_visible(False)
+    ax.legend()
+
+    # Додаємо підписи з відсотком успішності на стовпці
+    for i, year in enumerate(yearly_orders.index):
+        total = yearly_orders.loc[year, 'total']
+        rate = yearly_orders.loc[year, 'success_rate']
+        ax.text(i, yearly_orders.loc[year, 'total'] + 0.02 * ax.get_ylim()[1],
+                f'{rate:.1f}%',
+                ha='center', va='bottom',
+                fontsize=9,
+                bbox=dict(facecolor='white', alpha=0.8, boxstyle='round,pad=0.2'))
+
+    plt.tight_layout()
+    plt.savefig(f"{column_dir}/yearly_orders.png", dpi=300)
     plt.close()
 
     # 3. Теплова карта кількості замовлень по годинам і дням тижня
@@ -613,7 +739,32 @@ def create_time_series_plots(df, date_column):
         ax.spines['top'].set_visible(False)
         ax.spines['right'].set_visible(False)
 
-        # Зберігаємо графік
+        # Додаємо підписи для важливих точок
+        # Знаходимо максимум та мінімум
+        max_idx = monthly_amount[1].idxmax()
+        min_idx = monthly_amount[1].idxmin()
+        max_val = monthly_amount[1].max()
+        min_val = monthly_amount[1].min()
+
+        # Підписуємо максимальне і мінімальне значення
+        max_pos = monthly_amount.index.get_loc(max_idx)
+        min_pos = monthly_amount.index.get_loc(min_idx)
+
+        # Підписи до важливих точок
+        if not pd.isna(max_val):
+            ax.annotate(f'Макс: {max_val:.0f}',
+                        xy=(max_pos, max_val),
+                        xytext=(max_pos, max_val + 0.05 * ax.get_ylim()[1]),
+                        ha='center', va='bottom',
+                        bbox=dict(boxstyle='round,pad=0.3', fc='yellow', alpha=0.3))
+
+        if not pd.isna(min_val):
+            ax.annotate(f'Мін: {min_val:.0f}',
+                        xy=(min_pos, min_val),
+                        xytext=(min_pos, min_val - 0.05 * ax.get_ylim()[1]),
+                        ha='center', va='top',
+                        bbox=dict(boxstyle='round,pad=0.3', fc='yellow', alpha=0.3))
+
         plt.tight_layout()
         plt.savefig(f"{column_dir}/avg_amount_trend.png", dpi=300)
         plt.close()
