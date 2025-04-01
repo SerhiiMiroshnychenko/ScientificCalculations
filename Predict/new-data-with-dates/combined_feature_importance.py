@@ -1103,7 +1103,7 @@ def main():
     logger.info("Початок роботи програми комплексного аналізу важливості ознак")
 
     # Параметри
-    data_file = 'cleaned_result.csv'
+    data_file = 'cleanest_data.csv'
     target_column = 'is_successful'
 
     try:
