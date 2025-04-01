@@ -845,19 +845,18 @@ def create_time_series_plots(df, date_column):
     # Створюємо графік
     fig, ax = plt.subplots(figsize=(14, 8))
 
-    # Малюємо область для обох категорій
-    ax.fill_between(daily_orders.index, 0, daily_orders[0],
-                    color='blue', alpha=0.3, label='Неуспішні')
-    ax.fill_between(daily_orders.index, daily_orders[0], daily_orders['total'],
-                    color='orange', alpha=0.3, label='Успішні')
-
-    # Додаємо лінії тренду (ковзне середнє за 30 днів)
+    # Визначаємо ширину вікна для ковзного середнього
     window = 30
+
+    # Прибираємо заповнені області і залишаємо тільки лінії тренду
     if len(daily_orders) > window:
+        # Малюємо лінії тренду (ковзне середнє за 30 днів)
         ax.plot(daily_orders.index, daily_orders[0].rolling(window=window).mean(),
-                color='blue', linewidth=2)
+                color='blue', linewidth=3, label='Тренд неуспішних')
         ax.plot(daily_orders.index, daily_orders[1].rolling(window=window).mean(),
-                color='orange', linewidth=2)
+                color='orange', linewidth=3, label='Тренд успішних')
+        ax.plot(daily_orders.index, daily_orders['total'].rolling(window=window).mean(),
+                color='green', linewidth=3, label='Тренд загальних')
 
     # Форматуємо дати на осі X
     # Створюємо локатор для позначок по роках
@@ -876,9 +875,20 @@ def create_time_series_plots(df, date_column):
     formatter = ticker.FuncFormatter(lambda x, pos: '{:,.0f}'.format(x))
     ax.yaxis.set_major_formatter(formatter)
 
-    # Знаходимо максимальні і мінімальні значення
-    max_total_idx = daily_orders['total'].idxmax()
-    max_total_val = daily_orders['total'].max()
+    # Регулюємо масштаб осі Y для кращого відображення тренду
+    # Визначаємо максимальне значення тренду з невеликим відступом вгору
+    max_trend = max(
+        daily_orders[0].rolling(window=window).mean().max(),
+        daily_orders[1].rolling(window=window).mean().max(),
+        daily_orders['total'].rolling(window=window).mean().max()
+    )
+
+    # Встановлюємо межі по Y від 0 до максимального значення з відступом 10%
+    ax.set_ylim(0, max_trend * 1.1)
+
+    # Знаходимо максимальні значення трендів
+    max_total_idx = daily_orders['total'].rolling(window=window).mean().idxmax()
+    max_total_val = daily_orders['total'].rolling(window=window).mean().max()
 
     # Підписуємо максимальне значення
     if not pd.isna(max_total_val):
@@ -890,7 +900,7 @@ def create_time_series_plots(df, date_column):
                     bbox=dict(boxstyle='round,pad=0.3', fc='yellow', alpha=0.7))
 
     # Налаштування графіка
-    plt.title('Кількість замовлень по днях з трендами', fontsize=14)
+    plt.title('Тренди кількості замовлень по днях', fontsize=14)
     plt.xlabel('Дата', fontsize=12)
     plt.ylabel('Кількість замовлень', fontsize=12)
     plt.grid(True, linestyle='--', alpha=0.7)
