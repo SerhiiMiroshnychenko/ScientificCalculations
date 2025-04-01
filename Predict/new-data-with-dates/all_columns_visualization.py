@@ -749,31 +749,8 @@ def create_time_series_plots(df, date_column):
         ax.spines['top'].set_visible(False)
         ax.spines['right'].set_visible(False)
 
-        # Додаємо підписи для важливих точок
-        # Знаходимо максимум та мінімум
-        max_idx = monthly_amount[1].idxmax()
-        min_idx = monthly_amount[1].idxmin()
-        max_val = monthly_amount[1].max()
-        min_val = monthly_amount[1].min()
-
-        # Підписуємо максимальне і мінімальне значення
-        max_pos = monthly_amount.index.get_loc(max_idx)
-        min_pos = monthly_amount.index.get_loc(min_idx)
-
-        # Підписи до важливих точок
-        if not pd.isna(max_val):
-            ax.annotate(f'Макс: {max_val:.0f}',
-                        xy=(max_pos, max_val),
-                        xytext=(max_pos, max_val + 0.05 * ax.get_ylim()[1]),
-                        ha='center', va='bottom',
-                        bbox=dict(boxstyle='round,pad=0.3', fc='yellow', alpha=0.3))
-
-        if not pd.isna(min_val):
-            ax.annotate(f'Мін: {min_val:.0f}',
-                        xy=(min_pos, min_val),
-                        xytext=(min_pos, min_val - 0.05 * ax.get_ylim()[1]),
-                        ha='center', va='top',
-                        bbox=dict(boxstyle='round,pad=0.3', fc='yellow', alpha=0.3))
+        # Видаляємо підписи для важливих точок
+        # Нічого не додаємо замість цього
 
         plt.tight_layout()
         plt.savefig(f"{column_dir}/avg_amount_trend.png", dpi=300)
@@ -812,6 +789,15 @@ def create_time_series_plots(df, date_column):
         ax.set_title('Порівняння середньої вартості замовлень по роках')
         ax.set_xticks(x)
         ax.set_xticklabels(means.index)
+
+        # Форматуємо числа з розділювачами тисяч
+        formatter = ticker.FuncFormatter(lambda x, pos: '{:,.0f}'.format(x))
+        ax.yaxis.set_major_formatter(formatter)
+
+        # Додаємо сітку та легенду
+        ax.grid(axis='y', linestyle='--', alpha=0.7)
+        ax.spines['top'].set_visible(False)
+        ax.spines['right'].set_visible(False)
         ax.legend()
 
         # Додаємо значення над стовпцями
@@ -831,6 +817,94 @@ def create_time_series_plots(df, date_column):
         plt.tight_layout()
         plt.savefig(f"{column_dir}/yearly_avg_amount.png", dpi=300)
         plt.close()
+
+    # Додаємо графік щоденної кількості замовлень по місяцях для порівняння з оригінальним
+    plt.figure(figsize=(14, 8))
+
+    # Створюємо новий датафрейм з щоденними даними
+    df_daily = df.copy()
+    # Додаємо фільтр, щоб виключити 2025 рік
+    df_daily = df_daily[df_daily[date_column].dt.year < 2025]
+    df_daily['date'] = df_daily[date_column].dt.date
+    df_daily['year_month'] = df_daily[date_column].dt.strftime('%Y-%m')
+
+    # Групуємо дані по днях
+    daily_orders = df_daily.groupby(['date', 'is_successful']).size().unstack(fill_value=0)
+
+    if 1 not in daily_orders.columns:
+        daily_orders[1] = 0
+    if 0 not in daily_orders.columns:
+        daily_orders[0] = 0
+
+    # Обчислюємо загальну кількість замовлень
+    daily_orders['total'] = daily_orders[0] + daily_orders[1]
+
+    # Сортуємо за датою
+    daily_orders = daily_orders.sort_index()
+
+    # Створюємо графік
+    fig, ax = plt.subplots(figsize=(14, 8))
+
+    # Малюємо область для обох категорій
+    ax.fill_between(daily_orders.index, 0, daily_orders[0],
+                    color='blue', alpha=0.3, label='Неуспішні')
+    ax.fill_between(daily_orders.index, daily_orders[0], daily_orders['total'],
+                    color='orange', alpha=0.3, label='Успішні')
+
+    # Додаємо лінії тренду (ковзне середнє за 30 днів)
+    window = 30
+    if len(daily_orders) > window:
+        ax.plot(daily_orders.index, daily_orders[0].rolling(window=window).mean(),
+                color='blue', linewidth=2)
+        ax.plot(daily_orders.index, daily_orders[1].rolling(window=window).mean(),
+                color='orange', linewidth=2)
+
+    # Форматуємо дати на осі X
+    # Створюємо локатор для позначок по роках
+    import matplotlib.dates as mdates
+    years = mdates.YearLocator()   # кожен рік
+    months = mdates.MonthLocator()  # кожен місяць
+    years_fmt = mdates.DateFormatter('%Y')
+
+    # Форматування осі X
+    ax.xaxis.set_major_locator(years)
+    ax.xaxis.set_major_formatter(years_fmt)
+    ax.xaxis.set_minor_locator(months)
+
+    # Форматуємо мітки на осі Y для відображення тисяч
+    import matplotlib.ticker as ticker
+    formatter = ticker.FuncFormatter(lambda x, pos: '{:,.0f}'.format(x))
+    ax.yaxis.set_major_formatter(formatter)
+
+    # Знаходимо максимальні і мінімальні значення
+    max_total_idx = daily_orders['total'].idxmax()
+    max_total_val = daily_orders['total'].max()
+
+    # Підписуємо максимальне значення
+    if not pd.isna(max_total_val):
+        ax.annotate(f'Макс: {max_total_val:.0f}',
+                    xy=(max_total_idx, max_total_val),
+                    xytext=(max_total_idx, max_total_val + 0.05 * ax.get_ylim()[1]),
+                    ha='center', va='bottom',
+                    fontweight='bold',
+                    bbox=dict(boxstyle='round,pad=0.3', fc='yellow', alpha=0.7))
+
+    # Налаштування графіка
+    plt.title('Кількість замовлень по днях з трендами', fontsize=14)
+    plt.xlabel('Дата', fontsize=12)
+    plt.ylabel('Кількість замовлень', fontsize=12)
+    plt.grid(True, linestyle='--', alpha=0.7)
+
+    # Додаємо легенду
+    plt.legend(fontsize=10, loc='upper right')
+
+    # Додаємо ефекти для виділення тренду
+    ax.spines['top'].set_visible(False)
+    ax.spines['right'].set_visible(False)
+
+    plt.tight_layout()
+    plt.savefig(f"{column_dir}/daily_orders.png", dpi=300)
+    plt.close()
 
 # Обробка та візуалізація всіх колонок
 numerical_columns = df.select_dtypes(include=[np.int64, np.float64]).columns
