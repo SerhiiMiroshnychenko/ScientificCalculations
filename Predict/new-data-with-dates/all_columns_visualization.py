@@ -394,6 +394,8 @@ def create_time_series_plots(df, date_column):
 
     # Створюємо новий датафрейм з групуванням по місяцях замість днів
     df_monthly = df.copy()
+    # Додаємо фільтр, щоб виключити 2025 рік
+    df_monthly = df_monthly[df_monthly[date_column].dt.year < 2025]
     df_monthly['year_month'] = df_monthly[date_column].dt.strftime('%Y-%m')
     monthly_orders = df_monthly.groupby(['year_month', 'is_successful']).size().unstack(fill_value=0)
 
@@ -534,6 +536,8 @@ def create_time_series_plots(df, date_column):
 
     # Додаємо стовпець для року
     df_yearly = df.copy()
+    # Додаємо фільтр, щоб виключити 2025 рік
+    df_yearly = df_yearly[df_yearly[date_column].dt.year < 2025]
     df_yearly['year'] = df_yearly[date_column].dt.year
 
     # Групуємо дані по роках та успішності
@@ -595,6 +599,8 @@ def create_time_series_plots(df, date_column):
 
     # Створюємо новий датафрейм з годинами та днями тижня
     df_heatmap = df.copy()
+    # Додаємо фільтр, щоб виключити 2025 рік
+    df_heatmap = df_heatmap[df_heatmap[date_column].dt.year < 2025]
     df_heatmap['hour'] = df_heatmap[date_column].dt.hour
     df_heatmap['day_of_week'] = df_heatmap[date_column].dt.day_name()
 
@@ -627,6 +633,8 @@ def create_time_series_plots(df, date_column):
 
     # Створюємо новий датафрейм з місяцями
     df_monthly = df.copy()
+    # Додаємо фільтр, щоб виключити 2025 рік
+    df_monthly = df_monthly[df_monthly[date_column].dt.year < 2025]
     df_monthly['month'] = df_monthly[date_column].dt.month_name()
     df_monthly['month_num'] = df_monthly[date_column].dt.month
 
@@ -671,11 +679,11 @@ def create_time_series_plots(df, date_column):
     # Встановлюємо шкалу від 0 до 100% для осі Y2
     ax2.set_ylim(0, 100)
 
-    # Додаємо значення поруч з точками
-    for i, value in enumerate(monthly_data['success_rate']):
-        ax2.text(i, value + 2, f'{value:.1f}%', color='red', ha='center')
+    # Форматуємо мітки на осі Y для відображення відсотків
+    formatter = ticker.FuncFormatter(lambda x, pos: f'{x:.0f}%')
+    ax2.yaxis.set_major_formatter(formatter)
 
-    # Налаштування графіка
+    # Додаємо заголовок і підписи до осей
     plt.title('Кількість замовлень та відсоток успішних по місяцях')
     plt.grid(axis='y', linestyle='--', alpha=0.3)
 
@@ -689,6 +697,8 @@ def create_time_series_plots(df, date_column):
 
         # Створюємо новий датафрейм з датами
         df_amount = df.copy()
+        # Додаємо фільтр, щоб виключити 2025 рік
+        df_amount = df_amount[df_amount[date_column].dt.year < 2025]
         df_amount['date'] = df_amount[date_column].dt.date
         df_amount['year_month'] = df_amount[date_column].dt.strftime('%Y-%m')
 
@@ -797,8 +807,8 @@ def create_time_series_plots(df, date_column):
             rects2 = ax.bar(x + width/2, [0] * len(means.index), width, label='Успішні', color='orange', alpha=0.7)
 
         # Додаємо підписи, назву і легенду
-        ax.set_xlabel('Рік')
-        ax.set_ylabel('Середня вартість замовлення, грн')
+        ax.set_xlabel('Рік', fontsize=12)
+        ax.set_ylabel('Середня вартість замовлення, грн', fontsize=12)
         ax.set_title('Порівняння середньої вартості замовлень по роках')
         ax.set_xticks(x)
         ax.set_xticklabels(means.index)
