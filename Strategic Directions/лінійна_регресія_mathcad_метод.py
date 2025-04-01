@@ -12,6 +12,7 @@ from scipy import stats
 import pandas as pd
 from tabulate import tabulate
 import os
+import seaborn as sns
 
 # Налаштування графіків для відображення кирилиці
 plt.rcParams['font.family'] = 'DejaVu Sans'
@@ -350,11 +351,46 @@ def perform_linear_regression_mathcad_method():
     plt.legend()
     plt.grid(True)
     plt.tight_layout()
-    plt.savefig(os.path.join(output_dir, 'regression_model_mathcad.png'), dpi=300)
+    plt.savefig(os.path.join(output_dir, '1_regression_model_mathcad.png'), dpi=300)
     plt.close()
 
-    # Перевірка чи справжні значення входять в довірчі інтервали
-    print("\nПеревірка на входження реальних параметрів в довірчі інтервали:")
+    # Графік 2: Залишки
+    plt.figure(figsize=(10, 8))
+    plt.scatter(x, y - y_pred, color='orange')
+    plt.axhline(y=0, color='r', linestyle='-')
+    plt.title('Залишки vs x (метод MathCad)')
+    plt.xlabel('x')
+    plt.ylabel('Залишки')
+    plt.grid(True)
+    plt.tight_layout()
+    plt.savefig(os.path.join(output_dir, '2_residuals_mathcad.png'), dpi=300)
+    plt.close()
+
+    # Графік 3: Розподіл залишків
+    plt.figure(figsize=(10, 8))
+    sns.histplot(y - y_pred, kde=True, color='skyblue')
+    plt.title('Розподіл залишків (метод MathCad)')
+    plt.xlabel('Залишки')
+    plt.ylabel('Частота')
+    plt.tight_layout()
+    plt.savefig(os.path.join(output_dir, '3_residuals_distribution_mathcad.png'), dpi=300)
+    plt.close()
+
+    # Графік 4: QQ-графік залишків
+    plt.figure(figsize=(10, 8))
+    stats.probplot(y - y_pred, dist="norm", plot=plt)
+    plt.title('QQ-графік залишків (метод MathCad)')
+    plt.tight_layout()
+    plt.savefig(os.path.join(output_dir, '4_qq_plot_mathcad.png'), dpi=300)
+    plt.close()
+
+    print("\nГрафіки збережено у директорію:", output_dir)
+    print(f"1. Лінійна регресійна модель: {output_dir}/1_regression_model_mathcad.png")
+    print(f"2. Графік залишків: {output_dir}/2_residuals_mathcad.png")
+    print(f"3. Розподіл залишків: {output_dir}/3_residuals_distribution_mathcad.png")
+    print(f"4. QQ-графік залишків: {output_dir}/4_qq_plot_mathcad.png")
+
+    print("\nПеревірка чи справжні значення входять в довірчі інтервали:")
     if a0_lower <= a0 <= a0_upper:
         print(f"   - Справжнє значення a0 = {a0} входить в довірчий інтервал [{a0_lower:.4f}, {a0_upper:.4f}]")
     else:
@@ -364,8 +400,6 @@ def perform_linear_regression_mathcad_method():
         print(f"   - Справжнє значення a1 = {a1} входить в довірчий інтервал [{a1_lower:.4f}, {a1_upper:.4f}]")
     else:
         print(f"   - Справжнє значення a1 = {a1} НЕ входить в довірчий інтервал [{a1_lower:.4f}, {a1_upper:.4f}]")
-
-    print("\nГрафіки збережено у директорію:", output_dir)
 
     print("\nВисновки за методом MathCad:")
     print(f"1. Побудоване рівняння регресії: y = {b0:.4f} + {b1:.4f}*x")
