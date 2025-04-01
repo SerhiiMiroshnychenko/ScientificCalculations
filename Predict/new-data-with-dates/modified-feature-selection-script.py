@@ -18,7 +18,7 @@ import joblib
 from datetime import datetime
 
 # Створюємо директорію для збереження результатів
-results_dir = f"feature_selection_results"
+results_dir = f"feature_selection_results_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
 os.makedirs(results_dir, exist_ok=True)
 
 # Налаштування логування
@@ -57,8 +57,7 @@ feature_names_ua = {
     'order_lines_count': 'Кількість позицій в замовленні',
     'discount_total': 'Загальна знижка',
     'salesperson': 'Менеджер',
-    'source': 'Джерело замовлення',
-    'create_date_months': 'Місяці від найранішої дати'
+    'source': 'Джерело замовлення'
 }
 
 # Функція для отримання українських назв ознак
@@ -383,16 +382,6 @@ def main():
             df_encoded[col] = encoder.fit_transform(df_encoded[col].astype(str))
             encoders[col] = encoder
 
-        # 1. create_date: перетворення у місяці від найранішої дати
-        try:
-            df['create_date'] = pd.to_datetime(df['create_date'], format='%Y-%m-%d %H:%M:%S.%f', errors='coerce')
-            min_date = df['create_date'].min()
-            df['create_date_months'] = ((df['create_date'] - min_date).dt.days / 30.44).round(
-                2)  # приблизне число місяців
-            logger.info(f"Додано числову колонку 'create_date_months': місяці від {min_date}")
-        except Exception as e:
-            logger.warning(f"Помилка при обробці create_date: {e}")
-
         # 4. Вибираємо числові змінні
         num_columns = df.select_dtypes(include=['number']).columns.tolist()
         if 'is_successful' in num_columns:
@@ -459,7 +448,7 @@ def main():
         plt.tight_layout()
         plt.savefig(f"{results_dir}/feature_scores_comparison.png")
 
-        # 8.3 Візуалізація продуктивності моделей
+        # # 8.3 Візуалізація продуктивності моделей
         # plt.figure(figsize=(12, 8))
         # sns.lineplot(x='N Features', y='Accuracy', hue='Model', data=performance_df, marker='o')
         # plt.title("Точність моделей залежно від кількості ознак")
@@ -492,15 +481,15 @@ def main():
         logger.info("Зберігаємо результати...")
         results_df.to_csv(f"{results_dir}/feature_selection_results.csv", index=False)
         # performance_df.to_csv(f"{results_dir}/model_performance.csv", index=False)
-        for model_name, model in models_dict.items():
-            joblib.dump(model, f"{results_dir}/{model_name}_model.pkl")
-        joblib.dump(encoders, f"{results_dir}/label_encoders.pkl")
-        for n in [5, 10, 15, 20, 25]:
-            if n <= len(results_df):
-                top_n = results_df['Feature'].head(n).tolist()
-                with open(f"{results_dir}/top_{n}_features.txt", 'w') as f:
-                    for i, feature in enumerate(top_n, 1):
-                        f.write(f"{i}. {feature}\n")
+        # for model_name, model in models_dict.items():
+        #     joblib.dump(model, f"{results_dir}/{model_name}_model.pkl")
+        # joblib.dump(encoders, f"{results_dir}/label_encoders.pkl")
+        # for n in [5, 10, 15, 20, 25]:
+        #     if n <= len(results_df):
+        #         top_n = results_df['Feature'].head(n).tolist()
+        #         with open(f"{results_dir}/top_{n}_features.txt", 'w') as f:
+        #             for i, feature in enumerate(top_n, 1):
+        #                 f.write(f"{i}. {feature}\n")
 
         # 10. Виводимо таблицю
         # Змінюємо порядок стовпців відповідно до ТЗ
