@@ -151,17 +151,34 @@ success_by_year = df_filtered.groupby('year')['is_successful'].agg(['mean', 'cou
 ax = plt.bar(success_by_year['year'], success_by_year['mean'], alpha=0.7)
 
 # Додаємо підписи з кількістю замовлень та відсотками успішності
-for i, v in enumerate(success_by_year['mean']):
+# Виправлено: використовуємо значення року замість індексу для позиціонування тексту
+for i, row in success_by_year.iterrows():
+    year = row['year']         # Використовуємо значення року
+    mean_value = row['mean']   # Середня успішність
+    count_value = row['count'] # Кількість замовлень
     # Додаємо кількість замовлень
-    plt.text(i, v + 0.02, f"{success_by_year['count'][i]:,}", ha='center')
+    plt.text(year, mean_value + 0.02, f"{count_value:,}", ha='center')
     # Додаємо відсоток успішності
-    plt.text(i, v - 0.03, f"{v:.1%}", ha='top', color='black', fontweight='bold')
+    plt.text(year, mean_value - 0.03, f"{mean_value:.1%}", ha='center', color='black', fontweight='bold')
 
 plt.title('Успішність замовлень за роками', fontsize=14)
 plt.xlabel('Рік')
 plt.ylabel('Частка успішних замовлень')
 plt.ylim(0, max(success_by_year['mean']) * 1.2)  # Трохи більший діапазон для підписів
 plt.grid(True, alpha=0.3)
+
+# Додаємо легенду безпосередньо на графік
+x_ = min(success_by_year['year'])
+print(f"{x_ = }")
+
+textbox = plt.text(
+    x= 1 + x_,  # Розміщуємо біля першого року
+    y=max(success_by_year['mean']) * 1.05,  # Вгорі графіка
+    s="Підписи на стовпчиках:\n- Верхня цифра: загальна кількість замовлень\n- Нижня цифра: відсоток успішних замовлень",
+    bbox=dict(facecolor='white', alpha=0.8, edgecolor='gray', boxstyle='round,pad=0.5'),
+    fontsize=10
+)
+
 plt.tight_layout()
 plt.savefig(os.path.join(plots_dir, '07_success_by_year.png'), dpi=300)
 logger.info("Графік успішності за роками збережено як '07_success_by_year.png'")
