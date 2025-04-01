@@ -18,7 +18,7 @@ import seaborn as sns
 plt.rcParams['font.family'] = 'DejaVu Sans'
 plt.rcParams['font.size'] = 12
 
-def generate_data(a0, a1, noise_range, n=20, x_min=0, x_max=10, seed=42):
+def generate_data(a0, a1, noise_range, n=51, x_min=0, x_max=10, seed=42):
     """
     Генерує дані згідно з лінійним рівнянням y = a0 + a1*x + випадковий_шум
 
@@ -257,7 +257,7 @@ def perform_linear_regression_mathcad_method():
     noise_range = 1.10  # Діапазон випадкового шуму
 
     # Генерація даних
-    n = 20  # Кількість точок
+    n = 51  # Кількість точок
     x, y, y_true = generate_data(a0, a1, noise_range, n)
 
     # Побудова лінійної регресії за методом MathCad
