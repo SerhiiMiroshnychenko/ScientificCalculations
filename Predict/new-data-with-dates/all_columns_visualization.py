@@ -368,6 +368,233 @@ def create_log_violin_plot(df, column_name):
     plt.savefig(f"{column_dir}/log_violin_plot_{column_name}.png", dpi=300, bbox_inches='tight')
     plt.close()
 
+# Функція для створення часових графіків
+def create_time_series_plots(df, date_column):
+    """
+    Створює спеціалізовані графіки для часових даних
+
+    Args:
+        df (pd.DataFrame): Датафрейм з даними
+        date_column (str): Назва колонки з датами
+    """
+    print(f"Створюємо часові графіки для колонки {date_column}...")
+
+    # Переконуємося, що колонка дат має правильний формат
+    try:
+        df[date_column] = pd.to_datetime(df[date_column])
+    except:
+        print(f"Помилка перетворення колонки {date_column} у формат datetime. Пропускаємо часові графіки.")
+        return
+
+    # Створюємо директорію для колонки
+    column_dir = ensure_column_dir(date_column)
+
+    # 1. Графік кількості замовлень по днях
+    plt.figure(figsize=(14, 8))
+
+    # Створюємо новий датафрейм з кількістю замовлень по днях
+    df_daily = df.copy()
+    df_daily['date'] = df_daily[date_column].dt.date
+    daily_orders = df_daily.groupby(['date', 'is_successful']).size().unstack(fill_value=0)
+
+    if 1 not in daily_orders.columns:
+        daily_orders[1] = 0
+    if 0 not in daily_orders.columns:
+        daily_orders[0] = 0
+
+    # Обчислюємо загальну кількість замовлень
+    daily_orders['total'] = daily_orders[0] + daily_orders[1]
+
+    # Сортуємо за датою
+    daily_orders = daily_orders.sort_index()
+
+    # Малюємо графік
+    ax = daily_orders[[0, 1]].plot(kind='bar', stacked=True, figsize=(14, 8),
+                                   color=['forestgreen', 'crimson'])
+
+    # Налаштування графіка
+    plt.title('Кількість замовлень по днях')
+    plt.xlabel('Дата')
+    plt.ylabel('Кількість замовлень')
+    plt.legend(['Неуспішні', 'Успішні'])
+    plt.grid(axis='y', linestyle='--', alpha=0.7)
+
+    # Обертаємо мітки дат для кращої читабельності
+    plt.xticks(rotation=45, ha='right')
+
+    # Форматуємо мітки осі X, щоб відображалися тільки кожні N днів
+    n_days = max(1, len(daily_orders) // 20)  # Виводимо не більше 20 міток
+    for i, tick in enumerate(ax.xaxis.get_ticklabels()):
+        if i % n_days != 0:
+            tick.set_visible(False)
+
+    plt.tight_layout()
+    plt.savefig(f"{column_dir}/daily_orders.png", dpi=300)
+    plt.close()
+
+    # 2. Графік відсотка успішних замовлень по днях
+    plt.figure(figsize=(14, 8))
+
+    # Обчислюємо відсоток успішних замовлень
+    success_rate = (daily_orders[1] / daily_orders['total'] * 100).fillna(0)
+
+    # Малюємо графік
+    ax = success_rate.plot(kind='line', marker='o', figsize=(14, 8), color='blue')
+
+    # Додаємо середню лінію
+    mean_rate = success_rate.mean()
+    plt.axhline(y=mean_rate, color='r', linestyle='--', label=f'Середній % успіху: {mean_rate:.1f}%')
+
+    # Налаштування графіка
+    plt.title('Відсоток успішних замовлень по днях')
+    plt.xlabel('Дата')
+    plt.ylabel('Відсоток успішних замовлень (%)')
+    plt.grid(True, linestyle='--', alpha=0.7)
+    plt.legend()
+
+    # Обертаємо мітки дат для кращої читабельності
+    plt.xticks(rotation=45, ha='right')
+
+    # Форматуємо мітки осі X, щоб відображалися тільки кожні N днів
+    for i, tick in enumerate(ax.xaxis.get_ticklabels()):
+        if i % n_days != 0:
+            tick.set_visible(False)
+
+    plt.tight_layout()
+    plt.savefig(f"{column_dir}/daily_success_rate.png", dpi=300)
+    plt.close()
+
+    # 3. Теплова карта кількості замовлень по годинам і дням тижня
+    plt.figure(figsize=(12, 8))
+
+    # Створюємо новий датафрейм з годинами та днями тижня
+    df_heatmap = df.copy()
+    df_heatmap['hour'] = df_heatmap[date_column].dt.hour
+    df_heatmap['day_of_week'] = df_heatmap[date_column].dt.day_name()
+
+    # Перевпорядковуємо дні тижня
+    days_order = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
+
+    # Створюємо зведену таблицю
+    heatmap_data = pd.pivot_table(df_heatmap, values='is_successful',
+                                  index='day_of_week', columns='hour',
+                                  aggfunc='count', fill_value=0)
+
+    # Перевпорядковуємо індекси для правильного відображення днів тижня
+    if not heatmap_data.empty:
+        heatmap_data = heatmap_data.reindex(days_order, fill_value=0)
+
+    # Малюємо теплову карту
+    sns.heatmap(heatmap_data, cmap='YlOrRd', annot=True, fmt='g')
+
+    # Налаштування графіка
+    plt.title('Розподіл замовлень по годинам і дням тижня')
+    plt.xlabel('Година дня')
+    plt.ylabel('День тижня')
+
+    plt.tight_layout()
+    plt.savefig(f"{column_dir}/hour_day_heatmap.png", dpi=300)
+    plt.close()
+
+    # 4. Розподіл успішності замовлень по місяцях
+    plt.figure(figsize=(12, 6))
+
+    # Створюємо новий датафрейм з місяцями
+    df_monthly = df.copy()
+    df_monthly['month'] = df_monthly[date_column].dt.month_name()
+    df_monthly['month_num'] = df_monthly[date_column].dt.month
+
+    # Групуємо дані по місяцях та успішності
+    monthly_data = df_monthly.groupby(['month_num', 'month', 'is_successful']).size().unstack(fill_value=0)
+
+    if 1 not in monthly_data.columns:
+        monthly_data[1] = 0
+    if 0 not in monthly_data.columns:
+        monthly_data[0] = 0
+
+    # Обчислюємо загальну кількість замовлень та відсоток успішних
+    monthly_data['total'] = monthly_data[0] + monthly_data[1]
+    monthly_data['success_rate'] = (monthly_data[1] / monthly_data['total'] * 100).fillna(0)
+
+    # Сортуємо за номером місяця
+    monthly_data = monthly_data.sort_index()
+
+    # Створюємо подвійний графік: стовпчиковий для кількості та лінійний для %
+    fig, ax1 = plt.subplots(figsize=(12, 6))
+
+    # Стовпчиковий графік кількості замовлень
+    bars = ax1.bar(monthly_data.index.get_level_values('month'), monthly_data['total'],
+                   color='lightblue', alpha=0.7)
+    ax1.set_xlabel('Місяць')
+    ax1.set_ylabel('Кількість замовлень', color='blue')
+    ax1.tick_params(axis='y', labelcolor='blue')
+
+    # Додаємо значення над стовпцями
+    for i, bar in enumerate(bars):
+        height = bar.get_height()
+        ax1.text(bar.get_x() + bar.get_width()/2., height + 0.1,
+                 f'{height:.0f}', ha='center', va='bottom')
+
+    # Створюємо другу вісь Y для відсотка успішності
+    ax2 = ax1.twinx()
+    ax2.plot(monthly_data.index.get_level_values('month'), monthly_data['success_rate'],
+             'ro-', linewidth=2, markersize=8)
+    ax2.set_ylabel('Відсоток успішних замовлень (%)', color='red')
+    ax2.tick_params(axis='y', labelcolor='red')
+
+    # Додаємо значення поруч з точками
+    for i, value in enumerate(monthly_data['success_rate']):
+        ax2.text(i, value + 2, f'{value:.1f}%', color='red', ha='center')
+
+    # Налаштування графіка
+    plt.title('Кількість замовлень та відсоток успішних по місяцях')
+    plt.grid(axis='y', linestyle='--', alpha=0.3)
+
+    plt.tight_layout()
+    plt.savefig(f"{column_dir}/monthly_distribution.png", dpi=300)
+    plt.close()
+
+    # 5. Графік тренду середньої вартості замовлень у часі (якщо є колонка order_amount)
+    if 'order_amount' in df.columns:
+        plt.figure(figsize=(14, 8))
+
+        # Створюємо новий датафрейм з датами
+        df_amount = df.copy()
+        df_amount['date'] = df_amount[date_column].dt.date
+
+        # Групуємо дані по датах та обчислюємо середню вартість
+        amount_by_date = df_amount.groupby(['date', 'is_successful'])['order_amount'].mean().unstack(fill_value=0)
+
+        if 1 not in amount_by_date.columns:
+            amount_by_date[1] = 0
+        if 0 not in amount_by_date.columns:
+            amount_by_date[0] = 0
+
+        # Сортуємо за датою
+        amount_by_date = amount_by_date.sort_index()
+
+        # Малюємо графік
+        ax = amount_by_date.plot(marker='o', figsize=(14, 8))
+
+        # Налаштування графіка
+        plt.title('Середня вартість замовлень по днях')
+        plt.xlabel('Дата')
+        plt.ylabel('Середня вартість замовлення')
+        plt.legend(['Неуспішні', 'Успішні'])
+        plt.grid(True, linestyle='--', alpha=0.7)
+
+        # Обертаємо мітки дат для кращої читабельності
+        plt.xticks(rotation=45, ha='right')
+
+        # Форматуємо мітки осі X, щоб відображалися тільки кожні N днів
+        for i, tick in enumerate(ax.xaxis.get_ticklabels()):
+            if i % n_days != 0:
+                tick.set_visible(False)
+
+        plt.tight_layout()
+        plt.savefig(f"{column_dir}/avg_amount_trend.png", dpi=300)
+        plt.close()
+
 # Обробка та візуалізація всіх колонок
 numerical_columns = df.select_dtypes(include=[np.int64, np.float64]).columns
 categorical_columns = df.select_dtypes(exclude=[np.int64, np.float64]).columns
@@ -383,7 +610,10 @@ for column in df.columns:
     df = preprocess_column(df, column)
 
     # Створюємо відповідні графіки залежно від типу даних
-    if column in numerical_columns:
+    if column == 'create_date':
+        # Особлива обробка для колонки дати
+        create_time_series_plots(df, column)
+    elif column in numerical_columns:
         create_violin_plot(df, column)
         create_log_violin_plot(df, column)
         create_density_plot(df, column)
