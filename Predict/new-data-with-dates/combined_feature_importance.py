@@ -58,7 +58,8 @@ feature_names_ua = {
     'order_lines_count': 'Кількість позицій в замовленні',
     'discount_total': 'Загальна знижка',
     'salesperson': 'Менеджер',
-    'source': 'Джерело замовлення'
+    'source': 'Джерело замовлення',
+    'create_date_months': 'Місяці від найранішої дати'
 }
 
 # Функція для отримання українських назв ознак
@@ -94,6 +95,53 @@ def load_data(file_path, group_column='is_successful'):
     # Перетворення стовпця групування на числовий тип (0 або 1), якщо це ще не зроблено
     df[group_column] = df[group_column].astype(int)
 
+    # Перетворення текстових колонок на числові для аналізу
+
+    # 1. create_date: перетворення у місяці від найранішої дати
+    try:
+        df['create_date'] = pd.to_datetime(df['create_date'], format='%Y-%m-%d %H:%M:%S.%f', errors='coerce')
+        min_date = df['create_date'].min()
+        df['create_date_months'] = ((df['create_date'] - min_date).dt.days / 30.44).round(2)  # приблизне число місяців
+        logger.info(f"Додано числову колонку 'create_date_months': місяці від {min_date}")
+    except Exception as e:
+        logger.warning(f"Помилка при обробці create_date: {e}")
+
+    # 2. day_of_week: перетворення у числа 1-7
+    if 'day_of_week' in df.columns:
+        days_mapping = {
+            'Monday': 1, 'Tuesday': 2, 'Wednesday': 3, 'Thursday': 4,
+            'Friday': 5, 'Saturday': 6, 'Sunday': 7
+        }
+        df['day_of_week_num'] = df['day_of_week'].map(days_mapping)
+        logger.info(f"Додано числову колонку 'day_of_week_num': дні тижня (1-7)")
+
+    # 3. month: перетворення у числа 1-12
+    if 'month' in df.columns:
+        months_mapping = {
+            'January': 1, 'February': 2, 'March': 3, 'April': 4,
+            'May': 5, 'June': 6, 'July': 7, 'August': 8,
+            'September': 9, 'October': 10, 'November': 11, 'December': 12
+        }
+        df['month_num'] = df['month'].map(months_mapping)
+        logger.info(f"Додано числову колонку 'month_num': місяці (1-12)")
+
+    # 4. quarter: перетворення у числа 1-4
+    if 'quarter' in df.columns:
+        if df['quarter'].dtype == 'object':
+            quarter_mapping = {'Q1': 1, 'Q2': 2, 'Q3': 3, 'Q4': 4, '1': 1, '2': 2, '3': 3, '4': 4}
+            df['quarter_num'] = df['quarter'].map(quarter_mapping)
+        else:
+            df['quarter_num'] = df['quarter']
+        logger.info(f"Додано числову колонку 'quarter_num': квартали (1-4)")
+
+    # 5. source: перетворення у 0 або 1
+    if 'source' in df.columns:
+        df['source_binary'] = df['source'].map({False: 0, True: 1})
+        # Для можливих текстових значень 'True' та 'False'
+        df.loc[df['source'].astype(str).str.lower() == 'true', 'source_binary'] = 1
+        df.loc[df['source'].astype(str).str.lower() == 'false', 'source_binary'] = 0
+        logger.info(f"Додано числову колонку 'source_binary': бінарне значення (0 або 1)")
+
     # Визначення колонок для аналізу (всі числові колонки)
     numeric_columns = df.select_dtypes(include=['number']).columns.tolist()
 
@@ -112,14 +160,14 @@ def load_data(file_path, group_column='is_successful'):
     logger.info(f"Для аналізу обрано {len(numeric_columns)} числових колонок.")
 
     # Видалення ідентифікаторів та дат з набору ознак
-    exclude_columns = [group_column, 'id', 'order_id', 'partner_id', 'date', 'timestamp']
+    exclude_columns = [group_column, 'id', 'order_id', 'partner_id', 'timestamp']  # Видалено 'date'
     feature_columns = [col for col in numeric_columns if col not in exclude_columns]
 
     logger.info(f"Після фільтрації залишилось {len(feature_columns)} ознак для аналізу.")
 
     # Обробка категоріальних ознак
     categorical_features = df.select_dtypes(include=['object', 'category']).columns.tolist()
-    categorical_features = [col for col in categorical_features if col not in exclude_columns]
+    categorical_features = [col for col in categorical_features if col not in exclude_columns + ['create_date']]  # Додано виключення 'create_date'
 
     if categorical_features:
         logger.info(f"Знайдено {len(categorical_features)} категоріальних ознак")
