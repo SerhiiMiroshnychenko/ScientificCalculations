@@ -501,31 +501,8 @@ def create_time_series_plots(df, date_column):
     ax.spines['top'].set_visible(False)
     ax.spines['right'].set_visible(False)
 
-    # Додаємо підписи для важливих точок
-    # Знаходимо максимум та мінімум
-    max_idx = success_rate.idxmax()
-    min_idx = success_rate.idxmin()
-    max_val = success_rate.max()
-    min_val = success_rate.min()
-
-    # Підписуємо максимальне і мінімальне значення
-    max_pos = success_rate.index.get_loc(max_idx)
-    min_pos = success_rate.index.get_loc(min_idx)
-
-    # Підписи до важливих точок
-    if not pd.isna(max_val):
-        ax.annotate(f'Макс: {max_val:.1f}%',
-                    xy=(max_pos, max_val),
-                    xytext=(max_pos, max_val + 5),
-                    ha='center', va='bottom',
-                    bbox=dict(boxstyle='round,pad=0.3', fc='yellow', alpha=0.3))
-
-    if not pd.isna(min_val):
-        ax.annotate(f'Мін: {min_val:.1f}%',
-                    xy=(min_pos, min_val),
-                    xytext=(min_pos, min_val - 10),
-                    ha='center', va='top',
-                    bbox=dict(boxstyle='round,pad=0.3', fc='yellow', alpha=0.3))
+    # Видаляємо підписи для важливих точок
+    # Нічого не додаємо замість цього
 
     plt.tight_layout()
     plt.savefig(f"{column_dir}/monthly_success_rate.png", dpi=300)
