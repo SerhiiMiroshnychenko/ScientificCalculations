@@ -57,7 +57,8 @@ feature_names_ua = {
     'order_lines_count': 'Кількість позицій в замовленні',
     'discount_total': 'Загальна знижка',
     'salesperson': 'Менеджер',
-    'source': 'Джерело замовлення'
+    'source': 'Джерело замовлення',
+    'create_date_months': 'Місяці від найранішої дати'
 }
 
 # Функція для отримання українських назв ознак
@@ -101,7 +102,18 @@ def evaluate_features(X, y, cv=5):
     if high_corr_pairs:
         logger.warning(f"Виявлено {len(high_corr_pairs)} пар ознак з високою кореляцією (>0.8):")
         for pair in high_corr_pairs[:5]:
-            logger.warning(f"  {pair[0]} <-> {pair[1]}: {correlation_matrix.loc[pair[0], pair[1]]:.3f}")
+            try:
+                # Спробуємо різні способи отримати скалярне значення
+                try:
+                    corr_value = correlation_matrix.at[pair[0], pair[1]]
+                except:
+                    try:
+                        corr_value = correlation_matrix.loc[pair[0], pair[1]].values[0][0]
+                    except:
+                        corr_value = correlation_matrix.loc[pair[0], pair[1]].iloc[0, 0]
+                logger.warning(f"  {pair[0]} <-> {pair[1]}: {corr_value:.3f}")
+            except Exception as e:
+                logger.warning(f"  {pair[0]} <-> {pair[1]}: помилка форматування ({str(e)})")
         if len(high_corr_pairs) > 5:
             logger.warning(f"  ... та {len(high_corr_pairs)-5} інших пар")
 
@@ -370,34 +382,107 @@ def main():
         else:
             logger.info("Пропущених значень не виявлено")
 
-        # 3. Кодуємо категоріальні змінні
-        logger.info("Кодуємо категоріальні змінні...")
-        cat_columns = df.select_dtypes(include=['object']).columns.tolist()
-        ignore_cols = ['order_id', 'state']
-        cat_columns = [col for col in cat_columns if col not in ignore_cols]
+        # 3. Обробляємо колонку з датою
         df_encoded = df.copy()
+        try:
+            # Перевіряємо наявність колонки create_date
+            if 'create_date' not in df_encoded.columns:
+                logger.error("Колонка 'create_date' відсутня в DataFrame!")
+                raise ValueError("Колонка 'create_date' відсутня")
+
+            # Виводимо інформацію про вхідні дані
+            logger.info(f"Тип даних колонки 'create_date' до перетворення: {df_encoded['create_date'].dtype}")
+            logger.info(f"Перші 5 значень 'create_date': {df_encoded['create_date'].head(5).tolist()}")
+
+            # Перетворюємо дати
+            df_encoded['create_date'] = pd.to_datetime(df_encoded['create_date'], errors='coerce')
+
+            # Перевіряємо результат перетворення
+            null_after = df_encoded['create_date'].isnull().sum()
+            if null_after > 0:
+                logger.warning(f"Після перетворення дат з'явилося {null_after} пропущених значень")
+
+            # Створюємо колонку місяців
+            if df_encoded['create_date'].notnull().any():
+                min_date = df_encoded['create_date'].min()
+                logger.info(f"Мінімальна дата: {min_date}")
+                df_encoded['create_date_months'] = ((df_encoded['create_date'] - min_date).dt.days / 30.44).round(2)
+
+                # Перевіряємо результат
+                nan_count = df_encoded['create_date_months'].isnull().sum()
+                if nan_count > 0:
+                    logger.warning(f"У колонці 'create_date_months' є {nan_count} пропущених значень")
+                    # Заповнюємо пропущені значення нулями
+                    df_encoded['create_date_months'] = df_encoded['create_date_months'].fillna(0)
+
+                logger.info(f"Статистика колонки 'create_date_months': мін={df_encoded['create_date_months'].min()}, макс={df_encoded['create_date_months'].max()}, середнє={df_encoded['create_date_months'].mean()}")
+            else:
+                logger.error("Усі дати після перетворення стали NaT!")
+                df_encoded['create_date_months'] = 0
+
+            logger.info(f"Додано числову колонку 'create_date_months'")
+        except Exception as e:
+            logger.error(f"Помилка при обробці create_date: {e}")
+            df_encoded['create_date_months'] = 0
+            logger.warning("Створено колонку 'create_date_months' з нульовими значеннями через помилку")
+
+        # 4. Кодуємо категоріальні змінні
+        logger.info("Кодуємо категоріальні змінні...")
+        cat_columns = df_encoded.select_dtypes(include=['object']).columns.tolist()
+        ignore_cols = ['order_id', 'state', 'create_date']
+        cat_columns = [col for col in cat_columns if col not in ignore_cols]
         encoders = {}
         for col in cat_columns:
             encoder = LabelEncoder()
             df_encoded[col] = encoder.fit_transform(df_encoded[col].astype(str))
             encoders[col] = encoder
 
-        # 4. Вибираємо числові змінні
-        num_columns = df.select_dtypes(include=['number']).columns.tolist()
+        # 5. Вибираємо числові змінні
+        num_columns = df_encoded.select_dtypes(include=['number']).columns.tolist()
         if 'is_successful' in num_columns:
             num_columns.remove('is_successful')
+        # Переконуємося, що create_date_months є у списку числових колонок
+        if 'create_date_months' in df_encoded.columns and 'create_date_months' not in num_columns:
+            num_columns.append('create_date_months')
 
-        # 5. Формуємо повний набір ознак
+        # 6. Формуємо повний набір ознак
+        # Виключаємо колонку з датами з аналізу
+        columns_to_exclude = ['create_date']
+        cat_columns = [col for col in cat_columns if col not in columns_to_exclude]
         X_full = df_encoded[num_columns + cat_columns]
         y = df_encoded['is_successful']
 
-        # 6. Оцінюємо важливість ознак
+        # 6.1 Обробка пропущених значень
+        logger.info("Перевіряємо наявність пропущених значень в X_full...")
+        missing_values = X_full.isnull().sum()
+        columns_with_missing = missing_values[missing_values > 0]
+        if not columns_with_missing.empty:
+            logger.warning(f"Знайдено стовпці з пропущеними значеннями в X_full: {columns_with_missing}")
+            # Заповнюємо пропущені значення медіаною для кожної колонки
+            for col in columns_with_missing.index:
+                logger.info(f"Заповнюємо пропущені значення для колонки '{col}' медіаною")
+                X_full[col] = X_full[col].fillna(X_full[col].median())
+
+            # Перевіряємо чи всі пропущені значення заповнені
+            missing_after = X_full.isnull().sum().sum()
+            if missing_after > 0:
+                logger.warning(f"Після заповнення залишилося {missing_after} пропущених значень")
+                logger.warning("Видаляємо рядки з пропущеними значеннями")
+                # Якщо є ще пропущені значення, видаляємо такі рядки
+                valid_indices = ~X_full.isnull().any(axis=1)
+                X_full = X_full[valid_indices]
+                y = y[valid_indices]
+                logger.info(f"Після видалення залишилося {len(X_full)} рядків з {len(valid_indices)} початкових")
+        else:
+            logger.info("Пропущених значень не виявлено в X_full")
+
+        # 7. Оцінюємо важливість ознак
         results_df, models_dict = evaluate_features(X_full, y, cv=5)
 
-        # 7. Оцінюємо моделі з різною кількістю ознак
+        # 8. Оцінюємо моделі з різною кількістю ознак
         # performance_df = evaluate_models_with_features(X_full, y, results_df)
 
-        # 8. Візуалізація результатів
+        # 9. Візуалізація результатів
         logger.info("Створюємо візуалізації...")
 
         # 8.1 Візуалізація ТОП-15 найважливіших ознак
@@ -477,7 +562,7 @@ def main():
         plt.tight_layout()
         plt.savefig(f"{results_dir}/correlation_matrix.png")
 
-        # 9. Зберігаємо результати
+        # 10. Зберігаємо результати
         logger.info("Зберігаємо результати...")
         results_df.to_csv(f"{results_dir}/feature_selection_results.csv", index=False)
         # performance_df.to_csv(f"{results_dir}/model_performance.csv", index=False)
@@ -491,7 +576,7 @@ def main():
         #             for i, feature in enumerate(top_n, 1):
         #                 f.write(f"{i}. {feature}\n")
 
-        # 10. Виводимо таблицю
+        # 11. Виводимо таблицю
         # Змінюємо порядок стовпців відповідно до ТЗ
         display_columns = ['Feature', 'MI Score', 'F Score', 'Spearman Score',
                            'LR Coefficient', 'DT Score', 'RF Score', 'XGBoost Score', 'Total Importance Rank']
