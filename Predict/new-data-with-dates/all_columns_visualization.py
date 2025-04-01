@@ -542,6 +542,9 @@ def create_time_series_plots(df, date_column):
     ax2.set_ylabel('Відсоток успішних замовлень (%)', color='red')
     ax2.tick_params(axis='y', labelcolor='red')
 
+    # Встановлюємо шкалу від 0 до 100% для осі Y2
+    ax2.set_ylim(0, 100)
+
     # Додаємо значення поруч з точками
     for i, value in enumerate(monthly_data['success_rate']):
         ax2.text(i, value + 2, f'{value:.1f}%', color='red', ha='center')
@@ -561,38 +564,225 @@ def create_time_series_plots(df, date_column):
         # Створюємо новий датафрейм з датами
         df_amount = df.copy()
         df_amount['date'] = df_amount[date_column].dt.date
+        df_amount['year_month'] = df_amount[date_column].dt.strftime('%Y-%m')
 
-        # Групуємо дані по датах та обчислюємо середню вартість
-        amount_by_date = df_amount.groupby(['date', 'is_successful'])['order_amount'].mean().unstack(fill_value=0)
+        # Групуємо дані помісячно (замість щоденно) для кращої візуалізації трендів
+        monthly_amount = df_amount.groupby(['year_month', 'is_successful'])['order_amount'].mean().unstack(fill_value=0)
 
-        if 1 not in amount_by_date.columns:
-            amount_by_date[1] = 0
-        if 0 not in amount_by_date.columns:
-            amount_by_date[0] = 0
+        if 1 not in monthly_amount.columns:
+            monthly_amount[1] = 0
+        if 0 not in monthly_amount.columns:
+            monthly_amount[0] = 0
 
         # Сортуємо за датою
-        amount_by_date = amount_by_date.sort_index()
+        monthly_amount = monthly_amount.sort_index()
 
-        # Малюємо графік
-        ax = amount_by_date.plot(marker='o', figsize=(14, 8))
+        # Створюємо графік
+        fig, ax = plt.subplots(figsize=(14, 8))
 
-        # Налаштування графіка
-        plt.title('Середня вартість замовлень по днях')
-        plt.xlabel('Дата')
-        plt.ylabel('Середня вартість замовлення')
-        plt.legend(['Неуспішні', 'Успішні'])
+        # Малюємо лінії для кожної категорії
+        ax.plot(range(len(monthly_amount)), monthly_amount[0], 'o-', color='blue', linewidth=2, label='Неуспішні')
+        ax.plot(range(len(monthly_amount)), monthly_amount[1], 'o-', color='orange', linewidth=2, label='Успішні')
+
+        # Робимо красиві мітки на осі X з відображенням років
+        plt.xticks(range(len(monthly_amount)), monthly_amount.index, rotation=45, ha='right')
+
+        # Відображаємо тільки кожну N-ту мітку, щоб уникнути перекриття
+        n = max(1, len(monthly_amount) // 12)  # Відображаємо приблизно 12 міток
+        for i, label in enumerate(ax.get_xticklabels()):
+            if i % n != 0:
+                label.set_visible(False)
+
+        # Форматуємо мітки на осі Y для відображення тисяч
+        import matplotlib.ticker as ticker
+        formatter = ticker.FuncFormatter(lambda x, pos: '{:,.0f}'.format(x))
+        ax.yaxis.set_major_formatter(formatter)
+
+        # Додаємо заголовок і підписи до осей
+        plt.title('Середня вартість замовлень по місяцях', fontsize=14)
+        plt.xlabel('Рік-Місяць', fontsize=12)
+        plt.ylabel('Середня вартість замовлення, грн', fontsize=12)
+
+        # Додаємо сітку для кращого сприйняття
         plt.grid(True, linestyle='--', alpha=0.7)
 
-        # Обертаємо мітки дат для кращої читабельності
-        plt.xticks(rotation=45, ha='right')
+        # Додаємо легенду
+        plt.legend(fontsize=10)
 
-        # Форматуємо мітки осі X, щоб відображалися тільки кожні N днів
-        for i, tick in enumerate(ax.xaxis.get_ticklabels()):
-            if i % n_days != 0:
-                tick.set_visible(False)
+        # Додаємо ефекти для виділення тренду
+        ax.spines['top'].set_visible(False)
+        ax.spines['right'].set_visible(False)
 
+        # Зберігаємо графік
         plt.tight_layout()
         plt.savefig(f"{column_dir}/avg_amount_trend.png", dpi=300)
+        plt.close()
+
+        # Додатковий графік - порівняння розподілу вартості по роках
+        plt.figure(figsize=(12, 8))
+
+        # Додаємо стовпець для року
+        df_amount['year'] = df_amount[date_column].dt.year
+
+        # Групуємо дані по роках для статистики
+        yearly_stats = df_amount.groupby(['year', 'is_successful'])['order_amount'].agg(['mean', 'median']).unstack()
+
+        # Рисуємо графік з групованими стовпцями для середніх значень
+        means = yearly_stats['mean']
+        x = np.arange(len(means.index))
+        width = 0.35
+
+        fig, ax = plt.subplots(figsize=(12, 6))
+
+        # Рисуємо стовпці для неуспішних і успішних замовлень
+        if 0 in means.columns:
+            rects1 = ax.bar(x - width/2, means[0], width, label='Неуспішні', color='blue', alpha=0.7)
+        else:
+            rects1 = ax.bar(x - width/2, [0] * len(means.index), width, label='Неуспішні', color='blue', alpha=0.7)
+
+        if 1 in means.columns:
+            rects2 = ax.bar(x + width/2, means[1], width, label='Успішні', color='orange', alpha=0.7)
+        else:
+            rects2 = ax.bar(x + width/2, [0] * len(means.index), width, label='Успішні', color='orange', alpha=0.7)
+
+        # Додаємо підписи, назву і легенду
+        ax.set_xlabel('Рік')
+        ax.set_ylabel('Середня вартість замовлення, грн')
+        ax.set_title('Порівняння середньої вартості замовлень по роках')
+        ax.set_xticks(x)
+        ax.set_xticklabels(means.index)
+        ax.legend()
+
+        # Додаємо значення над стовпцями
+        def autolabel(rects):
+            for rect in rects:
+                height = rect.get_height()
+                if height > 0:
+                    ax.annotate('{:,.0f}'.format(height),
+                                xy=(rect.get_x() + rect.get_width() / 2, height),
+                                xytext=(0, 3),  # 3 пікселі вертикальний зсув
+                                textcoords="offset points",
+                                ha='center', va='bottom')
+
+        autolabel(rects1)
+        autolabel(rects2)
+
+        plt.tight_layout()
+        plt.savefig(f"{column_dir}/yearly_avg_amount.png", dpi=300)
+        plt.close()
+
+    # 5. Графік тренду середньої вартості замовлень у часі (якщо є колонка order_amount)
+    if 'order_amount' in df.columns:
+        plt.figure(figsize=(14, 8))
+
+        # Створюємо новий датафрейм з датами
+        df_amount = df.copy()
+        df_amount['date'] = df_amount[date_column].dt.date
+        df_amount['year_month'] = df_amount[date_column].dt.strftime('%Y-%m')
+
+        # Групуємо дані помісячно (замість щоденно) для кращої візуалізації трендів
+        monthly_amount = df_amount.groupby(['year_month', 'is_successful'])['order_amount'].mean().unstack(fill_value=0)
+
+        if 1 not in monthly_amount.columns:
+            monthly_amount[1] = 0
+        if 0 not in monthly_amount.columns:
+            monthly_amount[0] = 0
+
+        # Сортуємо за датою
+        monthly_amount = monthly_amount.sort_index()
+
+        # Створюємо графік
+        fig, ax = plt.subplots(figsize=(14, 8))
+
+        # Малюємо лінії для кожної категорії
+        ax.plot(range(len(monthly_amount)), monthly_amount[0], 'o-', color='blue', linewidth=2, label='Неуспішні')
+        ax.plot(range(len(monthly_amount)), monthly_amount[1], 'o-', color='orange', linewidth=2, label='Успішні')
+
+        # Робимо красиві мітки на осі X з відображенням років
+        plt.xticks(range(len(monthly_amount)), monthly_amount.index, rotation=45, ha='right')
+
+        # Відображаємо тільки кожну N-ту мітку, щоб уникнути перекриття
+        n = max(1, len(monthly_amount) // 12)  # Відображаємо приблизно 12 міток
+        for i, label in enumerate(ax.get_xticklabels()):
+            if i % n != 0:
+                label.set_visible(False)
+
+        # Форматуємо мітки на осі Y для відображення тисяч
+        import matplotlib.ticker as ticker
+        formatter = ticker.FuncFormatter(lambda x, pos: '{:,.0f}'.format(x))
+        ax.yaxis.set_major_formatter(formatter)
+
+        # Додаємо заголовок і підписи до осей
+        plt.title('Середня вартість замовлень по місяцях', fontsize=14)
+        plt.xlabel('Рік-Місяць', fontsize=12)
+        plt.ylabel('Середня вартість замовлення, грн', fontsize=12)
+
+        # Додаємо сітку для кращого сприйняття
+        plt.grid(True, linestyle='--', alpha=0.7)
+
+        # Додаємо легенду
+        plt.legend(fontsize=10)
+
+        # Додаємо ефекти для виділення тренду
+        ax.spines['top'].set_visible(False)
+        ax.spines['right'].set_visible(False)
+
+        # Зберігаємо графік
+        plt.tight_layout()
+        plt.savefig(f"{column_dir}/avg_amount_trend.png", dpi=300)
+        plt.close()
+
+        # Додатковий графік - порівняння розподілу вартості по роках
+        plt.figure(figsize=(12, 8))
+
+        # Додаємо стовпець для року
+        df_amount['year'] = df_amount[date_column].dt.year
+
+        # Групуємо дані по роках для статистики
+        yearly_stats = df_amount.groupby(['year', 'is_successful'])['order_amount'].agg(['mean', 'median']).unstack()
+
+        # Рисуємо графік з групованими стовпцями для середніх значень
+        means = yearly_stats['mean']
+        x = np.arange(len(means.index))
+        width = 0.35
+
+        fig, ax = plt.subplots(figsize=(12, 6))
+
+        # Рисуємо стовпці для неуспішних і успішних замовлень
+        if 0 in means.columns:
+            rects1 = ax.bar(x - width/2, means[0], width, label='Неуспішні', color='blue', alpha=0.7)
+        else:
+            rects1 = ax.bar(x - width/2, [0] * len(means.index), width, label='Неуспішні', color='blue', alpha=0.7)
+
+        if 1 in means.columns:
+            rects2 = ax.bar(x + width/2, means[1], width, label='Успішні', color='orange', alpha=0.7)
+        else:
+            rects2 = ax.bar(x + width/2, [0] * len(means.index), width, label='Успішні', color='orange', alpha=0.7)
+
+        # Додаємо підписи, назву і легенду
+        ax.set_xlabel('Рік')
+        ax.set_ylabel('Середня вартість замовлення, грн')
+        ax.set_title('Порівняння середньої вартості замовлень по роках')
+        ax.set_xticks(x)
+        ax.set_xticklabels(means.index)
+        ax.legend()
+
+        # Додаємо значення над стовпцями
+        def autolabel(rects):
+            for rect in rects:
+                height = rect.get_height()
+                if height > 0:
+                    ax.annotate('{:,.0f}'.format(height),
+                                xy=(rect.get_x() + rect.get_width() / 2, height),
+                                xytext=(0, 3),  # 3 пікселі вертикальний зсув
+                                textcoords="offset points",
+                                ha='center', va='bottom')
+
+        autolabel(rects1)
+        autolabel(rects2)
+
+        plt.tight_layout()
+        plt.savefig(f"{column_dir}/yearly_avg_amount.png", dpi=300)
         plt.close()
 
 # Обробка та візуалізація всіх колонок
