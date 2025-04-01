@@ -297,6 +297,13 @@ def create_category_histogram(df, column_name):
         days_order = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
         # Перевпорядковуємо індекси для днів тижня
         categories_to_show = category_counts.reindex(days_order)
+    # Особлива обробка для місяців
+    elif column_name == 'month':
+        # Порядок місяців від Січня до Грудня
+        months_order = ['January', 'February', 'March', 'April', 'May', 'June',
+                        'July', 'August', 'September', 'October', 'November', 'December']
+        # Перевпорядковуємо індекси для місяців
+        categories_to_show = category_counts.reindex(months_order)
     else:
         # Якщо колонка має менше 20 унікальних значень, показуємо всі категорії
         # В іншому випадку, показуємо тільки 20 найчастіших категорій
