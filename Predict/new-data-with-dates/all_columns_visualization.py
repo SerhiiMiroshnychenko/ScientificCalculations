@@ -459,25 +459,50 @@ def create_time_series_plots(df, date_column):
     # Обчислюємо відсоток успішних замовлень
     success_rate = (monthly_orders[1] / monthly_orders['total'] * 100).fillna(0)
 
+    # Створюємо датафрейм для щоденних даних
+    df_daily_success = df.copy()
+    # Додаємо фільтр, щоб виключити 2025 рік
+    df_daily_success = df_daily_success[df_daily_success[date_column].dt.year < 2025]
+    df_daily_success['date'] = df_daily_success[date_column].dt.date
+
+    # Групуємо щоденні дані
+    daily_success = df_daily_success.groupby(['date', 'is_successful']).size().unstack(fill_value=0)
+    if 1 not in daily_success.columns:
+        daily_success[1] = 0
+    if 0 not in daily_success.columns:
+        daily_success[0] = 0
+
+    daily_success['total'] = daily_success[0] + daily_success[1]
+    daily_success['success_rate'] = (daily_success[1] / daily_success['total'] * 100).fillna(0)
+
     # Створюємо графік
     fig, ax = plt.subplots(figsize=(14, 8))
 
-    # Малюємо графік з маркерами для покращення візуалізації
-    ax.plot(range(len(success_rate)), success_rate, 'o-', color='crimson', linewidth=2.5, markersize=6)
+    # Малюємо щоденні дані напівпрозорими точками
+    ax.scatter(daily_success.index, daily_success['success_rate'],
+               color='blue', alpha=0.1, s=10, label='Щоденні дані')
 
-    # Додаємо горизонтальну лінію середнього значення
-    mean_rate = success_rate.mean()
-    ax.axhline(y=mean_rate, color='blue', linestyle='--', alpha=0.7,
-               label=f'Середній % успіху: {mean_rate:.1f}%')
+    # Підготовка дат для місячних даних
+    month_dates = []
+    # Конвертуємо рядки 'YYYY-MM' в об'єкти дати (беремо середину місяця)
+    for ym in success_rate.index:
+        year, month = map(int, ym.split('-'))
+        month_dates.append(pd.Timestamp(year=year, month=month, day=15))
 
-    # Робимо красиві мітки на осі X з відображенням років
-    plt.xticks(range(len(success_rate)), success_rate.index, rotation=45, ha='right')
+    # Малюємо місячну агрегацію як окремі точки з лінією
+    ax.plot(month_dates, success_rate,
+            'o-', color='crimson', linewidth=2, markersize=6, label='Місячна агрегація')
 
-    # Відображаємо тільки кожну N-ту мітку, щоб уникнути перекриття
-    n = max(1, len(success_rate) // 12)  # Відображаємо приблизно 12 міток
-    for i, label in enumerate(ax.get_xticklabels()):
-        if i % n != 0:
-            label.set_visible(False)
+    # Форматуємо дати на осі X
+    import matplotlib.dates as mdates
+    years = mdates.YearLocator()   # кожен рік
+    months = mdates.MonthLocator()  # кожен місяць
+    years_fmt = mdates.DateFormatter('%Y')
+
+    # Форматування осі X
+    ax.xaxis.set_major_locator(years)
+    ax.xaxis.set_major_formatter(years_fmt)
+    ax.xaxis.set_minor_locator(months)
 
     # Встановлюємо діапазон осі Y від 0 до 100 відсотків
     ax.set_ylim(0, 100)
@@ -486,23 +511,25 @@ def create_time_series_plots(df, date_column):
     formatter = ticker.FuncFormatter(lambda x, pos: f'{x:.0f}%')
     ax.yaxis.set_major_formatter(formatter)
 
+    # Додаємо середній рівень успішності
+    mean_rate = daily_success['success_rate'].mean()
+    ax.axhline(y=mean_rate, color='blue', linestyle='--', alpha=0.7,
+               label=f'Середній % успіху: {mean_rate:.1f}%')
+
     # Додаємо заголовок і підписи до осей
     plt.title('Відсоток успішних замовлень по місяцях', fontsize=14)
-    plt.xlabel('Рік-Місяць', fontsize=12)
+    plt.xlabel('Дата', fontsize=12)
     plt.ylabel('Відсоток успішних замовлень', fontsize=12)
 
     # Додаємо сітку для кращого сприйняття
     plt.grid(True, linestyle='--', alpha=0.7)
 
     # Додаємо легенду
-    plt.legend(fontsize=10)
+    plt.legend(fontsize=10, loc='upper right')
 
     # Додаємо ефекти для виділення тренду
     ax.spines['top'].set_visible(False)
     ax.spines['right'].set_visible(False)
-
-    # Видаляємо підписи для важливих точок
-    # Нічого не додаємо замість цього
 
     plt.tight_layout()
     plt.savefig(f"{column_dir}/monthly_success_rate.png", dpi=300)
@@ -1028,7 +1055,11 @@ def create_time_series_plots(df, date_column):
     # Створюємо графік
     fig, ax = plt.subplots(figsize=(14, 8))
 
-    # Малюємо тільки ковзне середнє як лінію
+    # Малюємо щоденні дані напівпрозорими точками
+    ax.scatter(daily_counts.index, daily_counts['success_rate'],
+               color='blue', alpha=0.1, s=10, label='Щоденні дані')
+
+    # Малюємо ковзне середнє як лінію
     ax.plot(daily_counts.index, rolling_avg,
             color='red', linewidth=2.5, label=f'Ковзне середнє ({window} днів)')
 
@@ -1047,14 +1078,8 @@ def create_time_series_plots(df, date_column):
     formatter = ticker.FuncFormatter(lambda x, pos: f'{x:.0f}%')
     ax.yaxis.set_major_formatter(formatter)
 
-    # Регулюємо масштаб осі Y для кращого відображення тренду
-    # Знаходимо мінімальне та максимальне значення ковзного середнього з невеликим запасом
-    min_rolling = rolling_avg.min()
-    max_rolling = rolling_avg.max()
-    margin = (max_rolling - min_rolling) * 0.1  # 10% запас
-
-    # Встановлюємо межі по Y з запасом
-    ax.set_ylim(max(0, min_rolling - margin), min(100, max_rolling + margin))
+    # Встановлюємо діапазон осі Y від 0 до 100 відсотків
+    ax.set_ylim(0, 100)
 
     # Додаємо середній рівень успішності
     mean_rate = daily_counts['success_rate'].mean()
