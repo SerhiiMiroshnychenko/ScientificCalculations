@@ -95,24 +95,32 @@ print(f"{len(n2_percentages) = }")
 
 # Параметри для побудови графіка
 time_per_step = 10  # Час на один крок, хв
-t_celsius = 100  # Температура в градусах Цельсія
+
+# Список температур на кожному кроці (в градусах Цельсія)
+temperatures = [100, 110, 123, 136, 141, 154, 168, 152, 143, 131, 120, 110]
 
 # Перевірка на однакову довжину всіх списків
 if not (len(co_percentages) == len(co2_percentages) == len(o2_percentages) == len(n2_percentages)):
     raise ValueError("Всі списки з частками компонентів повинні мати однакову довжину")
 
+# Перевірка на відповідність кількості кроків та температур
+if len(temperatures) < len(co_percentages):
+    raise ValueError(f"Список температур повинен мати не менше елементів ніж кількість кроків: {len(co_percentages)}")
+
 steps = len(co_percentages)  # Кількість точок (кроків + початкова точка)
 times = [i * time_per_step for i in range(steps)]  # Час у хвилинах
+
+# Обмежуємо список температур кількістю кроків
+temperatures = temperatures[:steps]
 
 # Ініціалізація масиву для зберігання теплоємностей
 heat_capacities = []
 
-print("Зміна середньої об'ємної теплоємності газової суміші при зміні складу\n")
-print(f"Температура: {t_celsius}°C ({t_celsius + T_STANDARD:.2f} К)\n")
+print("Зміна середньої об'ємної теплоємності газової суміші при зміні складу та температури\n")
 
 # Виведення заголовка таблиці з використанням табличної форми
-table_width = 96
-header = f"| {'№':^4} | {'Час, хв':^10} | {'CO, %':^10} | {'CO₂, %':^10} | {'O₂, %':^10} | {'N₂, %':^10} | {'Теплоємність, кДж/(м³·К)':^25} |"
+table_width = 110
+header = f"| {'№':^4} | {'Час, хв':^10} | {'T, °C':^8} | {'CO, %':^10} | {'CO₂, %':^10} | {'O₂, %':^10} | {'N₂, %':^10} | {'Теплоємність, кДж/(м³·К)':^25} |"
 
 print("=" * table_width)
 print(header)
@@ -126,6 +134,9 @@ for step in range(steps):
     o2_percent = o2_percentages[step]
     n2_percent = n2_percentages[step]
 
+    # Отримуємо температуру для поточного кроку
+    t_celsius = temperatures[step]
+
     # Перетворення відсотків в частки
     r_co = co_percent / 100
     r_co2 = co2_percent / 100
@@ -138,32 +149,58 @@ for step in range(steps):
         heat_capacities.append(cp_mix_vol)
 
         # Виведення результатів у вигляді таблиці
-        row = f"| {step:^4} | {step * time_per_step:^10} | {co_percent:^10.1f} | {co2_percent:^10.1f} | {o2_percent:^10.1f} | {n2_percent:^10.1f} | {cp_mix_vol:^25.4f} |"
+        row = f"| {step:^4} | {step * time_per_step:^10} | {t_celsius:^8} | {co_percent:^10.1f} | {co2_percent:^10.1f} | {o2_percent:^10.1f} | {n2_percent:^10.1f} | {cp_mix_vol:^25.4f} |"
         print(row)
 
     except ValueError as e:
-        error_row = f"| {step:^4} | {step * time_per_step:^10} | {co_percent:^10.1f} | {co2_percent:^10.1f} | {o2_percent:^10.1f} | {n2_percent:^10.1f} | {'ПОМИЛКА: ' + str(e):^25} |"
+        error_row = f"| {step:^4} | {step * time_per_step:^10} | {t_celsius:^8} | {co_percent:^10.1f} | {co2_percent:^10.1f} | {o2_percent:^10.1f} | {n2_percent:^10.1f} | {'ПОМИЛКА: ' + str(e):^25} |"
         print(error_row)
 
 print("=" * table_width)
 
-# Побудова графіку, якщо є дані для побудови
+# Побудова графіків, якщо є дані для побудови
 if heat_capacities:
-    plt.figure(figsize=(10, 6))
-    plt.plot(times, heat_capacities, marker='o', linestyle='-', color='b')
-    plt.grid(True)
-    plt.xlabel('Час, хв', fontsize=12)
-    plt.ylabel('Середня об\'ємна теплоємність, кДж/(м³·К)', fontsize=12)
-    plt.title('Зміна середньої об\'ємної теплоємності газової суміші з часом', fontsize=14)
+    # Графік залежності теплоємності від часу
+    fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(12, 10))
 
-    # Додавання пояснень до графіку
-    plt.annotate(f'Початковий склад:\nCO: {co_percentages[0]}%\nCO₂: {co2_percentages[0]}%\nO₂: {o2_percentages[0]}%\nN₂: {n2_percentages[0]}%',
-                 xy=(times[0], heat_capacities[0]), xytext=(times[0]+5, heat_capacities[0]+0.05),
+    # Перший графік - залежність від часу
+    ax1.plot(times, heat_capacities, marker='o', linestyle='-', color='b')
+    ax1.grid(True)
+    ax1.set_xlabel('Час, хв', fontsize=12)
+    ax1.set_ylabel('Середня об\'ємна теплоємність, кДж/(м³·К)', fontsize=12)
+    ax1.set_title('Зміна середньої об\'ємної теплоємності газової суміші з часом', fontsize=14)
+
+    # Додавання температур до першого графіку
+    for i, temp in enumerate(temperatures):
+        ax1.annotate(f'{temp}°C', xy=(times[i], heat_capacities[i]),
+                     xytext=(times[i], heat_capacities[i] + 0.02),
+                     bbox=dict(boxstyle="round,pad=0.2", facecolor="white", edgecolor="black", alpha=0.7),
+                     ha='center')
+
+    # Другий графік - залежність від температури
+    ax2.plot(temperatures, heat_capacities, marker='o', linestyle='-', color='r')
+    ax2.grid(True)
+    ax2.set_xlabel('Температура, °C', fontsize=12)
+    ax2.set_ylabel('Середня об\'ємна теплоємність, кДж/(м³·К)', fontsize=12)
+    ax2.set_title('Зміна середньої об\'ємної теплоємності газової суміші з температурою', fontsize=14)
+
+    # Додавання номерів кроків до другого графіку
+    for i in range(steps):
+        ax2.annotate(f'Крок {i}', xy=(temperatures[i], heat_capacities[i]),
+                     xytext=(temperatures[i], heat_capacities[i] - 0.02),
+                     bbox=dict(boxstyle="round,pad=0.2", facecolor="white", edgecolor="black", alpha=0.7),
+                     ha='center')
+
+    plt.tight_layout()
+
+    # Додавання пояснень до першого графіку
+    ax1.annotate(f'Початковий склад:\nCO: {co_percentages[0]}%\nCO₂: {co2_percentages[0]}%\nO₂: {o2_percentages[0]}%\nN₂: {n2_percentages[0]}%\nT: {temperatures[0]}°C',
+                 xy=(times[0], heat_capacities[0]), xytext=(times[0]+15, heat_capacities[0]+0.05),
                  bbox=dict(boxstyle="round,pad=0.3", facecolor="white", edgecolor="black", alpha=1),
                  arrowprops=dict(facecolor='black', shrink=0.05))
 
-    plt.annotate(f'Кінцевий склад:\nCO: {co_percentages[-1]}%\nCO₂: {co2_percentages[-1]}%\nO₂: {o2_percentages[-1]}%\nN₂: {n2_percentages[-1]}%',
-                 xy=(times[-1], heat_capacities[-1]), xytext=(times[-1], heat_capacities[-1]-0.15),
+    ax1.annotate(f'Кінцевий склад:\nCO: {co_percentages[-1]}%\nCO₂: {co2_percentages[-1]}%\nO₂: {o2_percentages[-1]}%\nN₂: {n2_percentages[-1]}%\nT: {temperatures[-1]}°C',
+                 xy=(times[-1], heat_capacities[-1]), xytext=(times[-1]-15, heat_capacities[-1]-0.15),
                  bbox=dict(boxstyle="round,pad=0.3", facecolor="white", edgecolor="black", alpha=1),
                  arrowprops=dict(facecolor='black', shrink=0.05))
 
@@ -177,8 +214,10 @@ if heat_capacities:
 
     if len(heat_capacities) > 1:
         print("\nВисновки:")
-        print(f"При зміні складу газової суміші від початкового до кінцевого")
+        print(f"При зміні складу газової суміші та температури від початкового до кінцевого стану")
         print(f"середня об'ємна теплоємність змінюється з {heat_capacities[0]:.4f} до {heat_capacities[-1]:.4f} кДж/(м³·К).")
-        print(f"Це зумовлено в першу чергу збільшенням вмісту CO₂, який має вищу теплоємність порівняно з CO.")
+        print(f"Це зумовлено двома факторами:")
+        print(f"1. Зміною складу суміші: збільшенням вмісту CO₂ з {co2_percentages[0]}% до {co2_percentages[-1]}%, який має вищу теплоємність порівняно з CO.")
+        print(f"2. Зміною температури: з {temperatures[0]}°C до {temperatures[-1]}°C, що також впливає на теплоємність компонентів.")
 else:
     print("\nНе вдалося побудувати графік через помилки в розрахунках.")
