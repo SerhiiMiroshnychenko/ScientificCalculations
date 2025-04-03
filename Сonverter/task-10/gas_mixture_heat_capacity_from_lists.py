@@ -85,9 +85,9 @@ def calculate_heat_capacity(r_co, r_co2, r_o2, r_n2, t_celsius):
     return cp_mix_vol
 
 # Cклад газової суміші на кожному кроці (у відсотках)
-co_percentages = [87.4, 86.1, 80.7, 75.6, 70.5, 67.3, 55.5, 40.1, 33.9, 20.3, 12.5, 8.8]
+co_percentages = [87.4, 87.1, 82.7, 77.6, 73.5, 67.3, 55.5, 40.1, 25.9, 20.3, 12.5, 8.8]
 print(f"{len(co_percentages) = }")
-co2_percentages = [10.1, 11.6, 17.2, 22.6, 28, 31.5, 43.5, 59.1, 65.4, 79.2, 87.1, 91.0]
+co2_percentages = [10.1, 10.6, 15.2, 20.6, 25, 31.5, 43.5, 59.1, 73.4, 79.2, 87.1, 91.0]
 print(f"{len(co2_percentages) = }")
 o2_percentages = [1.6, 1.45, 1.3, 1.1, 0.9, 0.7, 0.6, 0.5, 0.4, 0.3, 0.2, 0.1]
 print(f"{len(o2_percentages) = }")
