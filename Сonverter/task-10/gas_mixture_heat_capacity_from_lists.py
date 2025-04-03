@@ -4,7 +4,6 @@
 """
 Розрахунок зміни середньої об'ємної теплоємності газової суміші при зміні складу.
 Склад газу на кожному кроці задається окремими списками для кожного компоненту.
-Візуалізація залежності теплоємності від часу (кожен крок - 10 хвилин).
 """
 
 import matplotlib.pyplot as plt
@@ -111,8 +110,13 @@ heat_capacities = []
 print("Зміна середньої об'ємної теплоємності газової суміші при зміні складу\n")
 print(f"Температура: {t_celsius}°C ({t_celsius + T_STANDARD:.2f} К)\n")
 
-print("| № кроку | Час, хв | CO, % | CO₂, % | O₂, % | N₂, % | Теплоємність, кДж/(м³·К) |")
-print("|---------|---------|-------|--------|-------|-------|--------------------------|")
+# Виведення заголовка таблиці з використанням табличної форми
+table_width = 96
+header = f"| {'№':^4} | {'Час, хв':^10} | {'CO, %':^10} | {'CO₂, %':^10} | {'O₂, %':^10} | {'N₂, %':^10} | {'Теплоємність, кДж/(м³·К)':^25} |"
+
+print("=" * table_width)
+print(header)
+print("=" * table_width)
 
 # Обчислення теплоємності для кожного кроку
 for step in range(steps):
@@ -134,10 +138,14 @@ for step in range(steps):
         heat_capacities.append(cp_mix_vol)
 
         # Виведення результатів у вигляді таблиці
-        print(f"| {step} | {step * time_per_step} | {co_percent:.1f} | {co2_percent:.1f} | {o2_percent:.1f} | {n2_percent:.1f} | {cp_mix_vol:.4f} |")
+        row = f"| {step:^4} | {step * time_per_step:^10} | {co_percent:^10.1f} | {co2_percent:^10.1f} | {o2_percent:^10.1f} | {n2_percent:^10.1f} | {cp_mix_vol:^25.4f} |"
+        print(row)
 
     except ValueError as e:
-        print(f"| {step} | {step * time_per_step} | {co_percent:.1f} | {co2_percent:.1f} | {o2_percent:.1f} | {n2_percent:.1f} | ПОМИЛКА: {e} |")
+        error_row = f"| {step:^4} | {step * time_per_step:^10} | {co_percent:^10.1f} | {co2_percent:^10.1f} | {o2_percent:^10.1f} | {n2_percent:^10.1f} | {'ПОМИЛКА: ' + str(e):^25} |"
+        print(error_row)
+
+print("=" * table_width)
 
 # Побудова графіку, якщо є дані для побудови
 if heat_capacities:
@@ -159,9 +167,13 @@ if heat_capacities:
                  bbox=dict(boxstyle="round,pad=0.3", facecolor="white", edgecolor="black", alpha=1),
                  arrowprops=dict(facecolor='black', shrink=0.05))
 
+    # Збереження графіку у файл
+    plt.savefig(r'D:\WINDSURF\MIP\Cobv-Tasks\task10\heat_capacity_change.png', dpi=300, bbox_inches='tight')
+
     # Відображення графіку
     plt.show()
 
+    print("\nГрафік збережено у файл 'heat_capacity_change.png'")
 
     if len(heat_capacities) > 1:
         print("\nВисновки:")
