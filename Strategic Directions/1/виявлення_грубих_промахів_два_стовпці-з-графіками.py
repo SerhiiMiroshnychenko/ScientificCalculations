@@ -491,11 +491,11 @@ def main():
 
     # Параметри задаються прямо в скрипті
     file_path = "cleanest_data.csv"  # Шлях до CSV файлу з даними
-    column1 = "partner_order_age_days"  # Перший стовпець для аналізу
-    column2 = "partner_success_rate"  # Другий стовпець для аналізу
+    column1 = "partner_total_orders"  # Перший стовпець для аналізу
+    column2 = "partner_total_messages"  # Другий стовпець для аналізу
     delimiter = ","  # Розділювач у CSV файлі
     confidence = 0.95  # Рівень довіри
-    max_iterations = 100  # Максимальна кількість ітерацій для виявлення викидів
+    max_iterations = 1000000  # Максимальна кількість ітерацій для виявлення викидів
 
     try:
         # Зчитування даних
