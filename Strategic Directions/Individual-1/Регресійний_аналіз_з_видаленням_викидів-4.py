@@ -716,20 +716,88 @@ def compare_regression_models(x_before, y_before, x_after, y_after, metrics_befo
     residuals_before = metrics_before["residuals"]
     residuals_after = metrics_after["residuals"]
 
-    # Гістограма залишків до очищення
-    axes[0].set_title('Залишки до очищення', fontsize=18, fontweight='bold')
-    sns.histplot(residuals_before, kde=True, color='blue', alpha=0.7, ax=axes[0])
-    axes[0].axvline(np.mean(residuals_before), color='red', linestyle='--', linewidth=2)
-    axes[0].set_xlabel('Залишки', fontsize=14, fontweight='bold')
-    axes[0].set_ylabel('Частота', fontsize=14, fontweight='bold')
+    # Статистики залишків
+    mean_before = np.mean(residuals_before)
+    std_before = np.std(residuals_before)
+    mean_after = np.mean(residuals_after)
+    std_after = np.std(residuals_after)
 
-    # Гістограма залишків після очищення
-    axes[1].set_title('Залишки після очищення', fontsize=18, fontweight='bold')
-    sns.histplot(residuals_after, kde=True, color='green', alpha=0.7, ax=axes[1])
-    axes[1].axvline(np.mean(residuals_after), color='red', linestyle='--', linewidth=2)
-    axes[1].set_xlabel('Залишки', fontsize=14, fontweight='bold')
-    axes[1].set_ylabel('Частота', fontsize=14, fontweight='bold')
+    # Налаштування гістограм
+    bin_params_before = {}
+    bin_params_after = {}
 
+    if len(residuals_before) > 1000:
+        # Оптимальна кількість бінів для великих даних
+        data_range = np.max(residuals_before) - np.min(residuals_before)
+        bin_width = 2 * stats.iqr(residuals_before) / (len(residuals_before) ** (1/3))
+        n_bins = int(data_range / bin_width) if bin_width > 0 else 50
+        n_bins = min(100, max(30, n_bins))
+        bin_params_before['bins'] = n_bins
+
+    if len(residuals_after) > 1000:
+        data_range = np.max(residuals_after) - np.min(residuals_after)
+        bin_width = 2 * stats.iqr(residuals_after) / (len(residuals_after) ** (1/3))
+        n_bins = int(data_range / bin_width) if bin_width > 0 else 50
+        n_bins = min(100, max(30, n_bins))
+        bin_params_after['bins'] = n_bins
+
+    # Покращення відображення гістограми
+    for i, (ax, residuals, title, color, mean_val, std_val, params) in enumerate([
+        (axes[0], residuals_before, 'Залишки до очищення', 'royalblue', mean_before, std_before, bin_params_before),
+        (axes[1], residuals_after, 'Залишки після очищення', 'forestgreen', mean_after, std_after, bin_params_after)
+    ]):
+        # Гістограма з кращим візуальним розподілом
+        sns.histplot(residuals, kde=True, color=color, alpha=0.6, edgecolor='black', linewidth=1.0, ax=ax, **params)
+
+        # Додавання вертикальної лінії середнього значення
+        ax.axvline(mean_val, color='red', linestyle='--', linewidth=2,
+                   label=f'Середнє = {mean_val:.4f}')
+
+        # Додавання нормального розподілу
+        x_norm = np.linspace(np.percentile(residuals, 0.1), np.percentile(residuals, 99.9), 1000)
+        y_norm = stats.norm.pdf(x_norm, mean_val, std_val)
+
+        # Масштабування нормального розподілу
+        bin_heights = [p.get_height() for p in ax.patches] if ax.patches else []
+        max_height = max(bin_heights) if bin_heights else len(residuals) / 20
+        scale_factor = max_height / (np.max(y_norm) if np.max(y_norm) > 0 else 1)
+
+        # Додавання кривої нормального розподілу
+        ax.plot(x_norm, y_norm * scale_factor, 'r-', alpha=0.7, linewidth=2,
+                label=f'Нормальний розподіл')
+
+        # Додавання статистичної інформації
+        stats_text = (f'n = {len(residuals):,}\n'
+                      f'\u03BC = {mean_val:.4f}\n'
+                      f'\u03C3 = {std_val:.4f}')
+        ax.text(0.95, 0.95, stats_text, transform=ax.transAxes,
+                verticalalignment='top', horizontalalignment='right',
+                bbox=dict(boxstyle='round', facecolor='white', alpha=0.9, edgecolor='gray'),
+                fontsize=14)
+
+        # Налаштування зовнішнього вигляду
+        ax.set_title(title, fontsize=20, fontweight='bold', pad=15)
+        ax.set_xlabel('Залишки', fontsize=16, fontweight='bold')
+        ax.set_ylabel('Частота', fontsize=16, fontweight='bold')
+        ax.grid(True, linestyle='--', alpha=0.6)
+        ax.legend(fontsize=12, loc='upper left')
+
+        # Додавання горизонтальних ліній для стандартних відхилень
+        for spine in ax.spines.values():
+            spine.set_linewidth(1.5)
+            spine.set_edgecolor('black')
+
+        # Встановлення однакових меж по осі X для обох графіків
+        # Визначення спільних меж на основі перцентилів
+        all_residuals = np.concatenate([residuals_before, residuals_after])
+        q_low, q_high = np.percentile(all_residuals, [0.5, 99.5])
+        # Розширення меж на 10% для кращого відображення
+        range_x = q_high - q_low
+        xlim_min, xlim_max = q_low - 0.1 * range_x, q_high + 0.1 * range_x
+        axes[i].set_xlim([xlim_min, xlim_max])
+
+    # Загальний заголовок
+    fig.suptitle('Порівняння розподілу залишків', fontsize=22, fontweight='bold', y=1.02)
     plt.tight_layout()
     plt.show()
 
