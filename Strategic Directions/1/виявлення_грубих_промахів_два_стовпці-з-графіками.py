@@ -6,6 +6,7 @@ import pandas as pd
 import sys
 from scipy import stats
 import matplotlib.pyplot as plt
+import seaborn as sns
 
 """
 Скрипт для виявлення та ідентифікації грубих промахів у рядах спостереження.
@@ -179,6 +180,20 @@ def check_outliers(data, label, confidence=0.95):
 
     return has_outliers, outlier_indices, (n, x_mean, D, sigma)
 
+
+def plot_histograms(data_before, data_after, column_name):
+    """Візуалізація гістограм до та після очищення"""
+    plt.figure(figsize=(12, 5))
+    plt.subplot(1, 2, 1)
+    sns.histplot(data_before, kde=True, color='blue')
+    plt.title(f'{column_name} (початкові дані)')
+
+    plt.subplot(1, 2, 2)
+    sns.histplot(data_after, kde=True, color='green')
+    plt.title(f'{column_name} (очищені дані)')
+    plt.tight_layout()
+    plt.show()
+
 def analyze_dual_data(data1, data2, column1_name, column2_name, confidence=0.95, max_iterations=3):
     """
     Повний аналіз двох стовпців даних з виявленням викидів, очищенням та розрахунком статистик
@@ -240,6 +255,11 @@ def analyze_dual_data(data1, data2, column1_name, column2_name, confidence=0.95,
 
     if iteration > max_iterations:
         print(f"\nДосягнуто максимальну кількість ітерацій ({max_iterations}).")
+
+    # # Візуалізація початкових даних
+    # print_header("ВІЗУАЛІЗАЦІЯ ПОЧАТКОВИХ ДАНИХ")
+    # plot_histograms(data1, current_data1, column1_name)
+    # plot_histograms(data2, current_data2, column2_name)
 
     # Розрахунок статистик для очищених даних
     print_header(f"СТАТИСТИЧНІ ХАРАКТЕРИСТИКИ ОЧИЩЕНИХ ДАНИХ")
@@ -318,12 +338,11 @@ def analyze_dual_data(data1, data2, column1_name, column2_name, confidence=0.95,
         "removed_indices": list(set(range(len(data1))) - set(range(len(current_data1))))
     }
 
-    # Створення інформативної візуалізації результатів аналізу
-    plt.figure(figsize=(16, 12))
 
     # 1. Порівняння початкових та очищених даних (розмір серій)
-    plt.subplot(2, 2, 1)
+    plt.figure(figsize=(10, 8))
     plt.title('Порівняння розміру серій даних')
+
     labels = ['Початкові дані', 'Очищені дані']
     sizes_1 = [len(data1), len(current_data1)]
     sizes_2 = [len(data2), len(current_data2)]
@@ -331,21 +350,25 @@ def analyze_dual_data(data1, data2, column1_name, column2_name, confidence=0.95,
     x = np.arange(len(labels))
     width = 0.35
 
-    plt.bar(x - width/2, sizes_1, width, label=column1_name, color='blue')
-    plt.bar(x + width/2, sizes_2, width, label=column2_name, color='red')
+    plt.bar(x - width / 2, sizes_1, width, label=column1_name, color='blue')
+    plt.bar(x + width / 2, sizes_2, width, label=column2_name, color='red')
 
     plt.ylabel('Кількість спостережень')
     for i, v in enumerate(sizes_1):
-        plt.text(i - width/2, v + 5, str(v), ha='center', va='bottom', color='blue')
+        plt.text(i - width / 2, v + 5, str(v), ha='center', va='bottom', color='blue')
     for i, v in enumerate(sizes_2):
-        plt.text(i + width/2, v + 5, str(v), ha='center', va='bottom', color='red')
+        plt.text(i + width / 2, v + 5, str(v), ha='center', va='bottom', color='red')
 
     plt.xticks(x, labels)
     plt.grid(True, axis='y')
     plt.legend()
 
+    # Зберігаємо перший графік
+    plt.tight_layout()
+    plt.show()
+
     # 2. Статистичні показники (середнє, СКВ, довірчі інтервали)
-    plt.subplot(2, 2, 2)
+    plt.figure(figsize=(10, 8))
     plt.title('Статистичні показники')
 
     # Створюємо таблицю для відображення статистик
@@ -380,8 +403,11 @@ def analyze_dual_data(data1, data2, column1_name, column2_name, confidence=0.95,
     table.scale(1, 1.5)
     plt.axis('off')
 
+    plt.tight_layout()
+    plt.show()
+
     # 3. Інформація про вилучені дані та довірчі інтервали
-    plt.subplot(2, 2, 3)
+    plt.figure(figsize=(10, 8))
     plt.title('Довірчі інтервали')
 
     # Створюємо графік довірчих інтервалів для обох стовпців
@@ -392,8 +418,8 @@ def analyze_dual_data(data1, data2, column1_name, column2_name, confidence=0.95,
 
     # Нормалізуємо дані для однакового масштабу
     max_mean = max(abs(x_mean1), abs(x_mean2))
-    norm_means = [m/max_mean for m in means]
-    norm_errors = [e/max_mean for e in errors]
+    norm_means = [m / max_mean for m in means]
+    norm_errors = [e / max_mean for e in errors]
 
     plt.barh(y_pos, norm_means, xerr=norm_errors, align='center',
              alpha=0.7, capsize=5, color=['blue', 'red'])
@@ -407,8 +433,12 @@ def analyze_dual_data(data1, data2, column1_name, column2_name, confidence=0.95,
     plt.xlabel('Нормалізовані значення')
     plt.grid(True, axis='x')
 
+    plt.tight_layout()
+    plt.show()
+
+
     # 4. Інформація про ітерації та видалені дані
-    plt.subplot(2, 2, 4)
+    plt.figure(figsize=(10, 8))
     plt.title('Підсумок аналізу')
 
     # Кількість видалених спостережень
@@ -419,7 +449,7 @@ def analyze_dual_data(data1, data2, column1_name, column2_name, confidence=0.95,
     summary_data = [
         ['Вхідних спостережень', f'{len(data1)}'],
         ['Видалених спостережень', f'{removed_count}'],
-        ['Відсоток видалених', f'{removed_count/len(data1)*100:.2f}%'],
+        ['Відсоток видалених', f'{removed_count / len(data1) * 100:.2f}%'],
         ['Кількість ітерацій', f'{iteration}'],
         ['Рівень довіри', f'{confidence}'],
         ['γp критичне', f'{get_critical_gamma(len(current_data1), confidence):.3f}']
@@ -435,13 +465,11 @@ def analyze_dual_data(data1, data2, column1_name, column2_name, confidence=0.95,
     summary_table.scale(1, 1.5)
     plt.axis('off')
 
-    # Збереження графіка
     plt.tight_layout()
-    output_path = r'D:\WINDSURF\SCRIPTs\Стратегичні-Напрямки\1\результати_аналізу_два_стовпці.png'
-    plt.savefig(output_path)
-    plt.close()
+    plt.show()
 
-    print(f"\nГрафік результатів збережено у файл '{output_path}'\n")
+    plot_histograms(data1, current_data1, column1_name)
+    plot_histograms(data2, current_data2, column2_name)
 
     return results
 
@@ -483,4 +511,6 @@ def main():
         sys.exit(1)
 
 if __name__ == "__main__":
+    # Налаштування стилю графіків
+    sns.set_theme(style="whitegrid")
     main()
