@@ -629,6 +629,110 @@ def print_regression_results(x, y, x_name, y_name, metrics):
         interpretation = "висока еластичність (еластичний зв'язок)"
     print(f"Інтерпретація: {interpretation}")
 
+def compare_regression_models(x_before, y_before, x_after, y_after, metrics_before, metrics_after, x_name, y_name):
+    """
+    Візуалізує порівняння регресійних моделей до та після очищення викидів.
+
+    Параметри:
+    x_before (numpy.ndarray): Масив незалежних змінних до очищення
+    y_before (numpy.ndarray): Масив залежних змінних до очищення
+    x_after (numpy.ndarray): Масив незалежних змінних після очищення
+    y_after (numpy.ndarray): Масив залежних змінних після очищення
+    metrics_before (dict): Словник з метриками якості моделі до очищення
+    metrics_after (dict): Словник з метриками якості моделі після очищення
+    x_name (str): Назва незалежної змінної
+    y_name (str): Назва залежної змінної
+    """
+    # Налаштування стилю
+    plt.style.use('ggplot')
+    plt.rcParams.update({
+        'font.family': 'Arial',
+        'font.size': 14,
+        'axes.titlesize': 18,
+        'axes.labelsize': 16,
+        'xtick.labelsize': 14,
+        'ytick.labelsize': 14,
+        'legend.fontsize': 14,
+        'figure.figsize': (14, 8),
+        'figure.dpi': 120
+    })
+
+    # Видобування метрик для обох моделей
+    a0_before = metrics_before["a0"]
+    a1_before = metrics_before["a1"]
+    r_squared_before = metrics_before["r_squared"]
+    y_pred_before = metrics_before["y_pred"]
+
+    a0_after = metrics_after["a0"]
+    a1_after = metrics_after["a1"]
+    r_squared_after = metrics_after["r_squared"]
+    y_pred_after = metrics_after["y_pred"]
+
+    # Порівняння ліній регресії на одному графіку
+    fig, ax = plt.subplots(figsize=(14, 8))
+
+    # Відображення точок даних до очищення
+    ax.scatter(x_before, y_before, alpha=0.5, color='blue', s=30, label='Дані до очищення')
+
+    # Відображення точок даних після очищення
+    ax.scatter(x_after, y_after, alpha=0.7, color='green', s=40, label='Дані після очищення')
+
+    # Формування меж для ліній регресії (для кращого відображення)
+    all_x = np.concatenate([x_before, x_after])
+    x_min, x_max = np.min(all_x), np.max(all_x)
+    x_range = np.linspace(x_min, x_max, 100)
+
+    # Обчислення прогнозних значень для плавної лінії
+    y_range_before = a0_before + a1_before * x_range
+    y_range_after = a0_after + a1_after * x_range
+
+    # Додавання ліній регресії
+    ax.plot(x_range, y_range_before, color='darkblue', linestyle='-', linewidth=2,
+            label=f'Модель до: y = {a0_before:.4f} + {a1_before:.4f}x, R² = {r_squared_before:.4f}')
+
+    ax.plot(x_range, y_range_after, color='darkgreen', linestyle='-', linewidth=2,
+            label=f'Модель після: y = {a0_after:.4f} + {a1_after:.4f}x, R² = {r_squared_after:.4f}')
+
+    # Оформлення графіка
+    ax.set_title('Порівняння регресійних моделей до та після очищення викидів', fontsize=20, fontweight='bold')
+    ax.set_xlabel(x_name, fontsize=16, fontweight='bold')
+    ax.set_ylabel(y_name, fontsize=16, fontweight='bold')
+
+    # Покращення легенди
+    legend = ax.legend(fontsize=12, loc='upper left', frameon=True, framealpha=0.9)
+    legend.get_frame().set_edgecolor('black')
+    legend.get_frame().set_linewidth(1.0)
+
+    # Покращення відображення сітки
+    ax.grid(True, linestyle='--', alpha=0.7)
+
+    plt.tight_layout()
+    plt.show()
+
+    # Додатковий графік: Порівняння залишків
+    fig, axes = plt.subplots(1, 2, figsize=(18, 8))
+
+    # Отримання залишків
+    residuals_before = metrics_before["residuals"]
+    residuals_after = metrics_after["residuals"]
+
+    # Гістограма залишків до очищення
+    axes[0].set_title('Залишки до очищення', fontsize=18, fontweight='bold')
+    sns.histplot(residuals_before, kde=True, color='blue', alpha=0.7, ax=axes[0])
+    axes[0].axvline(np.mean(residuals_before), color='red', linestyle='--', linewidth=2)
+    axes[0].set_xlabel('Залишки', fontsize=14, fontweight='bold')
+    axes[0].set_ylabel('Частота', fontsize=14, fontweight='bold')
+
+    # Гістограма залишків після очищення
+    axes[1].set_title('Залишки після очищення', fontsize=18, fontweight='bold')
+    sns.histplot(residuals_after, kde=True, color='green', alpha=0.7, ax=axes[1])
+    axes[1].axvline(np.mean(residuals_after), color='red', linestyle='--', linewidth=2)
+    axes[1].set_xlabel('Залишки', fontsize=14, fontweight='bold')
+    axes[1].set_ylabel('Частота', fontsize=14, fontweight='bold')
+
+    plt.tight_layout()
+    plt.show()
+
 def plot_regression_results(x, y, x_name, y_name, metrics):
     """
     Створює візуалізації результатів регресійного аналізу.
@@ -960,6 +1064,11 @@ def analyze_data_with_outlier_removal(file_path, column_x, column_y, delimiter='
         print(f"До:    {results_before['r_squared']:.4f}")
         print(f"Після: {results_after['r_squared']:.4f}")
         print(f"Зміна: {results_after['r_squared'] - results_before['r_squared']:.4f}")
+
+        # Візуалізація порівняння моделей до та після очищення
+        print_header("ВІЗУАЛІЗАЦІЯ ПОРІВНЯННЯ МОДЕЛЕЙ")
+        # Викликаємо функцію порівняння моделей
+        compare_regression_models(x_data, y_data, x_clean, y_clean, results_before, results_after, x_name, y_name)
 
     return results_before, results_after
 
