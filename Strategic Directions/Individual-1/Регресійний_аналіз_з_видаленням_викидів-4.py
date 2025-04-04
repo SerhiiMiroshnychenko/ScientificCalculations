@@ -189,51 +189,87 @@ def plot_histograms(data_before, data_after, column_name):
     data_after (numpy.ndarray): Дані після очищення
     column_name (str): Назва стовпця для заголовків
     """
-    # Налаштування стилю
+    # Налаштування загального стилю графіків
+    plt.style.use('ggplot')
     plt.rcParams.update({
-        'font.size': 12,
-        'axes.titlesize': 14,
-        'axes.labelsize': 12,
-        'xtick.labelsize': 10,
-        'ytick.labelsize': 10,
-        'legend.fontsize': 11,
+        'font.family': 'Arial',
+        'font.size': 14,
+        'axes.titlesize': 18,
+        'axes.labelsize': 16,
+        'xtick.labelsize': 14,
+        'ytick.labelsize': 14,
+        'legend.fontsize': 14,
+        'axes.grid': True,
+        'axes.grid.which': 'both',
+        'grid.alpha': 0.3,
+        'figure.figsize': (14, 8),
+        'figure.dpi': 120
     })
 
-    # Накладені гістограми
-    plt.figure(figsize=(12, 7))
+    # Додаткові налаштування для гістограм
+    bin_params = {}
+    if len(data_before) > 1000:
+        # Автоматичний розрахунок оптимального числа бінів
+        # Використовуємо правило Freedman-Diaconis
+        data_range = np.max(data_before) - np.min(data_before)
+        bin_width = 2 * stats.iqr(data_before) / (len(data_before) ** (1/3))
+        n_bins = int(data_range / bin_width) if bin_width > 0 else 50
+        n_bins = min(100, max(20, n_bins))  # Обмежуємо кількість бінів
+        bin_params['bins'] = n_bins
 
-    # Створюємо накладені гістограми з більш прозорими кольорами
-    sns.histplot(data_before, kde=True, color='blue', alpha=0.4, label='Початкові дані', edgecolor='black', linewidth=0.8)
-    sns.histplot(data_after, kde=True, color='green', alpha=0.4, label='Очищені дані', edgecolor='black', linewidth=0.8)
+    # Створюємо фігуру
+    fig, ax = plt.subplots(1, 1, figsize=(14, 8))
 
-    # Додаємо статистики на графік
+    # Визначення статистик для обох наборів даних
     mean_before = np.mean(data_before)
     std_before = np.std(data_before)
     mean_after = np.mean(data_after)
     std_after = np.std(data_after)
 
-    # Додаємо текстову інформацію про статистики
-    info_text = (f"Початкові дані: $\\mu={mean_before:.2f}$, $\\sigma={std_before:.2f}$\n"
-                 f"Очищені дані: $\\mu={mean_after:.2f}$, $\\sigma={std_after:.2f}$")
+    # Добавляємо легенду з інформацією про початкові та очищені дані
+    before_label = f'Початкові дані: $\\mu={mean_before:.2f}$, $\\sigma={std_before:.2f}$'
+    after_label = f'Очищені дані: $\\mu={mean_after:.2f}$, $\\sigma={std_after:.2f}$'
 
-    plt.annotate(info_text, xy=(0.98, 0.98), xycoords='axes fraction',
-                 ha='right', va='top', fontsize=10,
-                 bbox=dict(boxstyle='round,pad=0.5', facecolor='white', alpha=0.8))
+    # Налаштування прозорості для кращого розрізнення
+    alpha_val = 0.6
+
+    # Накладені гістограми
+    sns.histplot(data_before, kde=True, color='blue', alpha=alpha_val, label=before_label,
+                 ax=ax, edgecolor='darkblue', linewidth=1.2, **bin_params)
+    sns.histplot(data_after, kde=True, color='green', alpha=alpha_val, label=after_label,
+                 ax=ax, edgecolor='darkgreen', linewidth=1.2, **bin_params)
 
     # Додаємо вертикальні лінії для середніх значень
-    plt.axvline(mean_before, color='blue', linestyle='--', linewidth=1.5, alpha=0.7)
-    plt.axvline(mean_after, color='green', linestyle='--', linewidth=1.5, alpha=0.7)
+    ax.axvline(mean_before, color='blue', linestyle='--', linewidth=2, alpha=0.9)
+    ax.axvline(mean_after, color='green', linestyle='--', linewidth=2, alpha=0.9)
 
-    plt.title(f'{column_name} (порівняння гістограм)', fontweight='bold', pad=15)
-    plt.xlabel(column_name, fontweight='bold')
-    plt.ylabel('Частота', fontweight='bold')
-    plt.legend(loc='upper right', frameon=True, framealpha=0.9)
-    plt.grid(True, alpha=0.3)
+    # Оформлення графіка
+    ax.set_title(f'{column_name} (порівняння гістограм)', fontsize=20, fontweight='bold', pad=20)
+    ax.set_xlabel(column_name, fontsize=18, fontweight='bold')
+    ax.set_ylabel('Частота', fontsize=18, fontweight='bold')
+
+    # Покращення легенди
+    legend = ax.legend(loc='upper right', frameon=True, framealpha=0.9, fontsize=14)
+    legend.get_frame().set_edgecolor('black')
+    legend.get_frame().set_linewidth(1.0)
+
+    # Покращення відображення сітки
+    ax.grid(True, linestyle='--', alpha=0.7)
+
+    # Покращення відображення меж графіка
+    for spine in ax.spines.values():
+        spine.set_linewidth(1.5)
+        spine.set_edgecolor('black')
+
+    # Встановлюємо межі по x для кращого відображення
+    # Визначаємо межі на основі перцентилів даних
+    data_all = np.concatenate([data_before, data_after])
+    q_low, q_high = np.percentile(data_all, [1, 99])
+    # Розширюємо межі на 10% в обидві сторони
+    range_x = q_high - q_low
+    ax.set_xlim([q_low - 0.1 * range_x, q_high + 0.1 * range_x])
+
     plt.tight_layout()
-
-    # Зберігаємо графік, якщо потрібно
-    # plt.savefig(f'{column_name}_histogram_comparison.png', dpi=300, bbox_inches='tight')
-
     plt.show()
 
 def plot_scatter_before_after(x_before, y_before, x_after, y_after, x_name, y_name):
@@ -698,29 +734,83 @@ def plot_regression_results(x, y, x_name, y_name, metrics):
     plt.show()
 
     # Графік 3: Гістограма залишків
-    plt.figure(figsize=(12, 7))
+    plt.style.use('ggplot')
+    fig, ax = plt.subplots(figsize=(14, 8), dpi=120)
 
-    # Додаємо гістограму з кращим форматуванням
-    sns.histplot(residuals, kde=True, color='purple', alpha=0.7, edgecolor='black', linewidth=0.8)
+    # Налаштування гістограми
+    bin_params = {}
+    if len(residuals) > 1000:
+        # Оптимальне число бінів для великих наборів даних
+        data_range = np.max(residuals) - np.min(residuals)
+        bin_width = 2 * stats.iqr(residuals) / (len(residuals) ** (1/3))
+        n_bins = int(data_range / bin_width) if bin_width > 0 else 50
+        n_bins = min(100, max(20, n_bins))  # Обмеження кількості бінів
+        bin_params['bins'] = n_bins
 
-    # Додаємо вертикальну лінію для середнього значення залишків
+    # Визначення статистик залишків
     mean_residuals = np.mean(residuals)
-    plt.axvline(mean_residuals, color='red', linestyle='--', linewidth=1.5,
-                label=f'Середнє значення: {mean_residuals:.4f}')
+    std_residuals = np.std(residuals)
+    std_error_mean = stats.sem(residuals)
+
+    # Добавляємо гістограму з кращим форматуванням
+    hist_color = '#440154'
+    hist = sns.histplot(residuals, kde=False, color=hist_color, alpha=0.7,
+                        edgecolor='black', linewidth=1.0, ax=ax, stat='count', **bin_params)
 
     # Додаємо нормальний розподіл для порівняння
-    x_norm = np.linspace(min(residuals), max(residuals), 100)
+    q_low, q_high = np.percentile(residuals, [0.1, 99.9])
+    x_norm = np.linspace(q_low, q_high, 1000)
     y_norm = stats.norm.pdf(x_norm, mean_residuals, std_residuals)
-    plt.plot(x_norm, y_norm * len(residuals) * (max(residuals) - min(residuals)) / 10,
-             'r-', alpha=0.5, linewidth=2, label='Нормальний розподіл')
 
-    plt.title('Гістограма залишків', fontweight='bold', pad=15)
-    plt.xlabel('Залишки', fontweight='bold')
-    plt.ylabel('Частота', fontweight='bold')
-    plt.grid(True, alpha=0.3)
-    plt.legend()
+    # Масштабування нормального розподілу до відповідної висоти гістограми
+    # Використовуємо простіший метод масштабування, без використання np.diff
+    bin_heights = [p.get_height() for p in ax.patches] if len(ax.patches) > 0 else []
+    max_height = max(bin_heights) if bin_heights else len(residuals) / 20
+    scale_factor = max_height / np.max(y_norm) if np.max(y_norm) > 0 else 1
+
+    # Додаємо лінію нормального розподілу
+    ax.plot(x_norm, y_norm * scale_factor, color='red', linewidth=2.5, alpha=0.7, label='Нормальний розподіл')
+
+    # Додаємо вертикальну лінію для середнього значення
+    ax.axvline(mean_residuals, color='red', linestyle='--', linewidth=2.0,
+               label=f'Середнє значення: {mean_residuals:.4f}')
+
+    # Налаштування зовнішнього вигляду графіка
+    ax.set_title('Гістограма залишків', fontsize=20, fontweight='bold', pad=20)
+    ax.set_xlabel('Залишки', fontsize=18, fontweight='bold')
+    ax.set_ylabel('Частота', fontsize=18, fontweight='bold')
+
+    # Додаємо текстову інформацію про статистику
+    info_text = f'n = {len(residuals):,}\n'
+    info_text += f'\u03BC = {mean_residuals:.4f}\n'
+    info_text += f'\u03C3 = {std_residuals:.4f}'
+
+    # Додаємо текстове поле з інформацією
+    ax.text(0.97, 0.97, info_text, transform=ax.transAxes,
+            verticalalignment='top', horizontalalignment='right',
+            bbox=dict(boxstyle='round', facecolor='white', alpha=0.9, edgecolor='gray'),
+            fontsize=14)
+
+    # Покращення легенди
+    legend = ax.legend(loc='upper left', fontsize=14, frameon=True)
+    legend.get_frame().set_alpha(0.9)
+    legend.get_frame().set_edgecolor('black')
+
+    # Покращення сітки
+    ax.grid(True, linestyle='--', alpha=0.6)
+
+    # Покращення меж графіка
+    for spine in ax.spines.values():
+        spine.set_linewidth(1.5)
+        spine.set_edgecolor('black')
+
+    # Встановлюємо межі по x для кращого відображення
+    # Використовуючи перцентилі замість просто min/max
+    q_low, q_high = np.percentile(residuals, [0.5, 99.5])
+    x_margin = (q_high - q_low) * 0.2  # 20% запас
+    ax.set_xlim([q_low - x_margin, q_high + x_margin])
+
     plt.tight_layout()
-    # plt.savefig('residuals_histogram.png', dpi=300, bbox_inches='tight')
     plt.show()
 
     # Графік 4: QQ-plot залишків з покращеним форматуванням
