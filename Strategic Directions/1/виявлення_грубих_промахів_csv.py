@@ -301,7 +301,7 @@ def main():
 
     # Параметри задаються прямо в скрипті
     file_path = "cleanest_data.csv"  # Шлях до CSV файлу з даними
-    column = "order_amount"  # Стовпець для аналізу (індекс або назва)
+    column = "partner_order_age_days"  # Стовпець для аналізу (індекс або назва)
     delimiter = ","  # Розділювач у CSV файлі
     confidence = 0.95  # Рівень довіри
     max_iterations = 100  # Максимальна кількість ітерацій для виявлення викидів
