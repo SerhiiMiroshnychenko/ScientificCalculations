@@ -796,9 +796,12 @@ def compare_regression_models(x_before, y_before, x_after, y_after, metrics_befo
         xlim_min, xlim_max = q_low - 0.1 * range_x, q_high + 0.1 * range_x
         axes[i].set_xlim([xlim_min, xlim_max])
 
-    # Загальний заголовок
-    fig.suptitle('Порівняння розподілу залишків', fontsize=22, fontweight='bold', y=1.02)
-    plt.tight_layout()
+    # Спочатку застосовуємо tight_layout, щоб оптимізувати розміщення графіків
+    plt.tight_layout(rect=[0, 0.03, 1, 0.95])  # Залишаємо місце для заголовка
+
+    # Додаємо загальний заголовок після налаштування макету
+    fig.suptitle('Порівняння розподілу залишків', fontsize=20, fontweight='bold', y=0.98)
+
     plt.show()
 
 def plot_regression_results(x, y, x_name, y_name, metrics):
