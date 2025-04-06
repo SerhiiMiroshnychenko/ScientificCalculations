@@ -170,7 +170,7 @@ plt.title('Зміна середньої об\'ємної теплоємност
 # Додавання температур до першого графіку
 for i, temp in enumerate(temperatures):
     plt.annotate(f'{temp}°C', xy=(times[i], heat_capacities_volumetric[i]),
-                 xytext=(times[i], heat_capacities_volumetric[i] + 0.05),  # Більший відступ
+                 xytext=(times[i], heat_capacities_volumetric[i] + 0.025),  # Більший відступ
                  bbox=dict(boxstyle="round,pad=0.2", facecolor="white", edgecolor="black", alpha=0.7),
                  ha='center',
                  arrowprops=dict(arrowstyle='->', lw=0.5, connectionstyle="arc3,rad=0"))
