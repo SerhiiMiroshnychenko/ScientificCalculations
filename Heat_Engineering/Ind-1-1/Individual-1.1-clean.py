@@ -80,7 +80,7 @@ print(f"dP_lr = {dP_loss:.2f}")
 P_wat_min = (dP_loss + 1e5)/1e6  # МПа
 print(f"P_wat_min = {P_wat_min:.2f}")
 
-print(f"3. Втрати тиску:")
+print("\n3. Втрати тиску:")
 print(f"   - на тертя: {dP_fr/1000:.2f} кПа")
 print(f"   - місцеві: {dP_lr/1000:.2f} кПа")
 print(f"   - сумарні: {dP_loss/1000:.2f} кПа")
