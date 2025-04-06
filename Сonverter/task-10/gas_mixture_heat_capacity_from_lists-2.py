@@ -194,10 +194,23 @@ plt.xlabel('Час, хв', fontsize=12)
 plt.ylabel('Середня мольна теплоємність, кДж/(моль·К)', fontsize=12)
 plt.title('Зміна середньої мольної теплоємності газової суміші з часом', fontsize=14)
 
+# Додавання номерів кроків до графіку мольної теплоємності
+for i in range(steps):
+    if i % 2 == 0:  # Парні кроки - вгорі
+        offset_y = 0.003  # Невелике зміщення вгору
+    else:  # Непарні - внизу
+        offset_y = -0.003  # Невелике зміщення вниз
+
+    plt.annotate(f'Крок {i}', xy=(times[i], heat_capacities_molar[i]),
+                 xytext=(times[i], heat_capacities_molar[i] + offset_y),
+                 bbox=dict(boxstyle="round,pad=0.2", facecolor="white", edgecolor="black", alpha=0.7),
+                 ha='center',
+                 arrowprops=dict(arrowstyle='->', lw=0.5, connectionstyle="arc3,rad=0"))
+
 # Додавання температур до графіку мольної теплоємності
 for i, temp in enumerate(temperatures):
     plt.annotate(f'{temp}°C', xy=(times[i], heat_capacities_molar[i]),
-                 xytext=(times[i], heat_capacities_molar[i] + 0.05),  # Більший відступ
+                 xytext=(times[i], heat_capacities_molar[i] + 0.005),  # Менший відступ, щоб не виходило за межі графіка
                  bbox=dict(boxstyle="round,pad=0.2", facecolor="white", edgecolor="black", alpha=0.7),
                  ha='center',
                  arrowprops=dict(arrowstyle='->', lw=0.5, connectionstyle="arc3,rad=0"))
