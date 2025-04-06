@@ -96,7 +96,7 @@ time_per_step = 10  # Час на один крок, хв
 
 # Список температур на кожному кроці (в градусах Цельсія)
 temperatures = [100, 110, 123, 136, 141, 154, 168, 152, 143, 131, 120, 110]
-temperatures = [100, 200, 300, 400, 500, 600, 700, 800, 900, 1000, 1100, 1200]
+# temperatures = [100, 200, 300, 400, 500, 600, 700, 800, 900, 1000, 1100, 1200]
 
 # Перевірка на однакову довжину всіх списків
 if not (len(co_percentages) == len(co2_percentages) == len(o2_percentages) == len(n2_percentages)):
@@ -194,26 +194,13 @@ plt.xlabel('Час, хв', fontsize=12)
 plt.ylabel('Середня мольна теплоємність, кДж/(моль·К)', fontsize=12)
 plt.title('Зміна середньої мольної теплоємності газової суміші з часом', fontsize=14)
 
-# Додавання номерів кроків до графіку мольної теплоємності
-for i in range(steps):
-    if i % 2 == 0:  # Парні кроки - вгорі
-        offset_y = 0.003  # Невелике зміщення вгору
-    else:  # Непарні - внизу
-        offset_y = -0.003  # Невелике зміщення вниз
-
-    plt.annotate(f'Крок {i}', xy=(times[i], heat_capacities_molar[i]),
-                 xytext=(times[i], heat_capacities_molar[i] + offset_y),
-                 bbox=dict(boxstyle="round,pad=0.2", facecolor="white", edgecolor="black", alpha=0.7),
-                 ha='center',
-                 arrowprops=dict(arrowstyle='->', lw=0.5, connectionstyle="arc3,rad=0"))
-
 # Додавання температур до графіку мольної теплоємності
 for i, temp in enumerate(temperatures):
     plt.annotate(f'{temp}°C', xy=(times[i], heat_capacities_molar[i]),
-                 xytext=(times[i], heat_capacities_molar[i] + 0.005),  # Менший відступ, щоб не виходило за межі графіка
-                 bbox=dict(boxstyle="round,pad=0.2", facecolor="white", edgecolor="black", alpha=0.7),
+                 xytext=(times[i], heat_capacities_molar[i] + 0.0005),  # Мінімальний відступ
+                 bbox=dict(boxstyle="round,pad=0.1", facecolor="white", edgecolor="black", alpha=0.7),
                  ha='center',
-                 arrowprops=dict(arrowstyle='->', lw=0.5, connectionstyle="arc3,rad=0"))
+                 arrowprops=dict(arrowstyle="-", lw=0.5, connectionstyle="arc3,rad=0"))
 
 # Графік 3: Порівняння теплоємностей (нормалізованих) від часу
 plt.figure(figsize=(12, 7))
