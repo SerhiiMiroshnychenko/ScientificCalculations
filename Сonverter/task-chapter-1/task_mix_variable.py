@@ -5,7 +5,6 @@
 
 import numpy as np
 import matplotlib.pyplot as plt
-from scipy import integrate
 
 # Константи
 R = 8.31446261815  # Дж/(моль·К)
@@ -51,7 +50,7 @@ temperatures = [25, 114, 202, 291, 380, 468, 557, 645, 734, 823, 911, 1000]
 
 # Перевірка на однакову довжину всіх списків
 steps = len(temperatures)
-if not (len(co_percentages) == steps and len(co2_percentages) == steps and 
+if not (len(co_percentages) == steps and len(co2_percentages) == steps and
         len(o2_percentages) == steps and len(n2_percentages) == steps):
     raise ValueError("Усі списки повинні мати однакову довжину!")
 
@@ -89,9 +88,9 @@ def get_cv_coefficients():
     b_v_n2 = b_n2 * CAL_TO_JOULE
     c_v_n2 = 0
 
-    return (a_v_co, b_v_co, c_v_co, 
-            a_v_co2, b_v_co2, c_v_co2, 
-            a_v_o2, b_v_o2, c_v_o2, 
+    return (a_v_co, b_v_co, c_v_co,
+            a_v_co2, b_v_co2, c_v_co2,
+            a_v_o2, b_v_o2, c_v_o2,
             a_v_n2, b_v_n2, c_v_n2)
 
 # Отримання коефіцієнтів
@@ -129,54 +128,54 @@ print("=" * 60)
 for i in range(steps - 1):
     T1 = temperatures_K[i]
     T2 = temperatures_K[i + 1]
-    
+
     # Розрахунок кількості речовини на початку кроку
     n = (P_STANDARD * volume) / (R * T1)
-    
+
     # Склад на поточному кроці
     r_co = co_fractions[i]
     r_co2 = co2_fractions[i]
     r_o2 = o2_fractions[i]
     r_n2 = n2_fractions[i]
-    
+
     # Кількість речовини для кожного компонента
     n_co = n * r_co
     n_co2 = n * r_co2
     n_o2 = n * r_o2
     n_n2 = n * r_n2
-    
+
     # Аналітичний розрахунок для кожного компонента
     Q_co = n_co * (
             a_v_co * (T2 - T1) +
             b_v_co * (T2**2 - T1**2) / 2 +
             c_v_co * (-1/T2 + 1/T1)
     )
-    
+
     Q_co2 = n_co2 * (
             a_v_co2 * (T2 - T1) +
             b_v_co2 * (T2**2 - T1**2) / 2 +
             c_v_co2 * (-1/T2 + 1/T1)
     )
-    
+
     Q_o2 = n_o2 * (
             a_v_o2 * (T2 - T1) +
             b_v_o2 * (T2**2 - T1**2) / 2 +
             c_v_o2 * (-1/T2 + 1/T1)
     )
-    
+
     Q_n2 = n_n2 * (
             a_v_n2 * (T2 - T1) +
             b_v_n2 * (T2**2 - T1**2) / 2 +
             c_v_n2 * (-1/T2 + 1/T1)
     )
-    
+
     # Загальна теплота для поточного кроку
     Q_step = Q_co + Q_co2 + Q_o2 + Q_n2
-    
+
     # Додавання до списку значень
     q_values.append(Q_step)
     total_heat += Q_step
-    
+
     # Зберігаємо деталі для кожного кроку
     step_details.append({
         "step": i + 1,
@@ -221,60 +220,63 @@ print(f"N₂:  {total_n2/1000:.2f} кДж ({total_n2/total_heat*100:.1f}%)")
 # Створення списку часу на основі часу на один крок
 times = [i * time_per_step for i in range(steps - 1)]
 
-# Побудова графіків
-plt.figure(figsize=(20, 12))
-
-# Створення сітки графіків 2x2
-fig, axs = plt.subplots(2, 2, figsize=(20, 12))
+# Побудова графіків окремо
 
 # 1. Графік зміни складу суміші
-axs[0, 0].plot(times, [detail["co_percent"] for detail in step_details], 'r-', label='CO')
-axs[0, 0].plot(times, [detail["co2_percent"] for detail in step_details], 'b-', label='CO₂')
-axs[0, 0].plot(times, [detail["o2_percent"] for detail in step_details], 'g-', label='O₂')
-axs[0, 0].plot(times, [detail["n2_percent"] for detail in step_details], 'k-', label='N₂')
-axs[0, 0].set_xlabel('Час, хв')
-axs[0, 0].set_ylabel('Склад, %')
-axs[0, 0].set_title('Зміна складу суміші під час процесу')
-axs[0, 0].grid(True)
-axs[0, 0].legend()
+plt.figure(figsize=(10, 6))
+plt.plot(times, [detail["co_percent"] for detail in step_details], 'y-', label='CO')
+plt.plot(times, [detail["co2_percent"] for detail in step_details], 'b-', label='CO₂')
+plt.plot(times, [detail["o2_percent"] for detail in step_details], 'g-', label='O₂')
+plt.plot(times, [detail["n2_percent"] for detail in step_details], 'k-', label='N₂')
+plt.xlabel('Час, хв')
+plt.ylabel('Склад, %')
+plt.title('Зміна складу суміші під час процесу')
+plt.grid(True)
+plt.legend()
+plt.tight_layout()
+plt.show()
 
 # 2. Графік зміни температури
+plt.figure(figsize=(10, 6))
 t_values = [detail["T1"] for detail in step_details] + [step_details[-1]["T2"]]
 time_values = [i * time_per_step for i in range(len(t_values))]
-axs[0, 1].plot(time_values, t_values, 'r-o')
-axs[0, 1].set_xlabel('Час, хв')
-axs[0, 1].set_ylabel('Температура, °C')
-axs[0, 1].set_title('Зміна температури під час процесу')
-axs[0, 1].grid(True)
+plt.plot(time_values, t_values, 'r-o')
+plt.xlabel('Час, хв')
+plt.ylabel('Температура, °C')
+plt.title('Зміна температури під час процесу')
+plt.grid(True)
+plt.tight_layout()
+plt.show()
 
 # 3. Графік теплоти на кожному кроці
-axs[1, 0].bar(range(1, len(step_details) + 1), [detail["Q_step"]/1000 for detail in step_details])
-axs[1, 0].set_xlabel('Крок')
-axs[1, 0].set_ylabel('Теплота, кДж')
-axs[1, 0].set_title('Теплота, поглинута на кожному кроці')
-axs[1, 0].set_xticks(range(1, len(step_details) + 1))
-axs[1, 0].grid(True)
+plt.figure(figsize=(10, 6))
+plt.bar(range(1, len(step_details) + 1), [detail["Q_step"]/1000 for detail in step_details])
+plt.xlabel('Крок')
+plt.ylabel('Теплота, кДж')
+plt.title('Теплота, поглинута на кожному кроці')
+plt.xticks(range(1, len(step_details) + 1))
+plt.grid(True)
+plt.tight_layout()
+plt.show()
 
 # 4. Графік внеску компонентів на кожному кроці
+plt.figure(figsize=(10, 6))
 q_steps = np.array([detail["Q_step"] for detail in step_details])
 q_co = np.array([detail["Q_co"] for detail in step_details])
 q_co2 = np.array([detail["Q_co2"] for detail in step_details])
 q_o2 = np.array([detail["Q_o2"] for detail in step_details])
 q_n2 = np.array([detail["Q_n2"] for detail in step_details])
 
-axs[1, 1].stackplot(range(1, len(step_details) + 1), 
-                   [q_co/1000, q_co2/1000, q_o2/1000, q_n2/1000],
-                   labels=['CO', 'CO₂', 'O₂', 'N₂'],
-                   colors=['r', 'b', 'g', 'k'])
-axs[1, 1].set_xlabel('Крок')
-axs[1, 1].set_ylabel('Теплота, кДж')
-axs[1, 1].set_title('Внесок кожного компонента в теплоту на кожному кроці')
-axs[1, 1].set_xticks(range(1, len(step_details) + 1))
-axs[1, 1].legend()
-axs[1, 1].grid(True)
-
-# Загальний заголовок
-fig.suptitle('Аналіз теплообміну в газовій суміші зі змінним складом', fontsize=16)
-plt.tight_layout(rect=[0, 0, 1, 0.96])
-plt.savefig("D:/WINDSURF/MIP/Convertor/Практичне1/variable_mixture_analysis.png", dpi=300)
+plt.stackplot(range(1, len(step_details) + 1),
+              [q_co/1000, q_co2/1000, q_o2/1000, q_n2/1000],
+              labels=['CO', 'CO₂', 'O₂', 'N₂'],
+              colors=['gold', 'b', 'g', 'k'])
+plt.xlabel('Крок')
+plt.ylabel('Теплота, кДж')
+plt.title('Внесок кожного компонента в теплоту на кожному кроці')
+plt.xticks(range(1, len(step_details) + 1))
+plt.legend()
+plt.grid(True)
+plt.tight_layout()
+plt.savefig("D:/WINDSURF/MIP/Convertor/Практичне1/4_component_contribution.png", dpi=300)
 plt.show()
