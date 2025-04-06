@@ -52,33 +52,33 @@ print(f"   Швидкість води: {w:.2f} м/с")
 
 # 3. Розрахунок температури робочої поверхні за формулою (1.8)
 t2 = t1 + (q * 1000 * math.log(d/d1)) / (2 * math.pi * lambda_pipe)
-print(f"{t2 = }")
+print(f"t2 = {t2:.2f}")
 
 # Перевірка температурних обмежень
 t2_max = 450 if material == "Сталь Ст20" else 260
 print(f"{t2_max = }")
 
 print(f"\n2. Температура зовнішньої поверхні змійовика: {t2:.2f} °С")
-print(f"   Максимально допустима температура: {t2_max} °С")
+print(f"   Максимально допустима температура: {t2_max:.2f} °С")
 if t2 > t2_max:
     print(f"   УВАГА! Перевищення допустимої температури на {t2 - t2_max:.2f} °С")
 
 # 4. Розрахунок втрат тиску
 # Втрати на тертя за формулою (1.9)
 dP_fr = mu_fr * (L/d1) * rho * (w**2/2)
-print(f"{dP_fr = }")
+print(f"dP_fr = {dP_fr:.2f}")
 
 # Місцеві втрати за формулою (1.10)
 dP_lr = (n_90 * xi_lr1 + n_180 * xi_lr2) * rho * (w**2/2)
-print(f"{dP_lr = }")
+print(f"dP_lr = {dP_lr:.2f}")
 
 # Сумарні втрати за формулою (1.12)
 dP_loss = dP_fr + dP_lr + dP_g
-print(f"{dP_loss = }")
+print(f"dP_lr = {dP_loss:.2f}")
 
 # Перевірка достатності тиску води
 P_wat_min = (dP_loss + 1e5)/1e6  # МПа
-print(f"{P_wat_min = }")
+print(f"P_wat_min = {P_wat_min:.2f}")
 
 print(f"\n3. Втрати тиску:")
 print(f"   - на тертя: {dP_fr/1000:.2f} кПа")
