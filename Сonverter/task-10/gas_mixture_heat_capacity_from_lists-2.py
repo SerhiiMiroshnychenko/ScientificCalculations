@@ -223,7 +223,7 @@ plt.legend()
 # Додавання температур до графіку порівняння
 for i, temp in enumerate(temperatures):
     plt.annotate(f'{temp}°C', xy=(times[i], normalized_molar[i]),
-                 xytext=(times[i], normalized_molar[i] + 0.1),  # Ще більший відступ для кращої видимості
+                 xytext=(times[i], normalized_molar[i] + 0.01),  # Ще більший відступ для кращої видимості
                  bbox=dict(boxstyle="round,pad=0.2", facecolor="white", edgecolor="black", alpha=0.7),
                  ha='center',
                  arrowprops=dict(arrowstyle='->', lw=0.5, connectionstyle="arc3,rad=0"))
