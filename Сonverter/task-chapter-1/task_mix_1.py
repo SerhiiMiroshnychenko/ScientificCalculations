@@ -193,17 +193,46 @@ print(f"   Кількість речовини: [моль]")
 print(f"   Температура: [К]")
 print(f"   Теплота: [Дж/(моль·К)] · [моль] · [К] = [Дж] ✓")
 
-# Побудова графіка теплоємності для кожного компонента
+# Функція для розрахунку cv суміші в залежності від температури
+def cv_mix(T, composition={"co": r_co, "co2": r_co2, "o2": r_o2, "n2": r_n2}):
+    return (composition["co"] * cv_co(T) +
+            composition["co2"] * cv_co2(T) +
+            composition["o2"] * cv_o2(T) +
+            composition["n2"] * cv_n2(T))
+
+# Побудова графіка теплоємності для суміші та кожного компонента
 plot_temperatures = np.linspace(T1, T2, 100)
-plt.figure(figsize=(12, 6))
-plt.plot(plot_temperatures - 273.15, [cv_co(T) for T in plot_temperatures], label='CO')
-plt.plot(plot_temperatures - 273.15, [cv_co2(T) for T in plot_temperatures], label='CO₂')
-plt.plot(plot_temperatures - 273.15, [cv_o2(T) for T in plot_temperatures], label='O₂')
-plt.plot(plot_temperatures - 273.15, [cv_n2(T) for T in plot_temperatures], label='N₂')
+plt.figure(figsize=(12, 8))
+
+# Графік теплоємності для кожного компонента
+plt.plot(plot_temperatures - 273.15, [cv_co(T) for T in plot_temperatures], 'r-', label='CO')
+plt.plot(plot_temperatures - 273.15, [cv_co2(T) for T in plot_temperatures], 'b-', label='CO₂')
+plt.plot(plot_temperatures - 273.15, [cv_o2(T) for T in plot_temperatures], 'g-', label='O₂')
+plt.plot(plot_temperatures - 273.15, [cv_n2(T) for T in plot_temperatures], 'k-', label='N₂')
+
+# Додаємо графік теплоємності суміші
+plt.plot(plot_temperatures - 273.15, [cv_mix(T) for T in plot_temperatures], 'm--', linewidth=2, label='Суміш')
 plt.xlabel('Температура, °C')
-plt.ylabel('Теплоємність, Дж/(моль·К)')
-plt.title('Теплоємність компонентів при сталому об\'ємі')
+plt.ylabel('Теплоємність при сталому об\'ємі, Дж/(моль·К)')
+plt.title('Теплоємність суміші та її компонентів при сталому об\'ємі')
 plt.grid(True)
-plt.legend()
-plt.savefig('components_heat_capacity.png')
-plt.close()
+plt.legend(loc='best')
+
+# Додаємо додаткові пояснення до графіка
+plt.figtext(0.5, 0.01, 'Пунктирна лінія показує теплоємність суміші, яка є середньозваженою від теплоємностей компонентів',
+            ha='center', fontsize=10, bbox={"facecolor":"white", "alpha":0.5, "pad":5})
+
+plt.tight_layout(rect=[0, 0.05, 1, 1])
+plt.savefig("mixture_and_components_cv.png", dpi=300)
+plt.show()
+
+# Додатковий графік - зміна теплоємності суміші з температурою
+plt.figure(figsize=(12, 6))
+plt.plot(plot_temperatures - 273.15, [cv_mix(T) for T in plot_temperatures], 'r-', linewidth=2)
+plt.xlabel('Температура, °C')
+plt.ylabel('Теплоємність суміші, Дж/(моль·К)')
+plt.title('Зміна теплоємності суміші з температурою')
+plt.grid(True)
+plt.tight_layout()
+plt.savefig("mixture_cv.png", dpi=300)
+plt.show()
