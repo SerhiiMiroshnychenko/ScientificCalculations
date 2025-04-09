@@ -568,31 +568,31 @@ def display_rankings(rankings, title="Рейтинг колонок"):
 
     # Виведення рейтингу за p-значенням t-тесту
     print("\n1. Рейтинг за p-значенням t-тесту (менше значення = сильніший зв'язок)")
-    print(tabulate(rankings['t_pvalue'].head(20), headers='keys', tablefmt='pretty', showindex=False, floatfmt=".4f"))
+    print(tabulate(rankings['t_pvalue'].head(24), headers='keys', tablefmt='pretty', showindex=False, floatfmt=".4f"))
 
     # Виведення рейтингу за p-значенням тесту Манна-Уітні
     print("\n2. Рейтинг за p-значенням тесту Манна-Уітні (менше значення = сильніший зв'язок)")
-    print(tabulate(rankings['mw_pvalue'].head(20), headers='keys', tablefmt='pretty', showindex=False, floatfmt=".4f"))
+    print(tabulate(rankings['mw_pvalue'].head(24), headers='keys', tablefmt='pretty', showindex=False, floatfmt=".4f"))
 
     # Виведення рейтингу за відносною різницею
     print("\n3. Рейтинг за відносною різницею середніх значень (більше значення = сильніший зв'язок)")
-    print(tabulate(rankings['relative_diff'].head(20), headers='keys', tablefmt='pretty', showindex=False, floatfmt=".2f"))
+    print(tabulate(rankings['relative_diff'].head(24), headers='keys', tablefmt='pretty', showindex=False, floatfmt=".2f"))
 
     # Виведення рейтингу за d Коена
     print("\n4. Рейтинг за розміром ефекту d Коена (більше значення = сильніший зв'язок)")
-    print(tabulate(rankings['cohen_d'].head(20), headers='keys', tablefmt='pretty', showindex=False, floatfmt=".4f"))
+    print(tabulate(rankings['cohen_d'].head(24), headers='keys', tablefmt='pretty', showindex=False, floatfmt=".4f"))
 
     # Виведення рейтингу за AUC
     print("\n5. Рейтинг за AUC (більше значення = сильніший зв'язок)")
-    print(tabulate(rankings['auc'].head(20), headers='keys', tablefmt='pretty', showindex=False, floatfmt=".4f"))
+    print(tabulate(rankings['auc'].head(24), headers='keys', tablefmt='pretty', showindex=False, floatfmt=".4f"))
 
     # Виведення рейтингу за Information Value
     print("\n6. Рейтинг за Information Value (більше значення = сильніший зв'язок)")
-    print(tabulate(rankings['iv'].head(20), headers='keys', tablefmt='pretty', showindex=False, floatfmt=".4f"))
+    print(tabulate(rankings['iv'].head(24), headers='keys', tablefmt='pretty', showindex=False, floatfmt=".4f"))
 
     # Виведення комбінованого рейтингу
     print("\n7. Комбінований рейтинг (враховує всі показники)")
-    print(tabulate(rankings['combined'].head(20), headers='keys', tablefmt='pretty', showindex=False, floatfmt=".4f"))
+    print(tabulate(rankings['combined'].head(24), headers='keys', tablefmt='pretty', showindex=False, floatfmt=".4f"))
 
 def display_column_analysis(column_name, basic_stats, tests_results, ci_results, comparison_df, is_significant):
     """
