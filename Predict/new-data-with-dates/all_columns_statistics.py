@@ -73,6 +73,13 @@ def load_data(file_path, group_column='is_successful'):
         df.loc[df['source'].astype(str).str.lower() == 'false', 'source_binary'] = 0
         print(f"Додано числову колонку 'source_binary': бінарне значення (0 або 1)")
 
+    # Додавання перетворення для salesperson
+    if 'salesperson' in df.columns:
+        # Створення числового кодування для значень salesperson
+        salesperson_mapping = {value: idx for idx, value in enumerate(df['salesperson'].unique())}
+        df['salesperson_num'] = df['salesperson'].map(salesperson_mapping)
+        print(f"Додано числову колонку 'salesperson_num': числове представлення менеджерів")
+
     # Визначення колонок для аналізу (всі числові колонки)
     numeric_columns = df.select_dtypes(include=['number']).columns.tolist()
 
