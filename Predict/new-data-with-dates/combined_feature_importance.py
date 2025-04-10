@@ -1063,7 +1063,7 @@ def plot_heatmap(rankings_df, top_n=15, save_path=None):
 
     plt.close()
 
-def print_method_rankings(rankings_df, method, all_metrics_results=None, top_n=10):
+def print_method_rankings(rankings_df, method, all_metrics_results=None, top_n=24):
     """
     Виводить рейтинг ознак за окремим методом
 
@@ -1190,7 +1190,7 @@ def main():
         ]
 
         for method in methods:
-            print_method_rankings(rankings_df, method, all_metrics_results=all_metrics, top_n=10)
+            print_method_rankings(rankings_df, method, all_metrics_results=all_metrics, top_n=24)
 
         # Створення візуалізацій
 

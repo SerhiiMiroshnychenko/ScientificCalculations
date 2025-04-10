@@ -575,11 +575,11 @@ def display_rankings(rankings, title="Рейтинг колонок"):
 
     # Виведення рейтингу за p-значенням t-тесту
     print("\n1. Рейтинг за p-значенням t-тесту (менше значення = сильніший зв'язок)")
-    print(tabulate(rankings['t_pvalue'].head(24), headers='keys', tablefmt='pretty', showindex=False, floatfmt=".4f"))
+    print(tabulate(rankings['t_pvalue'].head(24), headers='keys', tablefmt='pretty', showindex=False, floatfmt=".2e"))
 
     # Виведення рейтингу за p-значенням тесту Манна-Уітні
     print("\n2. Рейтинг за p-значенням тесту Манна-Уітні (менше значення = сильніший зв'язок)")
-    print(tabulate(rankings['mw_pvalue'].head(24), headers='keys', tablefmt='pretty', showindex=False, floatfmt=".4f"))
+    print(tabulate(rankings['mw_pvalue'].head(24), headers='keys', tablefmt='pretty', showindex=False, floatfmt=".2e"))
 
     # Виведення рейтингу за відносною різницею
     print("\n3. Рейтинг за відносною різницею середніх значень (більше значення = сильніший зв'язок)")
@@ -631,7 +631,7 @@ def display_column_analysis(column_name, basic_stats, tests_results, ci_results,
     # Форматування таблиці результатів тестів
     if tests_results is not None:
         tests_formatted = tests_results.copy()
-        tests_formatted['p-значення'] = tests_formatted['p-значення'].map(lambda x: f"{x:.8f}" if not pd.isna(x) else "N/A")
+        tests_formatted['p-значення'] = tests_formatted['p-значення'].map(lambda x: f"{x:.2e}" if not pd.isna(x) else "N/A")
         tests_formatted['Статистика'] = tests_formatted['Статистика'].map(lambda x: f"{x:.4f}" if not pd.isna(x) else "N/A")
 
         print("\nРезультати статистичних тестів:")
