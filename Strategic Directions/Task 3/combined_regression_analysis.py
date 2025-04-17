@@ -150,7 +150,10 @@ def build_regression_model(data, method_name):
         'residuals': residuals,
         'y_pred': y_pred,
         'corr_matrix': corr_matrix,
-        'method_name': method_name
+        'method_name': method_name,
+        'beta_x1': beta_x1,
+        'beta_x2': beta_x2,
+        'vif_data': vif_data
     }
 
 # Функція для візуалізації результатів
@@ -331,9 +334,9 @@ def visualize_results(results_seq, results_rand):
             b1_seq,
             b2_seq,
             b0_seq,
-            beta_x1,
-            beta_x2,
-            vif_data['VIF'].mean(),
+            results_seq['beta_x1'],
+            results_seq['beta_x2'],
+            results_seq['vif_data']['VIF'].mean(),
             stats.shapiro(results_seq['residuals'])[1]
         ],
         'Випадковий метод': [
@@ -343,9 +346,9 @@ def visualize_results(results_seq, results_rand):
             b1_rand,
             b2_rand,
             b0_rand,
-            beta_x1,
-            beta_x2,
-            vif_data['VIF'].mean(),
+            results_rand['beta_x1'],
+            results_rand['beta_x2'],
+            results_rand['vif_data']['VIF'].mean(),
             stats.shapiro(results_rand['residuals'])[1]
         ],
         'Задані значення': [
