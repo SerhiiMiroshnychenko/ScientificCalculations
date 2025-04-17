@@ -150,10 +150,7 @@ def build_regression_model(data, method_name):
         'residuals': residuals,
         'y_pred': y_pred,
         'corr_matrix': corr_matrix,
-        'method_name': method_name,
-        'beta_x1': beta_x1,
-        'beta_x2': beta_x2,
-        'vif_data': vif_data
+        'method_name': method_name
     }
 
 # Функція для візуалізації результатів
@@ -161,6 +158,10 @@ def visualize_results(results_seq, results_rand):
     """
     Візуалізує результати обох методів для порівняння
     """
+    # Отримуємо параметри моделей
+    b0_seq, b1_seq, b2_seq = results_seq['model_sm'].params
+    b0_rand, b1_rand, b2_rand = results_rand['model_sm'].params
+    
     # Створюємо фігуру для порівняння регресійних моделей
     plt.figure(figsize=(15, 10))
     
@@ -179,11 +180,9 @@ def visualize_results(results_seq, results_rand):
     )
     
     # Обчислюємо передбачені значення для послідовного методу
-    b0_seq, b1_seq, b2_seq = results_seq['model_sm'].params
     y_pred_grid_seq = b0_seq + b1_seq * x1_grid + b2_seq * x2_grid
     
     # Обчислюємо передбачені значення для випадкового методу
-    b0_rand, b1_rand, b2_rand = results_rand['model_sm'].params
     y_pred_grid_rand = b0_rand + b1_rand * x1_grid + b2_rand * x2_grid
     
     # Будуємо поверхні регресії
@@ -314,6 +313,22 @@ def visualize_results(results_seq, results_rand):
     print("ПОРІВНЯННЯ РЕЗУЛЬТАТІВ ОБОХ МЕТОДІВ")
     print("="*80)
     
+    # Обчислюємо β-коефіцієнти для обох моделей
+    beta_x1_seq = b1_seq * results_seq['X']['X1'].std() / results_seq['y'].std()
+    beta_x2_seq = b2_seq * results_seq['X']['X2'].std() / results_seq['y'].std()
+    
+    beta_x1_rand = b1_rand * results_rand['X']['X1'].std() / results_rand['y'].std()
+    beta_x2_rand = b2_rand * results_rand['X']['X2'].std() / results_rand['y'].std()
+    
+    # Обчислюємо VIF для обох моделей
+    vif_seq = pd.DataFrame()
+    vif_seq["Variable"] = results_seq['X'].columns
+    vif_seq["VIF"] = [variance_inflation_factor(results_seq['X'].values, i) for i in range(results_seq['X'].shape[1])]
+    
+    vif_rand = pd.DataFrame()
+    vif_rand["Variable"] = results_rand['X'].columns
+    vif_rand["VIF"] = [variance_inflation_factor(results_rand['X'].values, i) for i in range(results_rand['X'].shape[1])]
+    
     comparison_table = pd.DataFrame({
         'Показник': [
             'R²', 
@@ -334,9 +349,9 @@ def visualize_results(results_seq, results_rand):
             b1_seq,
             b2_seq,
             b0_seq,
-            results_seq['beta_x1'],
-            results_seq['beta_x2'],
-            results_seq['vif_data']['VIF'].mean(),
+            beta_x1_seq,
+            beta_x2_seq,
+            vif_seq['VIF'].mean(),
             stats.shapiro(results_seq['residuals'])[1]
         ],
         'Випадковий метод': [
@@ -346,9 +361,9 @@ def visualize_results(results_seq, results_rand):
             b1_rand,
             b2_rand,
             b0_rand,
-            results_rand['beta_x1'],
-            results_rand['beta_x2'],
-            results_rand['vif_data']['VIF'].mean(),
+            beta_x1_rand,
+            beta_x2_rand,
+            vif_rand['VIF'].mean(),
             stats.shapiro(results_rand['residuals'])[1]
         ],
         'Задані значення': [
