@@ -23,11 +23,6 @@ def s2(t, A2):
 s1_values = s1(t)
 s2_values_list = [s2(t, A2) for A2 in A2_values]
 
-# # Обробка можливих нескінченностей та NaN-ів (може виникнути через логарифм від'ємних чисел)
-# s1_values[~np.isfinite(s1_values)] = np.nan
-# for i in range(len(s2_values_list)):
-#     s2_values_list[i][~np.isfinite(s2_values_list[i])] = np.nan
-
 # Візуалізація часових рядів
 plt.figure(figsize=(12, 8))
 plt.plot(t, s1_values, label='s1(t), A1=2.02, t_hat1=1300s')
@@ -46,12 +41,8 @@ print("Розрахунок показника Герста:")
 
 # Функція для розрахунку і виведення показника Герста
 def calculate_hurst(series, name):
-    # Видалення NaN-ів перед розрахунком
-    # clean_series = series[~np.isnan(series)]
-    clean_series = series
-
-    if len(clean_series) > 100:  # Перевіряємо, чи достатньо даних
-        H, c, data = compute_Hc(clean_series, kind='price', simplified=False)
+    if len(series) > 100:  # Перевіряємо, чи достатньо даних
+        H, c, data = compute_Hc(series, kind='price', simplified=False)
         print(f"{name}: H={H:.4f}, c={c:.4f}")
         return H, c, data
     else:
@@ -101,28 +92,5 @@ for i, A2 in enumerate(A2_values):
         plt.legend()
         plt.grid(True)
         plt.tight_layout()
-
-# # Порівняльний графік всіх R/S аналізів
-# plt.figure(figsize=(12, 8))
-#
-# # Додаємо s1
-# if H1 is not None:
-#     plt.loglog(data1[0], data1[1], 'ro', label='s1(t)', alpha=0.7)
-#     plt.loglog(data1[0], c1*data1[0]**H1, 'r-', label=f's1(t) регресія (H={H1:.4f})', alpha=0.7)
-#
-# # Додаємо всі s2
-# for i, A2 in enumerate(A2_values):
-#     if H2_list[i] is not None:
-#         plt.loglog(data2_list[i][0], data2_list[i][1], f'{colors[i]}{markers[i]}',
-#                   label=f's2(t), A2=10^{np.log10(A2):.1f}', alpha=0.7)
-#         plt.loglog(data2_list[i][0], c2_list[i]*data2_list[i][0]**H2_list[i],
-#                   f'{colors[i]}-', label=f's2(t), A2=10^{np.log10(A2):.1f} регресія (H={H2_list[i]:.4f})', alpha=0.7)
-#
-# plt.title('Порівняння R/S аналізу для всіх часових рядів')
-# plt.xlabel('Time interval')
-# plt.ylabel('R/S ratio')
-# plt.legend()
-# plt.grid(True)
-# plt.tight_layout()
 
 plt.show()
