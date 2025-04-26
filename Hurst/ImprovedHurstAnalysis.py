@@ -297,7 +297,7 @@ def main():
     print("=" * 50)
     
     # Створення папки для збереження графіків за новою логікою
-    output_dir = "./plots"
+    output_dir = "plots"
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
         print(f"Створено директорію для збереження графіків: {output_dir}")
@@ -312,11 +312,16 @@ def main():
     print("АНАЛІЗ ЧАСОВОГО РЯДУ s1(t)")
     print("=" * 50)
     
-    results_s1 = analyze_time_series_hurst(s1, "$s_1(t)$", plot=True, save_path=output_dir)
+    # Додаємо суфікс для s1
+    suffix_s1 = "_s1"
+    
+    results_s1 = analyze_time_series_hurst(s1, "$s_1(t)$", plot=True, 
+                                          save_path=output_dir, suffix=suffix_s1)
     
     # Аналіз похідних s1
     print("\nАналіз похідних s1(t)...")
-    stats_s1, eq_stats_s1, eq_check_s1 = analyze_derivatives(s1, "$s_1(t)$", plot=True, save_path=output_dir)
+    stats_s1, eq_stats_s1, eq_check_s1 = analyze_derivatives(s1, "$s_1(t)$", 
+                                                           plot=True, save_path=output_dir, suffix=suffix_s1)
     
     print("\nСтатистики похідних для $s_1(t)$:")
     print(stats_s1.to_string(index=False))
@@ -351,7 +356,6 @@ def main():
     print("АНАЛІЗ ЗАВЕРШЕНО")
     print("=" * 50)
     print(f"Всі графіки збережено в директорії: {os.path.abspath(output_dir)}")
-    print("Формат збереження файлів: './plots/derivatives_s2_3.png'")
 
 if __name__ == "__main__":
     main()
