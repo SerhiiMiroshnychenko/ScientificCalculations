@@ -1,0 +1,63 @@
+@startuml
+skinparam backgroundColor white
+skinparam defaultFontName "Times New Roman"
+skinparam defaultFontSize 14
+skinparam ArrowColor DarkSlateGray
+skinparam RectangleBackgroundColor WhiteSmoke
+skinparam RectangleBorderColor DarkSlateGray
+skinparam NoteBorderColor Gray
+skinparam NoteBackgroundColor Ivory
+skinparam TitleFontSize 18
+skinparam TitleFontStyle bold
+
+title Методологія оцінки значущості ознак для прогностичної моделі
+
+rectangle "Набір даних B2B-замовлень\n(n = 86,794; p = 25)" as source
+
+rectangle "Етап I: Підготовка даних для аналізу" as prep
+note right of prep
+  • Видалення нерелевантних змінних
+  • Обробка пропущених значень
+  • Трансформація темпоральних змінних
+  • Обробка категоріальних змінних
+  • Трансформація числових змінних
+end note
+
+rectangle "Етап II: Застосування методів оцінки значущості ознак" as methods
+note right of methods
+  1. **AUC (Area Under the Curve)**
+     • Оцінка здатності окремої ознаки розділяти класи
+     • Обчислення площі під ROC-кривою
+
+  2. **Mutual Information**
+     • Вимірювання взаємної інформації між ознакою та цільовою змінною
+     • Оцінка нелінійних залежностей без припущень про розподіл
+
+  3. **Distance Correlation**
+     • Обчислення кореляції відстаней між векторами
+     • Виявлення залежностей, незалежно від їх форми
+
+  4. **Логістична регресія**
+     • Оцінка стандартизованих коефіцієнтів моделі
+     • Розрахунок відношення шансів (odds ratio)
+
+  5. **Decision Tree**
+     • Оцінка внеску ознаки у зменшення неоднорідності
+     • Урахування взаємодії між ознаками
+end note
+
+rectangle "Етап III: Інтегральна оцінка значущості" as integration
+note right of integration
+  • Ранжування ознак за кожним методом
+  • Обчислення середнього рангу для кожної ознаки
+  • Виділення найважливіших предикторів для бізнес-аналізу
+end note
+
+rectangle "Проранжований перелік ознак\nза впливом на успішність замовлень" as final
+
+source -down-> prep
+prep -down-> methods
+methods -down-> integration
+integration -down-> final
+
+@enduml
