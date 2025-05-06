@@ -1,0 +1,61 @@
+@startuml
+skinparam backgroundColor white
+skinparam defaultFontName "Times New Roman"
+skinparam defaultFontSize 14
+skinparam ArrowColor DarkSlateGray
+skinparam RectangleBackgroundColor WhiteSmoke
+skinparam RectangleBorderColor DarkSlateGray
+skinparam NoteBorderColor Gray
+skinparam NoteBackgroundColor Ivory
+skinparam TitleFontSize 18
+skinparam TitleFontStyle bold
+
+title Методологія етапів предпроцесингу даних
+
+rectangle "Вихідний масив даних\n(n = 86,794; p = 25)" as source
+
+rectangle "Етап I: Видалення нерелевантних змінних" as remove
+note right of remove
+  • Виключення ідентифікаторів (id, order_id, partner_id)
+  • Видалення незмістовних часових міток
+  • Усунення змінних, що можуть призвести до перенавчання моделі
+end note
+
+rectangle "Етап II: Обробка пропущених значень" as missing
+note right of missing
+  • Заповнення пропусків у числових змінних медіаною
+  • Заповнення пропусків у категоріальних змінних модою
+  • Забезпечення цілісності даних для моделювання
+end note
+
+rectangle "Етап III: Трансформація темпоральних змінних" as time
+note right of time
+  • Виділення компонентів з create_date
+  • Циклічне кодування (sin-cos трансформація)
+  • Розрахунок часової віддаленості (місяці)
+end note
+
+rectangle "Етап IV: Обробка категоріальних змінних" as cat
+note right of cat
+  • Аналіз кардинальності змінних
+  • Впровадження порядкового кодування
+  • Обробка змінних salesperson (k=31) та source (k=66)
+end note
+
+rectangle "Етап V: Трансформація числових змінних" as num
+note right of num
+  • Заміна від'ємних значень нулями для відповідних змінних
+  • Детекція та фільтрація викидів (IQR метод)
+  • Робастне масштабування (стандартизація)
+  • Нормалізація розподілів змінних
+end note
+
+rectangle "Підготовлені дані\n(n = 86,792; p = 30)" as final
+
+source -down-> remove
+remove -down-> missing
+missing -down-> time
+time -down-> cat
+cat -down-> num
+num -down-> final
+@enduml
