@@ -22,6 +22,7 @@ from sklearn.metrics import roc_auc_score
 import dcor  # потрібно встановити: pip install dcor
 from scipy import stats
 import warnings
+import re
 
 warnings.filterwarnings('ignore')
 
@@ -51,6 +52,63 @@ if X.select_dtypes(include=['object']).shape[1] > 0:
 print(f"Після фільтрації залишилось {X.shape[1]} числових ознак")
 
 
+# Функція для ідентифікації та групування циклічних ознак
+def identify_cyclical_features(feature_names):
+    """
+    Ідентифікує і групує пари циклічних ознак (sin/cos)
+    Повертає словник вигляду {'базова_назва': ['базова_назва_sin', 'базова_назва_cos']}
+    """
+    cyclical_pairs = {}
+    sin_features = [f for f in feature_names if f.endswith('_sin')]
+    
+    for sin_feature in sin_features:
+        base_name = sin_feature[:-4]  # Видаляємо '_sin'
+        cos_feature = f"{base_name}_cos"
+        
+        if cos_feature in feature_names:
+            # Створюємо базову назву без _sin/_cos
+            cyclical_pairs[base_name] = [sin_feature, cos_feature]
+    
+    return cyclical_pairs
+
+
+# Функція для створення DataFrame з обробленими ознаками (об'єднання циклічних)
+def preprocess_features_for_analysis(X):
+    """
+    Створює новий DataFrame де циклічні ознаки (sin/cos) об'єднані
+    """
+    feature_names = X.columns
+    cyclical_pairs = identify_cyclical_features(feature_names)
+    
+    # Створюємо новий DataFrame для зберігання оброблених даних
+    X_processed = pd.DataFrame()
+    
+    # Копіюємо оригінальні ознаки, які не є частиною циклічних пар
+    for feature in feature_names:
+        is_part_of_pair = False
+        for pair in cyclical_pairs.values():
+            if feature in pair:
+                is_part_of_pair = True
+                break
+        
+        if not is_part_of_pair:
+            X_processed[feature] = X[feature]
+    
+    # Об'єднуємо циклічні ознаки
+    for base_name, pair in cyclical_pairs.items():
+        sin_feature, cos_feature = pair
+        # Для кожної пари створюємо нову ознаку з іменем base_name
+        # Використовуємо евклідову норму (корінь з суми квадратів) як міру важливості
+        X_processed[base_name] = np.sqrt(X[sin_feature]**2 + X[cos_feature]**2)
+    
+    return X_processed
+
+
+# Обробляємо ознаки, об'єднуючи циклічні
+X_processed = preprocess_features_for_analysis(X)
+print(f"Після обробки циклічних ознак маємо {X_processed.shape[1]} ознак")
+
+
 # Функція для обчислення та впорядкування значущості ознак
 def create_feature_importance_df(importance_values, feature_names, method_name):
     """
@@ -72,19 +130,16 @@ def create_feature_importance_df(importance_values, feature_names, method_name):
 
 
 # Функція для візуалізації результатів
-def plot_feature_importance(importance_df, method_name, top_n=20):
+def plot_feature_importance(importance_df, method_name):
     """
-    Створює візуалізацію топ-N найважливіших ознак
+    Створює візуалізацію всіх ознак
     """
-    plt.figure(figsize=(12, 8))
+    plt.figure(figsize=(14, max(10, len(importance_df) * 0.3)))  # Динамічно налаштовуємо висоту
 
-    # Вибираємо топ-N ознак
-    plot_df = importance_df.head(top_n)
+    # Створюємо горизонтальну гістограму для всіх ознак
+    sns.barplot(x='Значущість', y='Ознака', data=importance_df)
 
-    # Створюємо горизонтальну гістограму
-    sns.barplot(x='Значущість', y='Ознака', data=plot_df)
-
-    plt.title(f'Топ-{top_n} найважливіших ознак за методом {method_name}')
+    plt.title(f'Значущість ознак за методом {method_name}')
     plt.tight_layout()
 
     # Збереження візуалізації
@@ -116,7 +171,7 @@ def calculate_auc_importance(X, y):
     return importances, feature_names
 
 
-auc_importances, features = calculate_auc_importance(X, y)
+auc_importances, features = calculate_auc_importance(X_processed, y)
 auc_importance_df = create_feature_importance_df(auc_importances, features, 'AUC')
 plot_feature_importance(auc_importance_df, 'AUC')
 
@@ -125,8 +180,8 @@ plot_feature_importance(auc_importance_df, 'AUC')
 #######################################
 print("\n2. Обчислення значущості ознак за методом Mutual Information...")
 
-mi_importances = mutual_info_classif(X, y, random_state=42)
-mi_importance_df = create_feature_importance_df(mi_importances, X.columns, 'MutualInformation')
+mi_importances = mutual_info_classif(X_processed, y, random_state=42)
+mi_importance_df = create_feature_importance_df(mi_importances, X_processed.columns, 'MutualInformation')
 plot_feature_importance(mi_importance_df, 'Mutual Information')
 
 #######################################
@@ -153,7 +208,7 @@ def calculate_dcor_importance(X, y):
     return importances, feature_names
 
 
-dcor_importances, features = calculate_dcor_importance(X, y)
+dcor_importances, features = calculate_dcor_importance(X_processed, y)
 dcor_importance_df = create_feature_importance_df(dcor_importances, features, 'DistanceCorrelation')
 plot_feature_importance(dcor_importance_df, 'Distance Correlation')
 
@@ -164,17 +219,17 @@ print("\n4. Обчислення значущості ознак за допом
 
 # Масштабування даних для логістичної регресії
 scaler = StandardScaler()
-X_scaled = scaler.fit_transform(X)
+X_processed_scaled = scaler.fit_transform(X_processed)
 
 # Навчання логістичної регресії
 log_reg = LogisticRegression(penalty='l2', C=1.0, max_iter=1000, random_state=42)
-log_reg.fit(X_scaled, y)
+log_reg.fit(X_processed_scaled, y)
 
 # Отримання абсолютних значень коефіцієнтів як міри важливості
 log_reg_importances = np.abs(log_reg.coef_[0])
 
 # Створення DataFrame з результатами
-log_reg_importance_df = create_feature_importance_df(log_reg_importances, X.columns, 'LogisticRegression')
+log_reg_importance_df = create_feature_importance_df(log_reg_importances, X_processed.columns, 'LogisticRegression')
 plot_feature_importance(log_reg_importance_df, 'Логістична регресія')
 
 
@@ -237,7 +292,7 @@ def calculate_logistic_regression_stats(X_scaled, y, feature_names):
 
 
 # Обчислення детальної статистики для логістичної регресії
-log_reg_detailed = calculate_logistic_regression_stats(X_scaled, y, X.columns)
+log_reg_detailed = calculate_logistic_regression_stats(X_processed_scaled, y, X_processed.columns)
 
 #######################################
 # 5. Decision Tree
@@ -246,13 +301,13 @@ print("\n5. Обчислення значущості ознак за допом
 
 # Навчання дерева рішень
 dt = DecisionTreeClassifier(max_depth=5, random_state=42)
-dt.fit(X, y)
+dt.fit(X_processed, y)
 
 # Отримання важливостей ознак
 dt_importances = dt.feature_importances_
 
 # Створення DataFrame з результатами
-dt_importance_df = create_feature_importance_df(dt_importances, X.columns, 'DecisionTree')
+dt_importance_df = create_feature_importance_df(dt_importances, X_processed.columns, 'DecisionTree')
 plot_feature_importance(dt_importance_df, 'Decision Tree')
 
 #######################################
@@ -315,19 +370,27 @@ def create_summary_table(feature_names, importance_dfs, method_names):
 importance_dfs = [auc_importance_df, mi_importance_df, dcor_importance_df,
                   log_reg_importance_df, dt_importance_df]
 method_names = ['AUC', 'MI', 'dCor', 'LogReg', 'DecTree']
-summary_df = create_summary_table(X.columns, importance_dfs, method_names)
+summary_df = create_summary_table(X_processed.columns, importance_dfs, method_names)
 
-# Візуалізація топ-10 ознак за середнім рангом
-top_features = summary_df.head(10)['Ознака'].tolist()
+# Візуалізація всіх ознак за середнім рангом
+plt.figure(figsize=(14, max(10, len(summary_df) * 0.3)))  # Динамічно налаштовуємо висоту
+sns.barplot(x='Середній_ранг', y='Ознака', data=summary_df)
+plt.title('Середній ранг значущості ознак за всіма методами')
+plt.tight_layout()
 
-plt.figure(figsize=(15, 10))
+# Збереження візуалізації середнього рангу
+output_file = 'feature_importance_average_rank.png'
+plt.savefig(output_file, dpi=300)
+plt.close()
+print(f"Візуалізацію середнього рангу збережено у файл {output_file}")
 
-# Створення стовпчастої діаграми для порівняння топ-10 ознак за різними методами
+# Створення стовпчастої діаграми для порівняння всіх ознак за різними методами
 comparison_data = []
-for feature in top_features:
+for feature in X_processed.columns:
     for i, method in enumerate(method_names):
         df = importance_dfs[i]
         value = float(df[df['Ознака'] == feature]['Значущість'])
+        
         # Масштабуємо значення, щоб вони були порівнянні
         if method == 'AUC':
             # AUC значення між 0.5 і 1, масштабуємо до [0, 1]
@@ -345,17 +408,51 @@ for feature in top_features:
 
 comparison_df = pd.DataFrame(comparison_data)
 
-# Візуалізація порівняння методів
+# Візуалізуємо топ-15 ознак для кращої читабельності
+top_features = summary_df.head(15)['Ознака'].tolist()
+top_comparison_df = comparison_df[comparison_df['Ознака'].isin(top_features)]
+
+# Візуалізація порівняння методів для топ-15 ознак
 plt.figure(figsize=(16, 10))
-sns.barplot(x='Ознака', y='Відносна_значущість', hue='Метод', data=comparison_df)
-plt.title('Порівняння відносної значущості топ-10 ознак за різними методами')
+sns.barplot(x='Ознака', y='Відносна_значущість', hue='Метод', data=top_comparison_df)
+plt.title('Порівняння відносної значущості топ-15 ознак за різними методами')
 plt.xticks(rotation=45, ha='right')
 plt.tight_layout()
 
-# Збереження порівняльної діаграми
-output_file = 'feature_importance_comparison.png'
+# Збереження порівняльної діаграми для топ-15
+output_file = 'feature_importance_comparison_top15.png'
 plt.savefig(output_file, dpi=300)
 plt.close()
-print(f"Порівняльну діаграму збережено у файл {output_file}")
+print(f"Порівняльну діаграму для топ-15 ознак збережено у файл {output_file}")
+
+# Створюємо інтерактивну HTML-таблицю з результатами
+try:
+    html_table = summary_df.to_html(index=False)
+    with open('feature_importance_summary.html', 'w', encoding='utf-8') as f:
+        f.write(f"""
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <meta charset="UTF-8">
+            <title>Результати аналізу значущості ознак</title>
+            <style>
+                body {{ font-family: Arial, sans-serif; margin: 20px; }}
+                table {{ border-collapse: collapse; width: 100%; }}
+                th, td {{ border: 1px solid #ddd; padding: 8px; text-align: left; }}
+                th {{ background-color: #f2f2f2; }}
+                tr:nth-child(even) {{ background-color: #f9f9f9; }}
+                tr:hover {{ background-color: #f2f2f2; }}
+            </style>
+        </head>
+        <body>
+            <h1>Результати аналізу значущості ознак</h1>
+            <p>Таблиця містить ранги та значення значущості для різних методів аналізу.</p>
+            {html_table}
+        </body>
+        </html>
+        """)
+    print("Створено HTML-таблицю з результатами: feature_importance_summary.html")
+except Exception as e:
+    print(f"Помилка при створенні HTML-таблиці: {e}")
 
 print("\nАналіз значущості ознак завершено. Результати збережено у відповідні файли.")
