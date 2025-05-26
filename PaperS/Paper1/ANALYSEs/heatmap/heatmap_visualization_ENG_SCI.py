@@ -86,10 +86,34 @@ plt.annotate('Feature Importance Rank Heatmap by Different Methods',
              xy=(0.5, 0.93), xycoords='figure fraction',
              fontsize=16, ha='center')
 
-# Створюємо теплову карту
-# Змінюємо колірну палітру на зелено-жовто-червону для кращого відображення рангів (зелений - найважливіші)
-heatmap = sns.heatmap(plot_data, annot=True, cmap="RdYlGn_r", fmt=".1f", linewidths=.5,
-                      cbar_kws={'label': 'Rank (lower = more important)'})
+# Створюємо матрицю з вже відформатованими значеннями
+# Це дозволить нам контролювати форматування кожного елемента
+annot_data = plot_data.copy()
+
+# Створюємо матрицю рядків для анотацій
+annot_texts = pd.DataFrame(index=annot_data.index, columns=annot_data.columns)
+
+# Заповнюємо матрицю відформатованими текстами
+for col in annot_data.columns:
+    for idx in annot_data.index:
+        value = annot_data.loc[idx, col]
+        if col == 'Average Rank':
+            # Формат з одним знаком після коми для Average Rank
+            annot_texts.loc[idx, col] = f"{value:.1f}"
+        else:
+            # Цілі числа для всіх інших колонок
+            annot_texts.loc[idx, col] = f"{int(value)}"
+
+# Створюємо теплову карту з нашими власними анотаціями
+heatmap = sns.heatmap(
+    plot_data,  # оригінальні дані для кольорів
+    annot=annot_texts.values,  # вже відформатовані тексти
+    cmap="RdYlGn_r",
+    fmt="",  # порожній формат, бо ми вже відформатували тексти
+    linewidths=.5,
+    annot_kws={"size": 10},
+    cbar_kws={'label': 'Rank (lower = more important)'}
+)
 
 # Налаштовуємо вісі
 plt.ylabel('')  # Не потрібно підписувати вісь Y, там вже є назви ознак

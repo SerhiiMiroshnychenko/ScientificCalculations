@@ -78,13 +78,32 @@ figure_width = 16
 # Створюємо фігуру
 fig, ax = plt.subplots(figsize=(figure_width, figure_height))
 
-# Створюємо теплову карту
+# Створюємо матрицю з вже відформатованими значеннями
+# Це дозволить нам контролювати форматування кожного елемента
+annot_data = plot_data.copy()
+
+# Створюємо матрицю рядків для анотацій
+annot_texts = pd.DataFrame(index=annot_data.index, columns=annot_data.columns)
+
+# Заповнюємо матрицю відформатованими текстами
+for col in annot_data.columns:
+    for idx in annot_data.index:
+        value = annot_data.loc[idx, col]
+        if col == 'Average Rank':
+            # Формат з одним знаком після коми для Average Rank
+            annot_texts.loc[idx, col] = f"{value:.1f}"
+        else:
+            # Цілі числа для всіх інших колонок
+            annot_texts.loc[idx, col] = f"{int(value)}"
+
+# Створюємо теплову карту з нашими власними анотаціями
 heatmap = sns.heatmap(
-    plot_data, 
-    annot=True,
-    cmap="RdYlGn_r", 
-    fmt=".1f", 
+    plot_data,  # оригінальні дані для кольорів
+    annot=annot_texts.values,  # вже відформатовані тексти
+    cmap="RdYlGn_r",
+    fmt="",  # порожній формат, бо ми вже відформатували тексти
     linewidths=.5,
+    annot_kws={"size": 10},
     cbar_kws={'label': 'Rank (lower = more important)'},
     ax=ax
 )
