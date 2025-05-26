@@ -135,13 +135,10 @@ plt.tight_layout()
 
 # Зберігаємо теплову карту
 output_file_png = 'feature_importance_heatmap_final.png'
-output_file_pdf = 'feature_importance_heatmap_final.pdf'
 
-plt.savefig(output_file_png, dpi=300, bbox_inches='tight')
-plt.savefig(output_file_pdf, bbox_inches='tight')
+plt.savefig(output_file_png, dpi=900, bbox_inches='tight')
 plt.close()
 
 print(f"Теплову карту збережено у файли:")
 print(f"- {output_file_png}")
-print(f"- {output_file_pdf}")
 print("Візуалізація завершена.")

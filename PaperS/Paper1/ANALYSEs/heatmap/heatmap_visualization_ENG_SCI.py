@@ -53,11 +53,14 @@ heatmap_data['Average Rank'] = data['Середній_ранг']
 # Сортуємо за середнім рангом
 heatmap_data = heatmap_data.sort_values('Average Rank')
 
+# Додаємо колонку з порядковими номерами (загальний ранг)
+heatmap_data['Overall Rank'] = range(1, len(heatmap_data) + 1)
+
 # Встановлюємо індекс для теплової карти (використовуємо оригінальні назви ознак)
 heatmap_data = heatmap_data.set_index('Feature')
 
 # Вибираємо колонки з методами для теплової карти
-heatmap_cols = method_names + ['Average Rank']
+heatmap_cols = method_names + ['Average Rank', 'Overall Rank']
 plot_data = heatmap_data[heatmap_cols]
 
 # Перейменовуємо ЛИШЕ колонки методів на повні англійські назви, залишаючи "Середній ранг" як є
@@ -76,7 +79,7 @@ def setup_fonts():
 setup_fonts()
 
 # Створюємо фігуру з відповідним розміром
-plt.figure(figsize=(14, max(10, len(plot_data) * 0.4)))  # Збільшуємо висоту для кращої читабельності
+plt.figure(figsize=(16, max(10, len(plot_data) * 0.4)))  # Збільшуємо ширину для додаткової колонки
 
 # Створюємо анотацію для заголовка (англійською)
 plt.annotate('Feature Importance Rank Heatmap by Different Methods',
@@ -92,16 +95,17 @@ heatmap = sns.heatmap(plot_data, annot=True, cmap="RdYlGn_r", fmt=".1f", linewid
 plt.ylabel('')  # Не потрібно підписувати вісь Y, там вже є назви ознак
 plt.xlabel('')
 
-# Обертаємо підписи на осі X для кращої читабельності
-plt.xticks(ha='center')
+# Встановлюємо горизонтальні підписи на осі X для кращої читабельності
+plt.xticks(rotation=0, ha='center')  # rotation=0 для горизонтальних підписів
 
 # Налаштовуємо макет
 plt.tight_layout()
 
-# Зберігаємо теплову карту
-output_file = 'feature_importance_heatmap_ENG_SCI.png'
-plt.savefig(output_file, dpi=300, bbox_inches='tight')
+# Зберігаємо теплову карту у кількох форматах
+output_file_png = 'feature_importance_heatmap_ENG_SCI.png'
+
+plt.savefig(output_file_png, dpi=900, bbox_inches='tight')
 plt.close()
 
-print(f"Теплову карту збережено у файл {output_file}")
+print(f"Теплову карту збережено у файл {output_file_png}")
 print("Візуалізація завершена.")
