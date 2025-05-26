@@ -52,11 +52,14 @@ heatmap_data['Average Rank'] = data['Середній_ранг']
 # Сортуємо за середнім рангом
 heatmap_data = heatmap_data.sort_values('Average Rank')
 
+# Додаємо колонку з порядковими номерами (загальний ранг)
+heatmap_data['Overall Rank'] = range(1, len(heatmap_data) + 1)
+
 # Встановлюємо індекс для теплової карти
 heatmap_data = heatmap_data.set_index('Feature')
 
 # Вибираємо колонки з методами для теплової карти
-heatmap_cols = method_names + ['Average Rank']
+heatmap_cols = method_names + ['Average Rank', 'Overall Rank']
 plot_data = heatmap_data[heatmap_cols]
 
 # Перейменовуємо колонки методів на повні назви
@@ -70,7 +73,7 @@ plt.rcParams['font.size'] = 12
 # Налаштування розміру фігури
 n_rows = len(plot_data)
 figure_height = max(10, n_rows * 0.4)
-figure_width = 14
+figure_width = 16
 
 # Створюємо фігуру
 fig, ax = plt.subplots(figsize=(figure_width, figure_height))
@@ -120,8 +123,8 @@ cbar.ax.yaxis.set_ticks_position('none')
 ax.set_ylabel('')
 ax.set_xlabel('')
 
-# Обертаємо підписи на осі X
-plt.xticks(ha='center')
+# Обертаємо підписи на осі X для кращої читабельності
+plt.xticks(rotation=0, ha='center')  # rotation=0 для горизонтальних підписів
 
 # Встановлюємо заголовок максимально близько до теплової карти
 ax.set_title('Feature Importance Rank Heatmap by Different Methods',
