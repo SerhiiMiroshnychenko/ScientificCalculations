@@ -127,8 +127,11 @@ plt.tight_layout()
 
 # Зберігаємо теплову карту у кількох форматах
 output_file_png = 'feature_importance_heatmap_ENG_SCI.png'
+output_file_svg = 'feature_importance_heatmap_ENG_SCI.svg'
 
 plt.savefig(output_file_png, dpi=900, bbox_inches='tight')
+plt.savefig(f"{output_file_svg}", format='svg',
+                bbox_inches='tight')
 plt.close()
 
 print(f"Теплову карту збережено у файл {output_file_png}")
