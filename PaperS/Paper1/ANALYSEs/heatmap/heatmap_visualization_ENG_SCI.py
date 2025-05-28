@@ -72,19 +72,19 @@ def setup_fonts():
     # Використовуємо шрифт Times New Roman розміром 8 пунктів
     plt.rcParams['font.family'] = 'serif'
     plt.rcParams['font.serif'] = ['Times New Roman']
-    plt.rcParams['font.size'] = 12
+    plt.rcParams['font.size'] = 16
 
 
 # Встановлюємо шрифти
 setup_fonts()
 
 # Створюємо фігуру з відповідним розміром
-plt.figure(figsize=(16, max(10, len(plot_data) * 0.4)))  # Збільшуємо ширину для додаткової колонки
+plt.figure(figsize=(20, max(10, len(plot_data) * 0.4)))  # Збільшуємо ширину для додаткової колонки
 
 # Створюємо анотацію для заголовка (англійською)
 plt.annotate('Feature Importance Rank Heatmap by Different Methods',
-             xy=(0.5, 0.93), xycoords='figure fraction',
-             fontsize=16, ha='center')
+             xy=(0.5, 0.92), xycoords='figure fraction',
+             fontsize=18, ha='center')
 
 # Створюємо матрицю з вже відформатованими значеннями
 # Це дозволить нам контролювати форматування кожного елемента
@@ -111,7 +111,7 @@ heatmap = sns.heatmap(
     cmap="RdYlGn_r",
     fmt="",  # порожній формат, бо ми вже відформатували тексти
     linewidths=.5,
-    annot_kws={"size": 10},
+    annot_kws={"size": 16},
     cbar_kws={'label': 'Rank (lower = more important)'}
 )
 
@@ -129,7 +129,7 @@ plt.tight_layout()
 output_file_png = 'feature_importance_heatmap_ENG_SCI.png'
 output_file_svg = 'feature_importance_heatmap_ENG_SCI.svg'
 
-plt.savefig(output_file_png, dpi=900, bbox_inches='tight')
+plt.savefig(output_file_png, dpi=300, bbox_inches='tight')
 plt.savefig(f"{output_file_svg}", format='svg',
                 bbox_inches='tight')
 plt.close()
