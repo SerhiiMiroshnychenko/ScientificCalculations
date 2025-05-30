@@ -1,6 +1,5 @@
 import math
 
-# Масиви даних для всіх варіантів із таблиці 1.1
 # Формат: [тепловий потік (кВт/м²), зовнішній діаметр (мм), внутрішній діаметр (мм),
 #          кількість поворотів на 90°, кількість поворотів на 180°,
 #          температура води на вході (°С), тиск води в цеху (МПа), матеріал труби]
@@ -190,48 +189,6 @@ def print_variant_results(results):
         print("   Необхідно внести зміни в конструкцію для забезпечення працездатності.")
 
 
-# Функція для зібрання статистики по всіх варіантах
-def collect_statistics(all_results):
-    valid_variants = [r['variant_num'] for r in all_results if
-                      r['check_t1'] and r['check_t_out'] and
-                      r['check_t2'] and r['check_L'] and r['check_P_wat']]
-
-    invalid_variants = [r['variant_num'] for r in all_results if
-                        not (r['check_t1'] and r['check_t_out'] and
-                             r['check_t2'] and r['check_L'] and r['check_P_wat'])]
-
-    temp_exceed_variants = [r['variant_num'] for r in all_results if not r['check_t2']]
-    pressure_low_variants = [r['variant_num'] for r in all_results if not r['check_P_wat']]
-    length_wrong_variants = [r['variant_num'] for r in all_results if not r['check_L']]
-
-    steel_variants = [r for r in all_results if r['material'] == "Сталь Ст20"]
-    copper_variants = [r for r in all_results if r['material'] == "Мідь"]
-
-    avg_steel_temp = sum(r['t2'] for r in steel_variants) / len(steel_variants) if steel_variants else 0
-    avg_copper_temp = sum(r['t2'] for r in copper_variants) / len(copper_variants) if copper_variants else 0
-
-    print(f"\n{'=' * 80}")
-    print(f"ЗАГАЛЬНА СТАТИСТИКА ПО ВСІХ ВАРІАНТАХ")
-    print(f"{'=' * 80}")
-
-    print(f"\nВсього варіантів: {len(all_results)}")
-    print(f"Працездатних варіантів: {len(valid_variants)} ({len(valid_variants) / len(all_results) * 100:.1f}%)")
-    print(f"Непрацездатних варіантів: {len(invalid_variants)} ({len(invalid_variants) / len(all_results) * 100:.1f}%)")
-
-    if invalid_variants:
-        print(f"\nНепрацездатні варіанти: {', '.join(map(str, invalid_variants))}")
-
-        if temp_exceed_variants:
-            print(f"Варіанти з перевищенням температури: {', '.join(map(str, temp_exceed_variants))}")
-        if pressure_low_variants:
-            print(f"Варіанти з недостатнім тиском води: {', '.join(map(str, pressure_low_variants))}")
-        if length_wrong_variants:
-            print(f"Варіанти з неприйнятною довжиною змійовика: {', '.join(map(str, length_wrong_variants))}")
-
-    print(f"\nСередня температура зовнішньої поверхні для сталевих труб: {avg_steel_temp:.2f} °С")
-    print(f"Середня температура зовнішньої поверхні для мідних труб: {avg_copper_temp:.2f} °С")
-
-
 # Головний блок коду
 def main():
     print("Тепловий і гідравлічний розрахунок водоохолоджуваної панелі ДСП")
@@ -242,9 +199,6 @@ def main():
         results = calculate_variant(i, variant_data)
         all_results.append(results)
         print_variant_results(results)
-
-    # Виведення загальної статистики
-    collect_statistics(all_results)
 
 
 if __name__ == "__main__":
