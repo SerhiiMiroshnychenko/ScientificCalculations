@@ -14,7 +14,7 @@ import warnings
 import os
 import time
 import pickle
-from joblib import Parallel, delayed
+# from joblib import Parallel, delayed  # Видалено joblib
 
 warnings.filterwarnings('ignore')
 
@@ -169,10 +169,11 @@ class FeatureCombinationAnalyzer:
         print(f"🔢 Загальна кількість комбінацій: {total_combinations}")
         print(f"⚡ Топ ознаки: {', '.join(self.top_feature_names)}")
         start_time = time.time()
-        # Паралельний запуск
-        results = Parallel(n_jobs=-1, verbose=5)(
-            delayed(self.test_feature_combination)(comb, size) for comb, size in all_combinations
-        )
+        # === Замість Parallel — звичайний цикл ===
+        results = []
+        for comb, size in all_combinations:
+            metrics = self.test_feature_combination(comb, size)
+            results.append(metrics)
         self.results = results
         self.results_df = pd.DataFrame(self.results)
         for size in range(1, n_features + 1):
@@ -488,7 +489,7 @@ if __name__ == '__main__':
     analyzer = FeatureCombinationAnalyzer(
         data_path=r'D:\PROJECTs\MY\ScientificCalculations\SC\ScientificCalculations\PaperS\Paper4\preprocessed_data2.csv',
         random_state=42,
-        top_features_count=12
+        top_features_count=5
     )
     analyzer.load_and_prepare_data()
     analyzer.select_top_features()
