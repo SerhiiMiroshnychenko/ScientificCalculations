@@ -171,9 +171,12 @@ class FeatureCombinationAnalyzer:
         start_time = time.time()
         # === Замість Parallel — звичайний цикл ===
         results = []
+        counter = total_combinations
         for comb, size in all_combinations:
+            print(f"{counter}: {comb}")
             metrics = self.test_feature_combination(comb, size)
             results.append(metrics)
+            counter -= 1
         self.results = results
         self.results_df = pd.DataFrame(self.results)
         for size in range(1, n_features + 1):
