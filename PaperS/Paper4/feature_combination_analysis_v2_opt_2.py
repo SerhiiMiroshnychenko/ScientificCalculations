@@ -81,7 +81,7 @@ class FeatureCombinationAnalyzer:
         self.results = []
         self.best_combinations = {}
         self.extended_results = []  # Для розширених комбінацій
-        self.results_dir = f"feature_analysis_results_v2_opt_1"
+        self.results_dir = f"feature_analysis_results_v2_opt_2"
         os.makedirs(self.results_dir, exist_ok=True)
         print(f"🔬 === АНАЛІЗ КОМБІНАЦІЙ ТОП-{self.top_features_count} ОЗНАК З ОПТИМАЛЬНИМИ ПАРАМЕТРАМИ ===")
         print(f"📁 Результати будуть збережені в: {self.results_dir}/")
@@ -489,7 +489,7 @@ if __name__ == '__main__':
     analyzer = FeatureCombinationAnalyzer(
         data_path=r'D:\PROJECTs\MY\ScientificCalculations\SC\ScientificCalculations\PaperS\Paper4\preprocessed_data2.csv',
         random_state=42,
-        top_features_count=5
+        top_features_count=12
     )
     analyzer.load_and_prepare_data()
     analyzer.select_top_features()
