@@ -248,37 +248,38 @@ class FeatureCombinationAnalyzer:
         # Розширені комбінації
         x2 = self.extended_results_df['combination_size'] if hasattr(self, 'extended_results_df') else []
         y2 = self.extended_results_df['test_auc_pr'] if hasattr(self, 'extended_results_df') else []
-        plt.scatter(x1, y1, alpha=0.5, c=x1, cmap='viridis', edgecolor='k', label='Комбінації топових ознак')
-        if len(x2) > 0:
-            plt.scatter(x2, y2, alpha=0.9, c='orange', marker='o', s=80, label='Послідовне нарощування (top+...)')
-        # === Додаємо підписи максимальних значень AUC-PR для кожної кількості ознак ===
-        # Об'єднуємо основні та розширені результати
+        # === Об'єднуємо всі результати в один датафрейм ===
         if len(x2) > 0:
             df_all = pd.concat([self.results_df, self.extended_results_df], ignore_index=True)
         else:
             df_all = self.results_df.copy()
+        x = df_all['combination_size']
+        y = df_all['test_auc_pr']
+        y_min, y_max = y.min(), y.max()  # Визначаємо до використання у підписах
+        plt.scatter(x, y, alpha=0.7, c=x, cmap='viridis', edgecolor='k', marker='o', s=80)
+        # === Додаємо підписи максимальних значень AUC-PR для кожної кількості ознак ===
         for size in sorted(df_all['combination_size'].unique()):
             size_df = df_all[df_all['combination_size'] == size]
             if not size_df.empty:
                 idx_max = size_df['test_auc_pr'].idxmax()
                 row = size_df.loc[idx_max]
-                x = row['combination_size']
-                y = row['test_auc_pr']
-                plt.text(x, y, f'{y:.3f}', fontsize=11, fontweight='bold', color='black',
-                         ha='center', va='bottom', bbox=dict(facecolor='white', alpha=0.7, edgecolor='none', boxstyle='round,pad=0.2'))
+                x_ = row['combination_size']
+                y_ = row['test_auc_pr']
+                y_offset = (y_max - y_min) * 0.03 if y_max > y_min else 0.01
+                plt.text(x_, y_ + y_offset, f'{y_:.3f}', fontsize=8, color='black',
+                         ha='center', va='bottom',
+                         bbox=dict(facecolor='white', alpha=0.5, edgecolor='none', boxstyle='round,pad=0.08'))
         plt.xlabel('Кількість ознак у комбінації', fontsize=14)
         plt.ylabel('AUC-PR (test_auc_pr)', fontsize=14)
-        plt.title('AUC-PR для комбінацій топових та нарощених наборів ознак', fontsize=16, fontweight='bold')
+        plt.title('AUC-PR для всіх комбінацій ознак', fontsize=16, fontweight='bold')
         # Додаємо padding по осі Y
-        all_y = pd.concat([y1, y2]) if len(y2) > 0 else y1
-        y_min, y_max = all_y.min(), all_y.max()
+        y_min, y_max = y.min(), y.max()
         y_range = y_max - y_min
         pad = y_range * 0.05 if y_range > 0 else 0.01
-        plt.xlim(0.5, self.top_features_count + len(x2) + 0.5)
-        plt.ylim(y_min - pad, y_max + pad)
-        plt.xticks(range(1, self.top_features_count + len(x2) + 1))
+        plt.xlim(0.5, df_all['combination_size'].max() + 0.5)
+        plt.ylim(y_min - pad, y_max + pad * 2)  # Додаємо більше місця зверху
+        plt.xticks(range(1, df_all['combination_size'].max() + 1))
         plt.grid(True, alpha=0.3)
-        plt.legend()
         plt.tight_layout()
         plt.savefig(f'{self.results_dir}/aucpr_vs_num_features_extended.png', dpi=300, bbox_inches='tight')
         plt.close()
