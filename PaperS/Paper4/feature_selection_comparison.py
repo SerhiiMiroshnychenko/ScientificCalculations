@@ -134,38 +134,6 @@ class FeatureSelectionComparison:
         self.rfe_df = rfe_df
         print(rfe_df)
 
-    def boostaroota_selection(self):
-        if BoostARoota is None:
-            print("❌ BoostARoota не встановлено! Встановіть через pip install boostaroota")
-            return
-        print(f"\n🔄 === BoostARoota ===")
-        # OHE для всіх ознак (як рекомендує BoostARoota)
-        X_train_ohe = pd.get_dummies(pd.DataFrame(self.X_train, columns=self.feature_names))
-        X_train_ohe = X_train_ohe.fillna(0).astype(float)
-        # Логування типів стовпців після OHE
-        non_numeric_cols = X_train_ohe.select_dtypes(exclude=[np.number]).columns.tolist()
-        print(f"[BoostARoota] Кількість стовпців після OHE: {X_train_ohe.shape[1]}")
-        print(f"[BoostARoota] Типи стовпців:\n{X_train_ohe.dtypes}")
-        if non_numeric_cols:
-            print(f"[BoostARoota] ⚠️ Знайдено нечислові стовпці: {non_numeric_cols}")
-        else:
-            print(f"[BoostARoota] ✅ Всі стовпці числові!")
-        print(f"[BoostARoota] Перші 5 рядків:\n{X_train_ohe.head()}")
-        # Видаляємо всі нечислові стовпці (object, string) якщо раптом залишились
-        X_train_ohe = X_train_ohe.select_dtypes(include=[np.number])
-        # y_train не змінюємо
-        # Використовуємо metric='logloss' як у прикладі
-        selector = BoostARoota(metric='logloss')
-        selector.fit(X_train_ohe, self.y_train)
-        selected = selector.keep_vars_
-        boostaroota_df = pd.DataFrame({
-            'feature': X_train_ohe.columns,
-            'selected': [f in selected for f in X_train_ohe.columns]
-        })
-        boostaroota_df.to_csv(f'{self.results_dir}/boostaroota_selected.csv', index=False)
-        self.boostaroota_df = boostaroota_df
-        print(boostaroota_df)
-
     def shap_importance(self):
         if shap is None:
             print("❌ SHAP не встановлено! Встановіть через pip install shap")
@@ -184,22 +152,65 @@ class FeatureSelectionComparison:
         self.shap_df = shap_df
         print(shap_df)
 
+    def greedy_feature_ranking(self):
+        print(f"\n🔄 === ЖАДІБНИЙ ВІДБІР ОЗНАК ===")
+        remaining = set(range(len(self.feature_names)))
+        selected = []
+        greedy_scores = []
+        for step in range(len(self.feature_names)):
+            best_score = -np.inf
+            best_idx = None
+            for idx in remaining:
+                current_features = selected + [idx]
+                X_train_sel = self.X_train_scaled[:, current_features]
+                X_test_sel = self.X_test_scaled[:, current_features]
+                model = XGBClassifier(**self.optimal_params)
+                model.fit(X_train_sel, self.y_train)
+                y_pred_proba = model.predict_proba(X_test_sel)[:, 1]
+                score = average_precision_score(self.y_test, y_pred_proba)
+                if score > best_score:
+                    best_score = score
+                    best_idx = idx
+            selected.append(best_idx)
+            remaining.remove(best_idx)
+            greedy_scores.append({'feature': self.feature_names[best_idx], 'score': best_score, 'step': step+1})
+            print(f"Крок {step+1}: {self.feature_names[best_idx]} (AUC-PR: {best_score:.4f})")
+        self.greedy_ranking_df = pd.DataFrame(greedy_scores)
+        self.greedy_ranking_df.to_csv(f'{self.results_dir}/greedy_ranking.csv', index=False)
+
     def compare_and_visualize(self):
         print(f"\n🔄 === Порівняння та візуалізація ===")
-        # Об'єднуємо всі рейтинги в одну таблицю
         df = pd.DataFrame({'feature': self.feature_names})
         if hasattr(self, 'xgb_importance_df'):
             df = df.merge(self.xgb_importance_df[['feature', 'importance']], on='feature', how='left')
             df['xgb_rank'] = df['importance'].rank(ascending=False, method='min')
         if hasattr(self, 'rfe_df'):
             df = df.merge(self.rfe_df[['feature', 'ranking']], on='feature', how='left')
-        if hasattr(self, 'boostaroota_df'):
-            df = df.merge(self.boostaroota_df[['feature', 'selected']], on='feature', how='left')
+            df['rfe_rank'] = df['ranking']
         if hasattr(self, 'shap_df'):
             df = df.merge(self.shap_df[['feature', 'mean_abs_shap']], on='feature', how='left')
             df['shap_rank'] = df['mean_abs_shap'].rank(ascending=False, method='min')
+        if hasattr(self, 'greedy_ranking_df'):
+            # Додаємо greedy_rank згідно з порядком у greedy_ranking_df
+            greedy_map = {row['feature']: i+1 for i, row in self.greedy_ranking_df.iterrows()}
+            df['greedy_rank'] = df['feature'].map(greedy_map)
+        # Додаємо середній ранг
+        rank_cols = ['xgb_rank', 'rfe_rank', 'shap_rank', 'greedy_rank']
+        df['mean_rank'] = df[rank_cols].mean(axis=1)
+        # Сортуємо за середнім рангом
+        df = df.sort_values('mean_rank', ascending=True)
         df.to_csv(f'{self.results_dir}/all_methods_comparison.csv', index=False)
-        # Barplot для кожного методу
+        # HEATMAP: ознаки по вертикалі, методи по горизонталі + середній ранг
+        heatmap_df = df.set_index('feature')[rank_cols + ['mean_rank']]
+        plt.figure(figsize=(10, max(8, len(self.feature_names)*0.4)))
+        sns.heatmap(heatmap_df, annot=True, fmt='.1f', cmap='YlGnBu', cbar_kws={'label': 'Ранг ознаки'})
+        plt.ylabel('Ознаки (відсортовано за середнім рангом)')
+        plt.xlabel('Метод')
+        plt.title('Теплова карта рангів ознак за різними методами та середній ранг')
+        plt.tight_layout()
+        plt.savefig(f'{self.results_dir}/feature_ranking_heatmap.png', dpi=300)
+        plt.close()
+        # Barplot для кожного методу (залишаю для зручності)
         plt.figure(figsize=(14, 7))
         if hasattr(self, 'xgb_importance_df'):
             sns.barplot(x='importance', y='feature', data=self.xgb_importance_df.head(15), color='skyblue', label='XGBoost')
@@ -221,7 +232,6 @@ class FeatureSelectionComparison:
             plt.tight_layout()
             plt.savefig(f'{self.results_dir}/shap_importance_barplot.png', dpi=300)
             plt.close()
-        # Scatter plot: XGBoost vs SHAP
         if hasattr(self, 'xgb_importance_df') and hasattr(self, 'shap_df'):
             merged = pd.merge(self.xgb_importance_df.reset_index().rename(columns={'index': 'xgb_rank'}),
                               self.shap_df.reset_index().rename(columns={'index': 'shap_rank'}),
@@ -244,8 +254,8 @@ class FeatureSelectionComparison:
         self.load_and_prepare_data()
         self.xgboost_importance()
         self.rfe_selection(n_features_to_select=10)
-        self.boostaroota_selection()
         self.shap_importance()
+        self.greedy_feature_ranking()
         self.compare_and_visualize()
 
 if __name__ == '__main__':
