@@ -157,9 +157,13 @@ class GreedyVsImportanceAnalyzer:
             on='feature', how='inner'
         )
         plt.figure(figsize=(8, 8))
-        plt.scatter(merged['xgb_rank']+1, merged['greedy_rank']+1, alpha=0.7)
+        # Визначаємо колір: зелений якщо ранги співпали, інакше синій
+        colors = np.where(merged['xgb_rank'] == merged['greedy_rank'], 'green', 'blue')
+        plt.scatter(merged['xgb_rank']+1, merged['greedy_rank']+1, alpha=0.7, c=colors)
+        # Додаємо надписи трохи далі від точки
         for _, row in merged.iterrows():
-            plt.text(row['xgb_rank']+1, row['greedy_rank']+1, row['feature'], fontsize=7, alpha=0.7)
+            dx, dy = 0.2, 0.2
+            plt.text(row['xgb_rank']+1+dx, row['greedy_rank']+1+dy, row['feature'], fontsize=7, alpha=0.7)
         plt.xlabel('XGBoost Rank')
         plt.ylabel('Greedy Rank')
         plt.title('Порівняння позицій ознак у рейтингах', fontsize=14, fontweight='bold')
