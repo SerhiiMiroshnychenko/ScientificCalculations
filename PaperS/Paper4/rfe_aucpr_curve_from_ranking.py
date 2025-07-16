@@ -6,6 +6,9 @@ from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
 from sklearn.feature_selection import RFE
 import os
+import matplotlib
+matplotlib.use('Agg')
+import matplotlib.pyplot as plt
 
 # === Функції для обробки циклічних ознак ===
 def identify_cyclical_features(feature_names):
@@ -36,7 +39,7 @@ def preprocess_features_for_analysis(X):
     return X_processed
 
 # === Параметри ===
-DATA_PATH = "D:/PROJECTs/MY/ScientificCalculations/SC/ScientificCalculations/PaperS/Paper4/preprocessed_data2.csv"
+DATA_PATH = r"D:\PROJECTs\MY\ScientificCalculations\SC\ScientificCalculations\PaperS\Paper4\preprocessed_data2.csv"
 RESULTS_DIR = "rfe_aucpr_curve_results"
 RFE_RESULTS_DIR = "rfe_sklearn_results_"
 RFE_RANKING_PATH = os.path.join(RFE_RESULTS_DIR, "rfe_ranking.csv")
@@ -117,4 +120,19 @@ for k in range(1, max_rank + 1):
 aucpr_df = pd.DataFrame(aucpr_log)
 aucpr_df.to_csv(AUC_LOG_CSV, index=False)
 
-print(f"AUC-PR для кожного k збережено у {AUC_LOG_CSV}") 
+print(f"AUC-PR для кожного k збережено у {AUC_LOG_CSV}")
+
+# === Візуалізація залежності AUC-PR від кількості ознак ===
+plt.figure(figsize=(8, 5))
+aucpr_df = pd.read_csv(AUC_LOG_CSV)
+plt.plot(aucpr_df['n_features'], aucpr_df['aucpr'], marker='o')
+for x, y in zip(aucpr_df['n_features'], aucpr_df['aucpr']):
+    plt.annotate(f"{y:.4f}", (x, y), textcoords="offset points", xytext=(0,7), ha='center', fontsize=8)
+plt.xlabel('Кількість ознак')
+plt.ylabel('AUC-PR')
+plt.title('Залежність AUC-PR від кількості ознак (RFE)')
+plt.grid(True)
+plt.tight_layout()
+plot_path = os.path.join(RESULTS_DIR, 'rfe_aucpr_curve.png')
+plt.savefig(plot_path)
+print(f"Графік збережено у {os.path.abspath(plot_path)}")

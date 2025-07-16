@@ -6,6 +6,9 @@ from sklearn.metrics import average_precision_score
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
 import os
+import matplotlib
+matplotlib.use('Agg')
+import matplotlib.pyplot as plt
 
 # === Функції для обробки циклічних ознак ===
 def identify_cyclical_features(feature_names):
@@ -114,3 +117,18 @@ metrics_df.to_csv(RFE_METRICS_CSV, index=False)
 
 print(f"RFE завершено. Ранжування збережено у {RFE_RANKING_CSV}")
 print(f"Лог метрик збережено у {RFE_METRICS_CSV}")
+
+# === Візуалізація залежності AUC-PR від кількості ознак ===
+plt.figure(figsize=(8, 5))
+metrics_df = pd.read_csv(RFE_METRICS_CSV)
+plt.plot(metrics_df['n_features'], metrics_df['aucpr'], marker='o')
+for x, y in zip(metrics_df['n_features'], metrics_df['aucpr']):
+    plt.annotate(f"{y:.4f}", (x, y), textcoords="offset points", xytext=(0,7), ha='center', fontsize=8)
+plt.xlabel('Кількість ознак')
+plt.ylabel('AUC-PR')
+plt.title('Залежність AUC-PR від кількості ознак (RFE)')
+plt.grid(True)
+plt.tight_layout()
+plot_path = os.path.join(os.path.dirname(RFE_METRICS_CSV), 'rfe_aucpr_curve.png')
+plt.savefig(plot_path)
+print(f"Графік збережено у {os.path.abspath(plot_path)}")
