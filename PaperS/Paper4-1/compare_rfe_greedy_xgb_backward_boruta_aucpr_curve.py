@@ -9,6 +9,7 @@ import os
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
+from boruta import BorutaPy
 
 # === Функції для обробки циклічних ознак ===
 def identify_cyclical_features(feature_names):
@@ -40,7 +41,7 @@ def preprocess_features_for_analysis(X):
 
 # === Параметри ===
 DATA_PATH = r"D:\PROJECTs\MY\ScientificCalculations\SC\ScientificCalculations\PaperS\Paper4\preprocessed_data2.csv"
-RESULTS_DIR = "compare_rfe_greedy_xgb_backward_aucpr_curve_results"
+RESULTS_DIR = "compare_rfe_greedy_xgb_backward_boruta_aucpr_curve_results"
 RANDOM_STATE = 42
 
 optimal_params = {
@@ -212,6 +213,37 @@ aucpr_df_backward = pd.DataFrame(backward_log)
 aucpr_df_backward = aucpr_df_backward.sort_values('n_features').reset_index(drop=True)
 aucpr_df_backward.to_csv(os.path.join(RESULTS_DIR, 'backward_aucpr_curve.csv'), index=False)
 
+# === Boruta з XGBoost ===
+print("🔄 Запуск Boruta з XGBoost...")
+boruta_clf = XGBClassifier(**optimal_params)
+boruta_selector = BorutaPy(
+    boruta_clf,
+    n_estimators='auto',
+    verbose=2,
+    random_state=RANDOM_STATE,
+    perc=100
+)
+boruta_selector.fit(X_train_scaled, y_train.values)
+selected_mask = boruta_selector.support_
+selected_features = [feature_names[i] for i, x in enumerate(selected_mask) if x]
+aucpr_log_boruta = []
+for k in range(1, len(selected_features)+1):
+    feats = selected_features[:k]
+    idxs = [feature_names.index(f) for f in feats]
+    X_train_sel = X_train_scaled[:, idxs]
+    X_test_sel = X_test_scaled[:, idxs]
+    model = XGBClassifier(**optimal_params)
+    model.fit(X_train_sel, y_train)
+    y_pred = model.predict_proba(X_test_sel)[:, 1]
+    aucpr = average_precision_score(y_test, y_pred)
+    aucpr_log_boruta.append({
+        'n_features': len(feats),
+        'features': ','.join(feats),
+        'aucpr': aucpr
+    })
+aucpr_df_boruta = pd.DataFrame(aucpr_log_boruta)
+aucpr_df_boruta.to_csv(os.path.join(RESULTS_DIR, 'boruta_aucpr_curve.csv'), index=False)
+
 # === Візуалізація для діапазону 12-24 ===
 plt.figure(figsize=(8, 5))
 # RFE — темно-блакитна
@@ -234,9 +266,14 @@ aucpr_df_backward_12_24 = aucpr_df_backward[(aucpr_df_backward['n_features'] >= 
 plt.plot(aucpr_df_backward_12_24['n_features'], aucpr_df_backward_12_24['aucpr'], marker='o', color='purple', label='Backward elimination')
 for x, y in zip(aucpr_df_backward_12_24['n_features'], aucpr_df_backward_12_24['aucpr']):
     plt.annotate(f"{y:.4f}", (x, y), textcoords="offset points", xytext=(0,7), ha='center', fontsize=8, color='purple')
+# Boruta — червоний
+aucpr_df_boruta_12_24 = aucpr_df_boruta[(aucpr_df_boruta['n_features'] >= 12) & (aucpr_df_boruta['n_features'] <= 24)]
+plt.plot(aucpr_df_boruta_12_24['n_features'], aucpr_df_boruta_12_24['aucpr'], marker='o', color='red', label='Boruta (XGBoost)')
+for x, y in zip(aucpr_df_boruta_12_24['n_features'], aucpr_df_boruta_12_24['aucpr']):
+    plt.annotate(f"{y:.4f}", (x, y), textcoords="offset points", xytext=(0,7), ha='center', fontsize=8, color='red')
 plt.xlabel('Кількість ознак')
 plt.ylabel('AUC-PR')
-plt.title('Залежність AUC-PR від кількості ознак (12-24): RFE, Greedy, XGBoost, Backward')
+plt.title('Залежність AUC-PR від кількості ознак (12-24): RFE, Greedy, XGBoost, Backward, Boruta')
 plt.grid(True)
 plt.legend()
 plt.tight_layout()
