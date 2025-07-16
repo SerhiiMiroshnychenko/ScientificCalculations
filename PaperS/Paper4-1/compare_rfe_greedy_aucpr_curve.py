@@ -108,6 +108,7 @@ for k in range(1, len(feature_names)+1):
         'aucpr': aucpr
     })
 aucpr_df_rfe = pd.DataFrame(aucpr_log_rfe)
+aucpr_df_rfe.to_csv(os.path.join(RESULTS_DIR, 'rfe_aucpr_curve.csv'), index=False)
 
 # === Greedy Feature Selection ===
 print("🔄 Запуск жадібного відбору ознак...")
@@ -135,14 +136,15 @@ for step in range(len(feature_names)):
         'aucpr': best_score
     })
 aucpr_df_greedy = pd.DataFrame(greedy_log)
+aucpr_df_greedy.to_csv(os.path.join(RESULTS_DIR, 'greedy_aucpr_curve.csv'), index=False)
 
 # === Візуалізація для діапазону 12-24 ===
 plt.figure(figsize=(8, 5))
-# RFE — блакитна
+# RFE — темно-блакитна
 aucpr_df_rfe_12_24 = aucpr_df_rfe[(aucpr_df_rfe['n_features'] >= 12) & (aucpr_df_rfe['n_features'] <= 24)]
-plt.plot(aucpr_df_rfe_12_24['n_features'], aucpr_df_rfe_12_24['aucpr'], marker='o', color='skyblue', label='RFE')
+plt.plot(aucpr_df_rfe_12_24['n_features'], aucpr_df_rfe_12_24['aucpr'], marker='o', color='#0077b6', label='RFE')
 for x, y in zip(aucpr_df_rfe_12_24['n_features'], aucpr_df_rfe_12_24['aucpr']):
-    plt.annotate(f"{y:.4f}", (x, y), textcoords="offset points", xytext=(0,7), ha='center', fontsize=8, color='skyblue')
+    plt.annotate(f"{y:.4f}", (x, y), textcoords="offset points", xytext=(0,7), ha='center', fontsize=8, color='#0077b6')
 # Greedy — зелена
 aucpr_df_greedy_12_24 = aucpr_df_greedy[(aucpr_df_greedy['n_features'] >= 12) & (aucpr_df_greedy['n_features'] <= 24)]
 plt.plot(aucpr_df_greedy_12_24['n_features'], aucpr_df_greedy_12_24['aucpr'], marker='o', color='green', label='Greedy')
@@ -154,6 +156,9 @@ plt.title('Залежність AUC-PR від кількості ознак (12-
 plt.grid(True)
 plt.legend()
 plt.tight_layout()
+# Додаємо верхній відступ
+ymin, ymax = plt.ylim()
+plt.ylim(ymin, ymax + (ymax - ymin) * 0.08)
 plot_path = os.path.join(RESULTS_DIR, 'compare_aucpr_curve_12_24.png')
 plt.savefig(plot_path)
 print(f"Об'єднаний графік (12-24) збережено у {os.path.abspath(plot_path)}") 
