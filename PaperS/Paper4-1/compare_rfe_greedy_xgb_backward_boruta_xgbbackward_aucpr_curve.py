@@ -59,8 +59,8 @@ optimal_params = {
     'random_state': RANDOM_STATE,
     'n_jobs': -1,
     'verbosity': 0,
-    # 'tree_method': 'hist',
-    # 'device': 'cuda',
+    'tree_method': 'hist',
+    'device': 'cuda',
 }
 
 os.makedirs(RESULTS_DIR, exist_ok=True)
