@@ -41,7 +41,7 @@ def preprocess_features_for_analysis(X):
 
 # === Параметри ===
 DATA_PATH = r"D:\PROJECTs\MY\ScientificCalculations\SC\ScientificCalculations\PaperS\Paper4\preprocessed_data2.csv"
-RESULTS_DIR = "compare_rfe_greedy_xgb_backward_boruta_aucpr_curve_results"
+RESULTS_DIR = "compare_rfe_greedy_xgb_backward_boruta_xgbbackward_aucpr_curve_results"
 RANDOM_STATE = 42
 
 optimal_params = {
@@ -59,8 +59,8 @@ optimal_params = {
     'random_state': RANDOM_STATE,
     'n_jobs': -1,
     'verbosity': 0,
-    'tree_method': 'hist',
-    'device': 'cuda',
+    # 'tree_method': 'hist',
+    # 'device': 'cuda',
 }
 
 os.makedirs(RESULTS_DIR, exist_ok=True)
@@ -244,6 +244,36 @@ for k in range(1, len(selected_features)+1):
 aucpr_df_boruta = pd.DataFrame(aucpr_log_boruta)
 aucpr_df_boruta.to_csv(os.path.join(RESULTS_DIR, 'boruta_aucpr_curve.csv'), index=False)
 
+# === Backward by XGBoost Importance ===
+print("🔄 Запуск зворотного відбору ознак за важливістю XGBoost...")
+xgb_model_full = XGBClassifier(**optimal_params)
+xgb_model_full.fit(X_train_scaled, y_train)
+importances_full = xgb_model_full.feature_importances_
+importance_order = np.argsort(importances_full)  # від найменшої до найбільшої важливості
+backward_xgb_log = []
+current_features = list(importance_order)
+for k in range(len(feature_names), 0, -1):
+    feats = [feature_names[i] for i in current_features]
+    idxs = current_features
+    X_train_sel = X_train_scaled[:, idxs]
+    X_test_sel = X_test_scaled[:, idxs]
+    model = XGBClassifier(**optimal_params)
+    model.fit(X_train_sel, y_train)
+    y_pred = model.predict_proba(X_test_sel)[:, 1]
+    aucpr = average_precision_score(y_test, y_pred)
+    backward_xgb_log.append({
+        'n_features': len(feats),
+        'features': ','.join(feats),
+        'aucpr': aucpr
+    })
+    if len(current_features) == 1:
+        break
+    # Видаляємо найменш важливу ознаку (яка зараз перша у списку)
+    current_features = current_features[1:]
+aucpr_df_backward_xgb = pd.DataFrame(backward_xgb_log)
+aucpr_df_backward_xgb = aucpr_df_backward_xgb.sort_values('n_features').reset_index(drop=True)
+aucpr_df_backward_xgb.to_csv(os.path.join(RESULTS_DIR, 'backward_xgb_aucpr_curve.csv'), index=False)
+
 # === Візуалізація для діапазону 12-24 ===
 plt.figure(figsize=(8, 5))
 AUC_MIN = 0.9766
@@ -272,9 +302,14 @@ aucpr_df_boruta_12_24 = aucpr_df_boruta[(aucpr_df_boruta['n_features'] >= 12) & 
 plt.plot(aucpr_df_boruta_12_24['n_features'], aucpr_df_boruta_12_24['aucpr'], marker='o', color='red', label='Boruta (XGBoost)')
 for x, y in zip(aucpr_df_boruta_12_24['n_features'], aucpr_df_boruta_12_24['aucpr']):
     plt.annotate(f"{y:.4f}", (x, y), textcoords="offset points", xytext=(0,7), ha='center', fontsize=8, color='red')
+# Backward by XGBoost importance — синій
+aucpr_df_backward_xgb_12_24 = aucpr_df_backward_xgb[(aucpr_df_backward_xgb['n_features'] >= 12) & (aucpr_df_backward_xgb['n_features'] <= 24) & (aucpr_df_backward_xgb['aucpr'] >= AUC_MIN)]
+plt.plot(aucpr_df_backward_xgb_12_24['n_features'], aucpr_df_backward_xgb_12_24['aucpr'], marker='o', color='blue', label='Backward XGBoost importance')
+for x, y in zip(aucpr_df_backward_xgb_12_24['n_features'], aucpr_df_backward_xgb_12_24['aucpr']):
+    plt.annotate(f"{y:.4f}", (x, y), textcoords="offset points", xytext=(0,7), ha='center', fontsize=8, color='blue')
 plt.xlabel('Кількість ознак')
 plt.ylabel('AUC-PR')
-plt.title('Залежність AUC-PR від кількості ознак (12-24): RFE, Greedy, XGBoost, Backward, Boruta')
+plt.title('Залежність AUC-PR від кількості ознак (12-24): RFE, Greedy, XGBoost, Backward, Boruta, Backward XGBoost')
 plt.grid(True)
 plt.legend()
 plt.tight_layout()
