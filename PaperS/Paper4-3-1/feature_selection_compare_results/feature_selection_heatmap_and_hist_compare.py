@@ -83,12 +83,18 @@ plt.ylabel('Ознака')
 plt.title('Теплова карта: включення ознак у найкращі набори')
 plt.tight_layout(rect=[0,0.08,1,1])
 
+# Додаємо зовнішню чорну рамку навколо heatmap
+for spine in ax.spines.values():
+    spine.set_visible(True)
+    spine.set_linewidth(1)
+    spine.set_color('black')
+
 # Додаємо кастомну легенду під графіком
 legend_elements = [
-    Patch(facecolor='#ffffff', edgecolor='black', label='Не входить'),
+    Patch(facecolor='#3cb371', edgecolor='black', label='Обидва датасети'),
     Patch(facecolor='#00bfff', edgecolor='black', label='Тільки датасет 1'),
     Patch(facecolor='#ff8800', edgecolor='black', label='Тільки датасет 2'),
-    Patch(facecolor='#3cb371', edgecolor='black', label='Обидва датасети'),
+    Patch(facecolor='#ffffff', edgecolor='black', label='Не входить'),
 ]
 plt.legend(handles=legend_elements, loc='upper center', bbox_to_anchor=(0.5, -0.08), ncol=4, frameon=True, fontsize=11)
 plt.savefig('feature_selection_heatmap_compare.png', dpi=300, bbox_inches='tight')
