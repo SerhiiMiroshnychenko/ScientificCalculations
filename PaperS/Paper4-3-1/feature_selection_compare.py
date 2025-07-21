@@ -84,43 +84,28 @@ baseline_metrics = {
 conf_matrix_baseline = confusion_matrix(y_test, y_pred_baseline)
 
 # === 2. OPTUNA HYPERPARAMETER SEARCH ON ALL FEATURES ===
-def optuna_objective(trial, X_train, y_train, base_params):
-    params = {
-        'n_estimators': trial.suggest_int('n_estimators', 100, 1000, step=50),
-        'learning_rate': trial.suggest_float('learning_rate', 0.01, 0.3, step=0.01),
-        'max_depth': trial.suggest_int('max_depth', 3, 12),
-        'min_child_weight': trial.suggest_int('min_child_weight', 1, 10),
-        'gamma': trial.suggest_float('gamma', 0, 2.0, step=0.05),
-        'subsample': trial.suggest_float('subsample', 0.6, 1.0, step=0.01),
-        'colsample_bytree': trial.suggest_float('colsample_bytree', 0.6, 1.0, step=0.01),
-        'reg_alpha': trial.suggest_float('reg_alpha', 0, 1.5, step=0.01),
-        'reg_lambda': trial.suggest_float('reg_lambda', 0.1, 3.0, step=0.05)
-    }
-    model_params = base_params.copy()
-    model_params.update(params)
-    model = XGBClassifier(**model_params)
-    cv_scores = cross_val_score(model, X_train, y_train, cv=5, scoring='average_precision', n_jobs=-1)
-    return cv_scores.mean()
-
-print("🔎 Step 2: Optuna hyperparameter search on all features...")
-class_counts = np.bincount(y_train)
-base_params = {
+# Замість Optuna підставляємо готові оптимальні параметри
+optimal_params = {
+    'subsample': 1.0,
+    'reg_lambda': 2.0,
+    'reg_alpha': 0.5,
+    'n_estimators': 800,
+    'min_child_weight': 3,
+    'max_depth': 7,
+    'learning_rate': 0.1,
+    'gamma': 0.2,
+    'colsample_bytree': 0.7,
     'objective': 'binary:logistic',
     'eval_metric': 'aucpr',
     'random_state': RANDOM_STATE,
     'n_jobs': -1,
-    'verbosity': 0
+    'verbosity': 0,
+    'tree_method': 'hist',
+    'device': 'cuda',
 }
-if len(class_counts) > 1 and class_counts[1] > 0:
-    base_params['scale_pos_weight'] = class_counts[0] / class_counts[1]
-study = optuna.create_study(direction='maximize', sampler=TPESampler(seed=RANDOM_STATE))
-start_time = time.time()
-study.optimize(lambda trial: optuna_objective(trial, X_train_scaled, y_train, base_params), n_trials=N_TRIALS, show_progress_bar=True)
-optuna_time = time.time() - start_time
-best_params_all = base_params.copy()
-best_params_all.update(study.best_params)
+
 # Final model on all features
-model_all = XGBClassifier(**best_params_all)
+model_all = XGBClassifier(**optimal_params)
 model_all.fit(X_train_scaled, y_train)
 y_pred_all = model_all.predict(X_test_scaled)
 y_pred_proba_all = model_all.predict_proba(X_test_scaled)[:, 1]
@@ -133,13 +118,13 @@ metrics_all = {
     'auc_pr': average_precision_score(y_test, y_pred_proba_all)
 }
 conf_matrix_all = confusion_matrix(y_test, y_pred_all)
-with open(os.path.join(RESULTS_DIR, 'optuna_all_features_results.json'), 'w') as f:
-    json.dump({'best_params': study.best_params, 'metrics': metrics_all, 'optuna_time_sec': optuna_time}, f, indent=2)
+with open(os.path.join(RESULTS_DIR, 'optimal_params_results.json'), 'w') as f:
+    json.dump({'optimal_params': optimal_params, 'metrics': metrics_all}, f, indent=2)
 
-# === 3. FEATURE SELECTION METHODS (using best_params_all) ===
+# === 3. FEATURE SELECTION METHODS (using optimal_params) ===
 print("🔎 Step 3: Feature selection with all methods...")
 # RFE
-estimator = XGBClassifier(**best_params_all)
+estimator = XGBClassifier(**optimal_params)
 rfe = RFE(estimator, n_features_to_select=None, step=1)
 rfe.fit(X_train_scaled, y_train)
 ranking = rfe.ranking_
@@ -152,7 +137,7 @@ for k in range(1, len(feature_names)+1):
         continue
     X_train_sel = X_train_scaled[:, idxs]
     X_test_sel = X_test_scaled[:, idxs]
-    model = XGBClassifier(**best_params_all)
+    model = XGBClassifier(**optimal_params)
     model.fit(X_train_sel, y_train)
     y_pred = model.predict_proba(X_test_sel)[:, 1]
     aucpr = average_precision_score(y_test, y_pred)
@@ -169,7 +154,7 @@ for step in range(len(feature_names)):
         current_features = selected + [idx]
         X_train_sel = X_train_scaled[:, current_features]
         X_test_sel = X_test_scaled[:, current_features]
-        model = XGBClassifier(**best_params_all)
+        model = XGBClassifier(**optimal_params)
         model.fit(X_train_sel, y_train)
         y_pred_proba = model.predict_proba(X_test_sel)[:, 1]
         score = average_precision_score(y_test, y_pred_proba)
@@ -181,7 +166,7 @@ for step in range(len(feature_names)):
     greedy_log.append({'n_features': len(selected), 'features': ','.join([feature_names[i] for i in selected]), 'aucpr': best_score})
 pd.DataFrame(greedy_log).to_csv(os.path.join(RESULTS_DIR, 'greedy_aucpr_curve.csv'), index=False)
 # XGBoost Importance
-xgb_model = XGBClassifier(**best_params_all)
+xgb_model = XGBClassifier(**optimal_params)
 xgb_model.fit(X_train_scaled, y_train)
 importances = xgb_model.feature_importances_
 importance_df = pd.DataFrame({'feature': feature_names, 'importance': importances}).sort_values('importance', ascending=False).reset_index(drop=True)
@@ -191,7 +176,7 @@ for k in range(1, min(25, len(feature_names)+1)):
     idxs = [feature_names.index(f) for f in selected_features if f in feature_names]
     X_train_sel = X_train_scaled[:, idxs]
     X_test_sel = X_test_scaled[:, idxs]
-    model = XGBClassifier(**best_params_all)
+    model = XGBClassifier(**optimal_params)
     model.fit(X_train_sel, y_train)
     y_pred = model.predict_proba(X_test_sel)[:, 1]
     aucpr = average_precision_score(y_test, y_pred)
@@ -202,7 +187,7 @@ backward_log = []
 current_features = list(range(len(feature_names)))
 X_train_sel = X_train_scaled[:, current_features]
 X_test_sel = X_test_scaled[:, current_features]
-model = XGBClassifier(**best_params_all)
+model = XGBClassifier(**optimal_params)
 model.fit(X_train_sel, y_train)
 y_pred_proba = model.predict_proba(X_test_sel)[:, 1]
 score = average_precision_score(y_test, y_pred_proba)
@@ -214,7 +199,7 @@ for k in range(len(feature_names), 0, -1):
         idxs = current_features
         X_train_sel = X_train_scaled[:, idxs]
         X_test_sel = X_test_scaled[:, idxs]
-        model = XGBClassifier(**best_params_all)
+        model = XGBClassifier(**optimal_params)
         model.fit(X_train_sel, y_train)
         y_pred_proba = model.predict_proba(X_test_sel)[:, 1]
         score = average_precision_score(y_test, y_pred_proba)
@@ -224,7 +209,7 @@ for k in range(len(feature_names), 0, -1):
         temp_features = [i for i in current_features if i != idx]
         X_train_sel = X_train_scaled[:, temp_features]
         X_test_sel = X_test_scaled[:, temp_features]
-        model = XGBClassifier(**best_params_all)
+        model = XGBClassifier(**optimal_params)
         model.fit(X_train_sel, y_train)
         y_pred_proba = model.predict_proba(X_test_sel)[:, 1]
         score = average_precision_score(y_test, y_pred_proba)
@@ -235,7 +220,7 @@ for k in range(len(feature_names), 0, -1):
     backward_log.append({'n_features': len(current_features), 'features': ','.join([feature_names[i] for i in current_features]), 'aucpr': best_score})
 pd.DataFrame(backward_log).sort_values('n_features').reset_index(drop=True).to_csv(os.path.join(RESULTS_DIR, 'backward_aucpr_curve.csv'), index=False)
 # Boruta
-boruta_clf = XGBClassifier(**best_params_all)
+boruta_clf = XGBClassifier(**optimal_params)
 boruta_selector = BorutaPy(boruta_clf, n_estimators='auto', verbose=2, random_state=RANDOM_STATE, perc=100)
 boruta_selector.fit(X_train_scaled, y_train.values)
 selected_mask = boruta_selector.support_
@@ -246,14 +231,14 @@ for k in range(1, len(selected_features)+1):
     idxs = [feature_names.index(f) for f in feats]
     X_train_sel = X_train_scaled[:, idxs]
     X_test_sel = X_test_scaled[:, idxs]
-    model = XGBClassifier(**best_params_all)
+    model = XGBClassifier(**optimal_params)
     model.fit(X_train_sel, y_train)
     y_pred = model.predict_proba(X_test_sel)[:, 1]
     aucpr = average_precision_score(y_test, y_pred)
     aucpr_log_boruta.append({'n_features': len(feats), 'features': ','.join(feats), 'aucpr': aucpr})
 pd.DataFrame(aucpr_log_boruta).to_csv(os.path.join(RESULTS_DIR, 'boruta_aucpr_curve.csv'), index=False)
 # Backward by XGBoost Importance
-xgb_model_full = XGBClassifier(**best_params_all)
+xgb_model_full = XGBClassifier(**optimal_params)
 xgb_model_full.fit(X_train_scaled, y_train)
 importances_full = xgb_model_full.feature_importances_
 importance_order = np.argsort(importances_full)
@@ -264,7 +249,7 @@ for k in range(len(feature_names), 0, -1):
     idxs = current_features
     X_train_sel = X_train_scaled[:, idxs]
     X_test_sel = X_test_scaled[:, idxs]
-    model = XGBClassifier(**best_params_all)
+    model = XGBClassifier(**optimal_params)
     model.fit(X_train_sel, y_train)
     y_pred = model.predict_proba(X_test_sel)[:, 1]
     aucpr = average_precision_score(y_test, y_pred)
@@ -287,7 +272,7 @@ print(f"Best Greedy set: {best_n_features} features, AUC-PR={best_row['aucpr']:.
 idxs_best = [feature_names.index(f) for f in best_features if f in feature_names]
 X_train_best = X_train_scaled[:, idxs_best]
 X_test_best = X_test_scaled[:, idxs_best]
-model_best = XGBClassifier(**best_params_all)
+model_best = XGBClassifier(**optimal_params)
 model_best.fit(X_train_best, y_train)
 y_pred_best = model_best.predict(X_test_best)
 y_pred_proba_best = model_best.predict_proba(X_test_best)[:, 1]
