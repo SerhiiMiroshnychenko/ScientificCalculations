@@ -261,13 +261,36 @@ pd.DataFrame(backward_xgb_log).sort_values('n_features').reset_index(drop=True).
 
 # === 4. COMPARISON TABLE (Baseline, Optuna, Greedy+Optuna) ===
 print("🔎 Step 4: Comparison table...")
-# Вибір найкращого Greedy-набору (максимум AUC-PR у діапазоні 12-24)
-greedy_df = pd.read_csv(os.path.join(RESULTS_DIR, 'greedy_aucpr_curve.csv'))
-greedy_df = greedy_df[(greedy_df['n_features'] >= 12) & (greedy_df['n_features'] <= 24)]
-best_row = greedy_df.loc[greedy_df['aucpr'].idxmax()]
-best_features = best_row['features'].split(',')
-best_n_features = int(best_row['n_features'])
-print(f"Best Greedy set: {best_n_features} features, AUC-PR={best_row['aucpr']:.5f}")
+# Автоматичний вибір найкращого набору серед усіх методів
+method_files = [
+    ('Прямий XGBoost', 'xgb_importance_aucpr_curve.csv'),
+    ('Зворотній XGBoost', 'backward_xgb_aucpr_curve.csv'),
+    ('Прямий Greedy', 'greedy_aucpr_curve.csv'),
+    ('Зворотній Greedy', 'backward_aucpr_curve.csv'),
+    ('RFE', 'rfe_aucpr_curve.csv'),
+    ('Boruta', 'boruta_aucpr_curve.csv'),
+]
+best_auc = -np.inf
+best_method = None
+best_features = None
+best_n_features = None
+for method_name, fname in method_files:
+    path = os.path.join(RESULTS_DIR, fname)
+    if not os.path.exists(path):
+        continue
+    df = pd.read_csv(path)
+    df = df[(df['n_features'] >= 12) & (df['n_features'] <= 24)]
+    if len(df) == 0:
+        continue
+    max_auc = df['aucpr'].max()
+    max_rows = df[df['aucpr'] == max_auc]
+    best_row = max_rows.loc[max_rows['n_features'].idxmin()]
+    if best_row['aucpr'] > best_auc:
+        best_auc = best_row['aucpr']
+        best_method = method_name
+        best_features = best_row['features'].split(',')
+        best_n_features = int(best_row['n_features'])
+print(f"Best set: {best_method}, {best_n_features} features, AUC-PR={best_auc:.5f}")
 # Оцінка моделі на best features + Optuna
 idxs_best = [feature_names.index(f) for f in best_features if f in feature_names]
 X_train_best = X_train_scaled[:, idxs_best]
@@ -287,7 +310,7 @@ metrics_best = {
 conf_matrix_best = confusion_matrix(y_test, y_pred_best)
 row1 = {'stage': 'All features (default)', **baseline_metrics}
 row2 = {'stage': 'All features + Optuna', **metrics_all}
-row3 = {'stage': f'Best features (Greedy, {best_n_features}) + Optuna', **metrics_best}
+row3 = {'stage': f'Best features ({best_method}, {best_n_features}) + Optuna', **metrics_best}
 comparison_df = pd.DataFrame([row1, row2, row3])
 comparison_df.to_csv(os.path.join(RESULTS_DIR, 'comparison_table.csv'), index=False)
 print(comparison_df)
@@ -296,8 +319,15 @@ print(comparison_df)
 print("🔄 Building confusion matrix plots...")
 labels = np.unique(y_test)
 fig, axes = plt.subplots(1, 3, figsize=(15, 4))
-for ax, cm, title in zip(axes, [conf_matrix_baseline, conf_matrix_all, conf_matrix_best],
-                        ['All features (default)', 'All features + Optuna', f'Best features (Greedy, {best_n_features}) + Optuna']):
+for ax, cm, title in zip(
+    axes,
+    [conf_matrix_baseline, conf_matrix_all, conf_matrix_best],
+    [
+        'All features (default)',
+        'All features + Optuna',
+        f'Best features ({best_method}, {best_n_features}) + Optuna'
+    ]
+):
     disp = ConfusionMatrixDisplay(confusion_matrix=cm, display_labels=labels)
     disp.plot(ax=ax, colorbar=False)
     ax.set_title(title)
