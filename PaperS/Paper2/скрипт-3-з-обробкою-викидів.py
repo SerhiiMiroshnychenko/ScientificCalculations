@@ -1349,7 +1349,7 @@ def main():
 
         # Створення візуалізацій
         logger.info("Створення візуалізацій...")
-        output_dir = 'results_visualizations'
+        output_dir = 'results_3_visualizations'
 
         # Підготовка даних про важливість ознак для візуалізації
         feature_importance = {col: params['weight'] for col, params in model['features'].items()}

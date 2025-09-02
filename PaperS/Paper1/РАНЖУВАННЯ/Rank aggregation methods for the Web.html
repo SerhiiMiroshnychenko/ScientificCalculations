@@ -1,0 +1,2517 @@
+<HTML>
+<HEAD>
+   <META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=iso-8859-1">
+   <META NAME="description" CONTENT="Rank aggregation methods for the Web">
+   <META NAME="keywords" CONTENT="rank aggregation, ranking functions, meta-search, multi-word queries, spam">
+   <META NAME="resource-type" CONTENT="document">
+   <META NAME="distribution" CONTENT="global">
+   <META HTTP-EQUIV="Content-Style-Type" CONTENT="text/css">
+   <META NAME="GENERATOR" CONTENT="Mozilla/4.03 [en] (Win95; I) [Netscape]">
+   <TITLE>Rank aggregation methods for the Web</TITLE>
+</HEAD>
+<BODY>
+
+<CENTER>
+<H1>
+<FONT FACE="arial,">Rank aggregation methods for the Web</FONT></H1></CENTER>
+
+<CENTER><FONT FACE="arial,"><B><A HREF="http://research.compaq.com/SRC/people/Cynthia_Dwork">Cynthia
+Dwork</A></B><SUP>1</SUP>, <B>Ravi Kumar</B><SUP>2</SUP><B>, <A HREF="http://www.wisdom.weizmann.ac.il/~naor">Moni
+Naor</A></B><SUP>3</SUP>,&nbsp;<B> D. Sivakumar</B><SUP>2</SUP></FONT></CENTER>
+
+<CENTER><FONT FACE="arial,"><FONT SIZE=-1>1: <I><A HREF="http://research.compaq.com/SRC">Compaq
+Systems Research Center</A></I>, Palo Alto, CA, USA.</FONT></FONT></CENTER>
+
+<CENTER><FONT FACE="arial,"><FONT SIZE=-1>2: <I><A HREF="http://www.almaden.ibm.com">IBM
+Almaden Research Center</A></I>, San Jose, CA, USA.</FONT></FONT></CENTER>
+
+<CENTER><FONT FACE="arial,"><FONT SIZE=-1>3: <I><A HREF="http://www.wisdom.weizmann.ac.il">Weizmann Institute of Science</A></I>, Rehovot, Israel.</FONT></FONT></CENTER>
+
+<CENTER><FONT FACE="arial,"><FONT SIZE=-1>(Visiting <A HREF="http://www.almaden.ibm.com"><I>IBM
+Almaden</I> </A>and <I><A HREF="http://www.cs.stanford.edu">Stanford University</A></I>)</FONT></FONT></CENTER>
+
+<CENTER><FONT FACE="arial,">&nbsp;</FONT></CENTER>
+
+<CENTER>
+<HR WIDTH="100%"></CENTER>
+
+<CENTER>
+<H3>
+<FONT FACE="arial,">Abstract</FONT></H3></CENTER>
+<FONT FACE="arial,">We consider the problem of combining ranking results
+from various sources. In the context of the Web, the main applications
+include building meta-search engines, combining ranking functions, selecting
+documents based on multiple criteria, and improving search precision through
+word associations. We develop a set of techniques for the rank aggregation
+problem and compare their performance to that of well-known methods.
+A primary
+goal of our work is to design rank aggregation techniques that can
+effectively combat "spam," a serious problem in Web searches. Experiments
+show that our methods are simple, efficient, and effective.</FONT>
+
+<P><FONT FACE="arial,"><B>Keywords: </B>rank aggregation, ranking functions,
+meta-search, multi-word queries, spam</FONT>
+<BR>
+<HR WIDTH="100%">
+<H1>
+<A NAME="sec:intro"></A><FONT FACE="arial,">1 Introduction</FONT></H1>
+<FONT FACE="arial,">The task of ranking a list of several alternatives
+based on one or more criteria is encountered in many situations. One of
+the underlying goals of this endeavor is to identify the best alternatives,
+either to simply declare them to be the best (e.g., in sports) or to employ
+them for some purpose. When there is just a <I>single</I> criterion (or
+"judge") for ranking, the task is relatively easy, and is simply a reflection
+of the judge's opinions and biases. (If simplicity were the only desideratum,
+dictatorship would prevail over democracy.) In contrast, this paper addresses
+the problem of computing a "consensus" ranking of the alternatives, given
+the individual ranking preferences of <I>several</I> judges. We call this
+the rank aggregation problem. Specifically, we study the rank aggregation
+problem in the context of the Web, where it is complicated by a plethora
+of issues. We begin by underscoring the importance of rank aggregation
+for Web applications and clarifying the various characteristics of this
+problem in the context of the Web. We provide the theoretical underpinnings
+for stating criteria for "good" rank aggregation techniques and evaluating
+specific proposals, and we offer novel algorithmic solutions. Our experiments
+provide initial evidence for the success of our methods, which we believe
+will significantly improve a variety of search applications on the Web.</FONT>
+<H2>
+<A NAME="sec:motivation"></A><FONT FACE="arial,">1.1 Motivation</FONT></H2>
+<FONT FACE="arial,">As of February 2001, there were at least 24 general-purpose
+search engines (see <A HREF="#searchengine"> Search Engine Watch</A>), 
+as well as numerous special-purpose
+search engines. The very fact that there are so many choices is an indication
+that no single search engine has proven to be satisfactory for all Web
+users. There are a number of good reasons why this is the case, even if
+we restrict attention to search engines that are meant to be "general purpose."
+Two fairly obvious reasons are that no one ranking algorithm can be considered
+broadly acceptable and no one search engine is sufficiently comprehensive
+in its coverage of the Web. The issues, however, are somewhat deeper.</FONT>
+
+<P><FONT FACE="arial,">Firstly, there is the question of "spam" --- devious
+manipulation by authors of Web pages in an attempt to achieve undeservedly
+high rank. No single <I>ranking function</I> can be trusted to perform
+well for all queries. A few years ago, query term frequency was the single
+main heuristic in ranking Web pages; since the influential work of Kleinberg
+<A HREF="#Kleinberg-HITS">[Kleinberg 1998, 1999]</A> and Brin and Page
+<A HREF="#google">[Brin and Page 1998]</A>, link analysis has come to be
+identified as a very powerful technique in ranking Web pages and other
+hyperlinked documents. Several other heuristics have been added, including
+anchor-text analysis <A HREF="#clever">[Chakrabarti <I>et al.</I> 1998]</A>,
+page structure (headers, etc.) analysis, the use of keyword listings and
+the url text itself, etc. These well-motivated heuristics exploit a wealth
+of information, but are often prone to manipulation by devious parties.</FONT>
+
+<P><FONT FACE="arial,">Secondly, in a world governed by (frequently changing)
+commercial interests and alliances, it is not clear that users have any
+form of protection against the biases/interests of individual search engines.
+As a case in point, note that <I>paid placement</I> and <I>paid inclusion</I>
+(see <A HREF="#inclusion">[Article in Search Engine Watch]</A>) appear
+to be gaining popularity among search engines.</FONT>
+
+<P><FONT FACE="arial,">In some cases, individual ranking functions are
+inadequate for a more fundamental reason: the data being ranked are simply
+not amenable to simple ranking functions. This is the case with querying
+about multimedia documents, e.g. "find a document that has information
+about Greek islands with pictures of beautiful blue beaches." This is a
+problem conventionally studied in database middleware (see <A HREF="#Fagin1">[Fagin
+1999]</A>). Several novel approaches have been invented for this purpose,
+but this problem cannot be considered well-solved by any measure. Naturally,
+these problems fall under the realm of rank aggregation.</FONT>
+
+<P><FONT FACE="arial,">Thus, our first motivation for studying rank aggregation
+in the context of the Web is to provide users a certain degree of <I>robustness</I>
+of search, in the face of various shortcomings and biases --- malicious
+or otherwise --- of individual search engines. That is, to find robust
+techniques for <I>meta-search</I>.</FONT>
+
+<P><FONT FACE="arial,">There is a second very broad set of scenarios where
+rank aggregation is called for. Roughly described, these are the cases
+where the user preference includes a variety of criteria, and the logic
+of classifying a document as acceptable or unacceptable is too complicated
+or too nebulous to encode in any simple query form. As prototypical examples,
+we list some cases that Web users experience frequently. Broadly, these
+can be classified as <I>multi-criteria selection</I> and <I>word association
+queries</I>. Examples of multi-criteria selection arise when trying to
+choose a product from a database of products, such as restaurants or travel
+plans. Examples of word association queries arise when a user wishes to
+search for a good document on a topic; the user knows a list of keywords
+that collectively describe the topic, but isn't sure that the best document
+on the topic necessarily contains all of them. (See <A HREF="#sec:appl">Section
+5</A> for specific examples of both categories.) This is a very familiar
+dilemma for Web search users: when we supply a list of keywords to a search
+engine, do we ask for documents that contain <I>all</I> the keywords, or
+do we ask for documents that contain <I>any</I> of the keywords? Notice
+that the former may produce no useful document, or too few of them, while
+the latter may produce an enormous list of documents where it is not clear
+which one to choose as the best. We propose the following natural approach
+to this problem:</FONT>
+<BLOCKQUOTE><B><FONT FACE="arial,">Associations Ranking</FONT></B>
+<BR><FONT FACE="arial,">Rank the database with respect to several small
+subsets of the queries, and aggregate these rankings.</FONT></BLOCKQUOTE>
+
+<H2>
+<A NAME="sec:challenges"></A><FONT FACE="arial,">1.2 Challenges</FONT></H2>
+<FONT FACE="arial,">The ideal scenario for rank aggregation is when each
+judge (search engine in the case of meta-search, individual criterion for
+multi-criteria selection, and subsets of queries in the case of word association
+queries) gives a complete ordering of all the alternatives in the universe
+of alternatives. This, however, is far too unrealistic for two main reasons.</FONT>
+
+<P><FONT FACE="arial,">The first reason is a particularly acute problem
+in doing meta-search: the coverage of various search engines is different;
+it is unlikely that all search engines will (eventually) be capable of
+ranking the entire collection of pages on the Web, which is growing at
+a very high rate. Secondly, search engines routinely limit access to about
+the first few hundreds of pages in their rank-ordering. This is done both
+to ensure the confidentiality of their ranking algorithm, and in the interest
+of efficiency. The issue of efficiency is also a serious bottleneck in
+performing rank aggregation for multi-criteria selection and word association
+queries.</FONT>
+
+<P><FONT FACE="arial,">Therefore, any method for rank aggregation for Web
+applications must be capable of dealing with the fact that only the top
+few hundred entries of each ranking are available. Of course, if there
+is absolutely no overlap among these entries, there isn't much <I>any</I>
+algorithm can do; the challenge is to design rank aggregation algorithms
+that work when there is limited but non-trivial overlap among the top few
+hundreds or thousands of entries in each ranking. Finally, in light of
+the amount of data, it is implicit that any rank aggregation method has
+to be computationally efficient.</FONT>
+<H2>
+<A NAME="sec:results"></A><FONT FACE="arial,">1.3 Our results</FONT></H2>
+<FONT FACE="arial,">We provide a mathematical setting in which to study
+the rank aggregation problem, and propose several algorithms. By drawing
+on the literature from social choice theory, statistics, and combinatorial
+optimization, we formulate precisely what it means to compute a good consensus
+ordering of the alternatives, given several (partial) rankings of the alternatives.
+Specifically, we identify the method of Kemeny, originally proposed in
+the context of social choice theory, as an especially desirable approach,
+since it minimizes the total disagreement (formalized below) between the
+several input rankings and their aggregation. Unfortunately, we show that
+computing optimal solutions based on Kemeny's approach is NP-hard, even
+when the number of rankings to be aggregated is only 4. Therefore, we provide
+several heuristic algorithms for rank aggregation and evaluate them in
+the context of Web applications. Besides the heuristics, we identify a
+crucial property of Kemeny optimal solutions that is particularly useful
+in combatting spam, and provide an efficient algorithm for minimimally
+modifying <I>any</I> initial aggregation so as to enjoy this property.
+This property is called the "extended Condorcet criterion," and we call
+the efficient process that is guaranteed to achieve it "local Kemenization."</FONT>
+
+<P><FONT FACE="arial,">Our algorithms for initial aggregation are based
+on two broad principles. The first principle is to achieve optimality not
+with respect to the Kemeny guidelines, but with respect to a different,
+closely related, measure, for which it is possible to find an efficient
+solution. The second principle is through the use of Markov chains as a
+means of combining partial comparison information --- derived from the
+individual rankings --- into a total ordering. While there is no guarantee
+on the quality of the output, the latter methods are extremely efficient,
+and usually match or outperform the first method.</FONT>
+
+<P><FONT FACE="arial,">We report experiments and quantitative measures
+of quality for the meta-search problem, and give several illustrations
+of our methods applied for the problems of spam resistance and word association
+queries.</FONT>
+<H2>
+<A NAME="sec:org"></A><FONT FACE="arial,">1.4 Organization</FONT></H2>
+<FONT FACE="arial,">We describe our framework, including the notions of
+<A HREF="#sec:ranking">ranking</A>, <A HREF="#sec:measures">distance measures</A>,
+and <A HREF="#sec:opt">optimal aggregation</A>, in <A HREF="#sec:prelim">Section
+2</A>. This section also contains a brief description of concepts from
+<A HREF="#sec:graphtheory">graph theory</A> and <A HREF="#sec:markovchains">Markov
+chains</A> that we need for this paper. <A HREF="#sec:spam">Section 3</A>
+discusses spam, the extended Condorcet principle, and local Kemenization.
+<A HREF="#sec:alg">Section 4</A> describes various rank aggregation methods,
+including the well-known Borda method and several other new methods. <A HREF="#sec:appl">Section
+5</A> presents five major applications of our methods and <A HREF="#sec:exp">Section
+6</A> presents an experimental study of some of them. Finally, <A HREF="#sec:conc">Section
+7</A> concludes the paper with some remarks on future work.</FONT>
+<H1>
+<A NAME="sec:prelim"></A><FONT FACE="arial,">2 Preliminaries</FONT></H1>
+
+<H2>
+<A NAME="sec:ranking"></A><FONT FACE="arial,">2.1 Ranking</FONT></H2>
+<FONT FACE="arial,">Given a universe <I>U</I>, an <I>ordered list</I> (or
+simply, a list) </FONT><FONT FACE="Symbol">t</FONT><FONT FACE="arial,">
+with respect to <I>U</I> is an ordering (aka ranking) of a subset <I>S</I>
+of <I>U</I>, i.e., </FONT><FONT FACE="Symbol">t</FONT><FONT FACE="arial,">
+= [<I>x</I><SUB>1</SUB> > <I>x</I><SUB>2</SUB> > ... > <I>x<SUB>d</SUB></I>],
+with each <I>x<SUB>i</SUB></I> in <I>S</I>, and > is some ordering relation
+on <I>S</I>. Also, if <I>i</I> in <I>U</I> is present in </FONT><FONT FACE="Symbol">t</FONT><FONT FACE="arial,">,
+let </FONT><FONT FACE="Symbol">t</FONT><FONT FACE="arial,">(<I>i</I>) denote
+the position or rank of <I>i</I> (a highly ranked or preferred element
+has a low-numbered position in the list). For a list </FONT><FONT FACE="Symbol">t</FONT><FONT FACE="arial,">,
+let |</FONT><FONT FACE="Symbol">t</FONT><FONT FACE="arial,">| denote the
+number of elements. By assigning a unique identifier to each element in
+<I>U</I>, we may assume without loss of generality that <I>U</I> = {1,
+2, ..., <I>|U|</I>}.</FONT>
+
+<P><FONT FACE="arial,">Depending on the kind of information present in
+</FONT><FONT FACE="Symbol">t</FONT><FONT FACE="arial,">, three situations
+arise:</FONT>
+
+<P><FONT FACE="arial,">(1) If </FONT><FONT FACE="Symbol">t</FONT><FONT FACE="arial,">
+contains all the elements in <I>U</I>, then it is said to be a <I>full
+list</I>. Full lists are in fact total orderings (permutations) of <I>U</I>.
+For instance, if <I>U</I> is the set of all pages indexed by a search engine,
+it is easy to see that a full list emerges when we rank pages (say, with
+respect to a query) according to a fixed algorithm.</FONT>
+
+<P><FONT FACE="arial,">(2) There are situations where full lists are not
+convenient or even possible. For instance, let <I>U</I> denote the set
+of all Web pages in the world. Let </FONT><FONT FACE="Symbol">t</FONT><FONT FACE="arial,">
+denote the results of a search engine in response to some fixed query.
+Even though the query might induce a total ordering of the pages indexed
+by the search engine, since the index set of the search engine is almost
+surely only a subset of <I>U</I>, we have a strict inequality |</FONT><FONT FACE="Symbol">t</FONT><FONT FACE="arial,">|
+&lt; <I>|U|</I>. In other words, there are pages in the world which are
+unranked by this search engine with respect to the query. Such lists that
+rank only some of the elements in <I>U</I> are called <I>partial lists</I>.</FONT>
+
+<P><FONT FACE="arial,">(3) A special case of partial lists is the following.
+If <I>S</I> is the set of all the pages indexed by a particular search
+engine and if </FONT><FONT FACE="Symbol">t</FONT><FONT FACE="arial,"> corresponds
+to the top 100 results of the search engine with respect to a query, clearly
+the pages that are not present in list </FONT><FONT FACE="Symbol">t</FONT><FONT FACE="arial,">
+can be assumed to be ranked below 100 by the search engine. Such lists
+that rank only a subset of <I>S</I> and where it is implicit that each
+ranked element is above all unranked elements, are called <I>top d lists</I>,
+where <I>d</I> is the size of the list. A natural operation of <I>projection</I>
+will be useful. Given a list </FONT><FONT FACE="Symbol">t</FONT><FONT FACE="arial,">
+and a subset <I>T</I> of the universe <I>U</I>, the projection of </FONT><FONT FACE="Symbol">t</FONT><FONT FACE="arial,">
+with respect to <I>T</I> (denoted </FONT><FONT FACE="Symbol">t</FONT><FONT FACE="arial,"><I><SUB>|T</SUB></I>
+will be a new list that contains only elements from <I>T</I>. Notice that
+if </FONT><FONT FACE="Symbol">t</FONT><FONT FACE="arial,"> happens to contain
+all the elements in <I>T</I>, then </FONT><FONT FACE="Symbol">t</FONT><FONT FACE="arial,"><I><SUB>|T</SUB></I>
+is a full list with respect to <I>T</I>.</FONT>&nbsp;
+<H3>
+<A NAME="sec:measures"></A><FONT FACE="arial,">2.1.1 Distance Measures</FONT></H3>
+<FONT FACE="arial,">How do we measure distance between two full lists with
+respect to a set <I>S</I>? Two popular distance measures (see <A HREF="#Diaconis-Book">[Diaconis
+1988]</A>) are: (1) The <I>Spearman footrule distance</I> is the sum, over
+all elements <I>i</I> in <I>S</I>, of the absolute difference between the
+rank of <I>i</I> according to the two lists. Formally, given two full lists
+</FONT><FONT FACE="Symbol">s</FONT><FONT FACE="arial,"> and </FONT><FONT FACE="Symbol">t</FONT><FONT FACE="arial,">,
+their Spearman footrule distance is given by</FONT>
+<BLOCKQUOTE><FONT FACE="arial,"><I>F</I>(</FONT><FONT FACE="Symbol">s</FONT><FONT FACE="arial,">,
+</FONT><FONT FACE="Symbol">t</FONT><FONT FACE="arial,">) = </FONT><FONT FACE="Symbol"><FONT SIZE=+1>S</FONT></FONT><FONT FACE="arial,">
+<I><SUB>i</SUB></I>&nbsp;<!-- <sub>1 <= <I>i</I> <= <I>|S|</I></sub> -->|</FONT><FONT FACE="Symbol">s</FONT><FONT FACE="arial,">(<I>i</I>)
+</FONT><FONT FACE="Symbol">-</FONT><FONT FACE="arial,"> </FONT><FONT FACE="Symbol">t</FONT><FONT FACE="arial,">(<I>i</I>)|.</FONT></BLOCKQUOTE>
+<FONT FACE="arial,">After dividing this number by the maximum value (1/2)<I>|S|</I><SUP>2</SUP>,
+one can obtain a normalized value of the footrule distance, which is always
+between 0 and 1. The footrule distance between two lists can be computed
+in linear time.</FONT>
+
+<P><FONT FACE="arial,">(2) The <I>Kendall tau distance</I> counts the number
+of pairwise disagreements between two lists; that is, the distance between
+two full lists </FONT><FONT FACE="Symbol">s</FONT><FONT FACE="arial,">
+and </FONT><FONT FACE="Symbol">t</FONT><FONT FACE="arial,"> is</FONT>
+<BLOCKQUOTE><FONT FACE="arial,"><I>K</I>(</FONT><FONT FACE="Symbol">s</FONT><FONT FACE="arial,">,
+</FONT><FONT FACE="Symbol">t</FONT><FONT FACE="arial,">) = |{(<I>i, j</I>)
+: <I>i</I> &lt; <I>j</I>, </FONT><FONT FACE="Symbol">s</FONT><FONT FACE="arial,">(<I>i</I>)
+&lt; </FONT><FONT FACE="Symbol">s</FONT><FONT FACE="arial,">(<I>j</I>)
+but </FONT><FONT FACE="Symbol">t</FONT><FONT FACE="arial,">(<I>i</I>) >
+</FONT><FONT FACE="Symbol">t</FONT><FONT FACE="arial,">(<I>j</I>)|.</FONT></BLOCKQUOTE>
+<FONT FACE="arial,">Dividing this number by the maximum possible value
+(1/2)<I>S</I>(<I>S</I> </FONT><FONT FACE="Symbol">-</FONT><FONT FACE="arial,">
+1) we obtain a normalized version of the Kendall distance. The Kendall
+distance for full lists is the "bubble sort" distance, i.e., the number
+of pairwise adjacent transpositions needed to transform from one list to
+the other. The Kendall distance between two lists of length <I>n</I> can
+be computed in <I>n</I> log <I>n</I> time using simple data structures.</FONT>
+
+<P><FONT FACE="arial,">The above measures are metrics and extend in a natural
+way to several lists. Given several full lists </FONT><FONT FACE="Symbol">s</FONT><FONT FACE="arial,">,
+</FONT><FONT FACE="Symbol">t</FONT><FONT FACE="arial,"><SUB>1</SUB>, ...,
+</FONT><FONT FACE="Symbol">t</FONT><FONT FACE="arial,"><I><SUB>k</SUB></I>,
+for instance, the normalized Footrule distance of </FONT><FONT FACE="Symbol">s</FONT><FONT FACE="arial,">
+to </FONT><FONT FACE="Symbol">t</FONT><FONT FACE="arial,"><SUB>1</SUB>,
+..., </FONT><FONT FACE="Symbol">t</FONT><FONT FACE="arial,"><I><SUB>k</SUB></I>
+is given by</FONT>
+<BLOCKQUOTE><FONT FACE="arial,"><I>F</I>(</FONT><FONT FACE="Symbol">s</FONT><FONT FACE="arial,">,
+</FONT><FONT FACE="Symbol">t</FONT><FONT FACE="arial,"><SUB>1</SUB>, ...
+</FONT><FONT FACE="Symbol">t</FONT><FONT FACE="arial,"><I><SUB>k</SUB></I>)
+= (1/<I>k</I>) </FONT><FONT FACE="Symbol"><FONT SIZE=+1>S</FONT></FONT><FONT FACE="arial,"><I><SUB>i</SUB></I>&nbsp;&nbsp;
+<I>F</I>(</FONT><FONT FACE="Symbol">s</FONT><FONT FACE="arial,">, </FONT><FONT FACE="Symbol">t</FONT><FONT FACE="arial,"><I><SUB>i</SUB></I>).</FONT></BLOCKQUOTE>
+<FONT FACE="arial,">One can define generalizations of these distance measures
+to partial lists. If </FONT><FONT FACE="Symbol">t</FONT><FONT FACE="arial,"><SUB>1</SUB>,
+..., </FONT><FONT FACE="Symbol">t</FONT><FONT FACE="arial,"><I><SUB>k</SUB></I>
+are partial lists, let <I>U</I> denote the union of elements in </FONT><FONT FACE="Symbol">t</FONT><FONT FACE="arial,"><SUB>1</SUB>,
+..., </FONT><FONT FACE="Symbol">t</FONT><FONT FACE="arial,"><I><SUB>k</SUB></I>,
+and let </FONT><FONT FACE="Symbol">s</FONT><FONT FACE="arial,"> be a full
+list with respect to <I>U</I>. Now, given </FONT><FONT FACE="Symbol">s</FONT><FONT FACE="arial,">,
+the idea is to consider the distance between </FONT><FONT FACE="Symbol">t</FONT><FONT FACE="arial,"><I><SUB>i</SUB></I>
+and the projection of </FONT><FONT FACE="Symbol">s</FONT><FONT FACE="arial,">
+with respect to </FONT><FONT FACE="Symbol">t</FONT><FONT FACE="arial,"><I><SUB>i</SUB></I>.
+Then, for instance, we have the <I>induced footrule distance:</I></FONT>
+<BLOCKQUOTE><FONT FACE="arial,"><I>F</I>(</FONT><FONT FACE="Symbol">s</FONT><FONT FACE="arial,">,
+</FONT><FONT FACE="Symbol">t</FONT><FONT FACE="arial,"><SUB>1</SUB>, ...,
+</FONT><FONT FACE="Symbol">t</FONT><FONT FACE="arial,"><I><SUB>k</SUB></I>)
+= (1/<I>k</I>) </FONT><FONT FACE="Symbol"><FONT SIZE=+1>S</FONT></FONT><FONT FACE="arial,"><I><SUB>i</SUB></I>&nbsp;&nbsp;
+<I>F</I>(</FONT><FONT FACE="Symbol">s</FONT><FONT FACE="arial,"> <SUB>|</SUB></FONT><SUB><FONT FACE="Symbol">t</FONT><FONT FACE="arial,"><I>i</I></FONT></SUB><FONT FACE="arial,">,
+</FONT><FONT FACE="Symbol">t</FONT><FONT FACE="arial,"><I><SUB>i</SUB></I>).</FONT></BLOCKQUOTE>
+<FONT FACE="arial,">In a similar manner, induced Kendall tau distance can
+be defined. Finally, we define a third notion of distance that measures
+the distance between a full list and a partial list on the same universe:</FONT>
+
+<P><FONT FACE="arial,">(3) Given one full list and a partial list, the
+<I>scaled footrule distance</I> weights contributions of elements based
+on the length of the lists they are present in. More formally, if </FONT><FONT FACE="Symbol">s</FONT><FONT FACE="arial,">
+is a full list and </FONT><FONT FACE="Symbol">t</FONT><FONT FACE="arial,">
+is a partial list, then:</FONT>
+<BLOCKQUOTE><FONT FACE="arial,"><I>SF</I>(</FONT><FONT FACE="Symbol">s</FONT><FONT FACE="arial,">,
+</FONT><FONT FACE="Symbol">t</FONT><FONT FACE="arial,">) = </FONT><FONT FACE="Symbol"><FONT SIZE=+1>S</FONT></FONT><SUB><FONT FACE="arial,"><I>i</I>
+in </FONT><FONT FACE="Symbol">t</FONT></SUB><FONT FACE="arial,">&nbsp;&nbsp;&nbsp;
+|&nbsp; (</FONT><FONT FACE="Symbol">s</FONT><FONT FACE="arial,">(<I>i</I>)/|</FONT><FONT FACE="Symbol">s</FONT><FONT FACE="arial,">|)
+</FONT><FONT FACE="Symbol">-</FONT><FONT FACE="arial,"> (</FONT><FONT FACE="Symbol">t</FONT><FONT FACE="arial,">(<I>i</I>)/|</FONT><FONT FACE="Symbol">t</FONT><FONT FACE="arial,">|)&nbsp;
+|.</FONT></BLOCKQUOTE>
+<FONT FACE="arial,">We will normalize <I>SF</I> by dividing by |</FONT><FONT FACE="Symbol">t</FONT><FONT FACE="arial,">|/2.</FONT>
+
+<P><FONT FACE="arial,">Note that these distances are not necessarily metrics.</FONT>
+
+<P><FONT FACE="arial,">To a large extent, our interpretations of experimental
+results will be in terms of these distance measures. While these distance
+measures seem natural, why these measures are good is moot. We do not delve
+into such discussions here; the interested reader can find such arguments
+in the books by Diaconis <A HREF="#Diaconis-Book">[Diaconis 1988]</A>,
+Critchlow <A HREF="#Critchlow">[Critchlow 1985]</A>, or Marden <A HREF="#Marden">[Marden]</A>.</FONT>
+<H3>
+<A NAME="sec:opt"></A><FONT FACE="arial,">2.1.2 Optimal rank aggregation</FONT></H3>
+<FONT FACE="arial,">In the generic context of rank aggregation, the notion
+of "better" depends on what distance measure we strive to optimize. Suppose
+we wish to optimize Kendall distance, the question then is: given (full
+or partial) lists </FONT><FONT FACE="Symbol">t</FONT><FONT FACE="arial,"><SUB>1</SUB>,
+..., </FONT><FONT FACE="Symbol">t</FONT><FONT FACE="arial,"><I><SUB>k</SUB></I>,
+find a </FONT><FONT FACE="Symbol">s</FONT><FONT FACE="arial,"> such that
+</FONT><FONT FACE="Symbol">s</FONT><FONT FACE="arial,"> is a full list
+with respect to the union of the elements of </FONT><FONT FACE="Symbol">t</FONT><FONT FACE="arial,"><SUB>1</SUB>,
+..., </FONT><FONT FACE="Symbol">t</FONT><FONT FACE="arial,"><I><SUB>k</SUB></I>,
+and </FONT><FONT FACE="Symbol">s</FONT><FONT FACE="arial,"> minimizes <I>K</I>(</FONT><FONT FACE="Symbol">s</FONT><FONT FACE="arial,">,
+</FONT><FONT FACE="Symbol">t</FONT><FONT FACE="arial,"><SUB>1</SUB>, ...,
+</FONT><FONT FACE="Symbol">t</FONT><FONT FACE="arial,"><I><SUB>k</SUB></I>).
+The aggregation obtained by optimizing Kendall distance is called <I>Kemeny
+optimal aggregation</I> and in a precise sense, corresponds to the geometric
+median of the inputs. We show that computing the Kemeny optimal aggregation
+is NP-Hard even when <I>k</I> = 4 (see <A HREF="#app:nph">Appendix B</A>).
+(Note that in contrast to the social choice scenario where there are many
+voters and relatively few candidates, in the web aggregation scenario we
+have many candidates (pages) and relatively few voters (the search engines).)</FONT>
+
+<P><FONT FACE="arial,">Kemeny optimal aggregations have a maximum likelihood
+interpretation. Suppose there is an underlying "correct" ordering </FONT><FONT FACE="Symbol">s</FONT><FONT FACE="arial,">
+of <I>S</I>, and each order </FONT><FONT FACE="Symbol">t</FONT><FONT FACE="arial,"><SUB>1</SUB>,
+..., </FONT><FONT FACE="Symbol">t</FONT><FONT FACE="arial,"><I><SUB>k</SUB></I>
+is obtained from </FONT><FONT FACE="Symbol">s</FONT><FONT FACE="arial,">
+by swapping two elements with some probability less than 1/2. Thus, the
+</FONT><FONT FACE="Symbol">t</FONT><FONT FACE="arial,">'s are "noisy" versions
+of </FONT><FONT FACE="Symbol">s</FONT><FONT FACE="arial,">. A Kemeny optimal
+aggregation of </FONT><FONT FACE="Symbol">t</FONT><FONT FACE="arial,"><SUB>1</SUB>,
+..., </FONT><FONT FACE="Symbol">t</FONT><FONT FACE="arial,"><I><SUB>k</SUB></I>,
+is one that is maximally likely to have produced the </FONT><FONT FACE="Symbol">t</FONT><FONT FACE="arial,">'s
+(it need not be unique) <A HREF="#Young88">[Young 1988]</A>. Viewed differently,
+Kemeny optimal aggregation has the property of eliminating noise from various
+different ranking schemes. Furthermore, Kemeny optimal aggregations are
+essentially the only ones that simultaneously satisfy natural and important
+properties of rank aggregation functions, called neutrality and consistency
+in the social choice literature, and the so-called Condorcet property <A HREF="#YoungLevenglick78">[Young
+and Levenglick 1978]</A>. Indeed, Kemeny optimal aggregations satisfy the
+<I>extended Condorcet criterion</I>. In <A HREF="#sec:spam">Section 3</A>
+we establish a strong connection between satisfaction of the extended Condorcet
+criterion and fighting search engine "spam."</FONT>
+
+<P><FONT FACE="arial,">Given that Kemeny optimal aggregation is useful,
+but computationally hard, how do we compute it? The following relation
+shows that Kendall distance can be approximated very well via the Spearman
+footrule distance.</FONT>
+<BLOCKQUOTE><A NAME="prop:1"></A><FONT FACE="arial,"><B>Proposition 1</B>
+[<A HREF="#diaconis-graham">Diaconis-Graham</A>]</FONT>
+<BR><FONT FACE="arial,">For any two full lists </FONT><FONT FACE="Symbol">s</FONT><FONT FACE="arial,">,
+</FONT><FONT FACE="Symbol">t</FONT><FONT FACE="arial,">, <I>K</I>(</FONT><FONT FACE="Symbol">s</FONT><FONT FACE="arial,">,
+</FONT><FONT FACE="Symbol">t</FONT><FONT FACE="arial,">) <u>&lt;</u> <I>F</I>(</FONT><FONT FACE="Symbol">s</FONT><FONT FACE="arial,">,
+</FONT><FONT FACE="Symbol">t</FONT><FONT FACE="arial,">) <u>&lt;</u> 2<I>K</I>(</FONT><FONT FACE="Symbol">s</FONT><FONT FACE="arial,">,
+</FONT><FONT FACE="Symbol">t</FONT><FONT FACE="arial,">).</FONT></BLOCKQUOTE>
+<FONT FACE="arial,">This leads us to the problem of <I>footrule optimal
+aggregation</I>. This is the same as before, except that the optimizing
+criterion is the footrule distance. In <A HREF="#sec:alg">Section 4</A>
+we exhibit a polynomial time algorithm to compute optimal footrule aggregation
+(scaled footrule aggregation for partial lists). Therefore we have:</FONT>
+<BLOCKQUOTE><A NAME="prop:2"></A><B><FONT FACE="arial,">Proposition 2</FONT></B>
+<BR><FONT FACE="arial,">If </FONT><FONT FACE="Symbol">s</FONT><FONT FACE="arial,">
+is the Kemeny optimal aggregation of full lists </FONT><FONT FACE="Symbol">t</FONT><FONT FACE="arial,"><SUB>1</SUB>,
+..., </FONT><FONT FACE="Symbol">t</FONT><FONT FACE="arial,"><I><SUB>k</SUB></I>,
+and </FONT><FONT FACE="Symbol">s</FONT><FONT FACE="arial,">' optimizes
+the footrule aggregation, then <I>K</I>(</FONT><FONT FACE="Symbol">s</FONT><FONT FACE="arial,">',
+</FONT><FONT FACE="Symbol">t</FONT><FONT FACE="arial,"><SUB>1</SUB>, ...,
+</FONT><FONT FACE="Symbol">t</FONT><FONT FACE="arial,"><I><SUB>k</SUB></I>)
+<u>&lt;</u> 2<I>K</I>(</FONT><FONT FACE="Symbol">s</FONT><FONT FACE="arial,">,
+</FONT><FONT FACE="Symbol">t</FONT><FONT FACE="arial,"><SUB>1</SUB>, ...,
+</FONT><FONT FACE="Symbol">t</FONT><FONT FACE="arial,"><I><SUB>k</SUB></I>).</FONT></BLOCKQUOTE>
+<FONT FACE="arial,">Later, in <A HREF="#sec:alg">Section 4</A>, we develop
+rank aggregation methods that do not optimize any obvious criteria, but
+turn out to be very effective in practice.</FONT>
+<H2>
+<A NAME="sec:basics"></A><FONT FACE="arial,">2.2 Basic Notions</FONT></H2>
+<FONT FACE="arial,">Readers familiar with the notions in graph theory and
+Markov chains can <A HREF="#sec:spam">skip this section</A>.</FONT>
+<H3>
+<A NAME="sec:graphtheory"></A><FONT FACE="arial,">2.2.1 Some concepts from
+graph theory</FONT></H3>
+<FONT FACE="arial,">A <I>graph</I> <I>G</I> = (<I>V</I>, <I>E</I>) consists
+of set of <I>nodes</I> <I>V</I> and a set of <I>edges</I> <I>E</I>. Each
+element <I>e</I> in <I>E</I> is an unordered pair (<I>u</I>, <I>v</I>)
+of incident nodes, representing a connection between nodes <I>u</I> and
+<I>v</I>. A graph is <I>connected</I> if the node set cannot be partitioned
+into components such that there are no edges whose incident nodes occur
+in different components.</FONT>
+
+<P><FONT FACE="arial,">A <I>bipartite graph</I> <I>G</I> = (<I>U</I>, <I>V</I>,
+<I>E</I>) consists of two disjoint sets of nodes <I>U</I>, <I>V</I> such
+that each edge <I>e</I> in <I>E</I> has one node from <I>U</I> and the
+other node from <I>V</I>.&nbsp;&nbsp; A bipartite graph is <I>complete</I>
+if each node in <I>U</I> is connected to every node in <I>V</I>.&nbsp;&nbsp;
+A <I>matching</I> is a subset of edges such that for each edge in the matching,
+there is no other edge that shares a node with it. A <I>maximum matching</I>
+is a matching of largest cardinality. A <I>weighted graph</I> is a graph
+with a (non-negative) weight for every edge <I>e</I>. Given a weighted
+graph, the <I>minimum weight maximum matching</I> is the maximum matching
+with minimum weight. The minimum weight maximum matching problem for bipartite
+graphs can be solved in time <I>O</I>(<I>n</I><SUP>2.5</SUP>), where <I>n</I>
+is the number of nodes.</FONT>
+
+<P><FONT FACE="arial,">A <I>directed graph</I> consists of nodes and edges,
+but this time an edge is an ordered pair of nodes (<I>u</I>, <I>v</I>),
+representing a connection from <I>u</I> to <I>v</I>. A <I>directed path</I>
+is said to exist from <I>u</I> to <I>v</I> if there is a sequence of nodes
+<I>u</I> = <I>w</I><SUB>0</SUB>, ..., <I>w<SUB>k</SUB></I> = <I>v</I> such
+that (<I>w<SUB>i</SUB></I>, <I>w<SUB>i+1</SUB></I> is an edge, for all
+<I>i</I> = 0, ..., <I>k</I> </FONT><FONT FACE="Symbol">-</FONT><FONT FACE="arial,">
+1. A <I>directed cycle</I> is a non-trivial directed path from a node to
+itself. A <I>strongly connected component</I> of a graph is a set of nodes
+such that for every pair of nodes in the component, there is a directed
+path from one to the other. A <I>directed acyclic graph</I> (DAG) is a
+directed graph with no directed cycles. In a DAG, a <I>sink</I> node is
+one with no directed path to any other node.</FONT>
+<H3>
+<A NAME="sec:markovchains"></A><FONT FACE="arial,">2.2.2 Markov chains</FONT></H3>
+<FONT FACE="arial,">A (homogeneous) <I>Markov chain</I> for a system is
+specified by a set of states <I>S</I> = {1, 2, ..., <I>n</I> } and an <I>n</I>
+by <I>n</I> non-negative, stochastic (i.e., the sum of each row is 1) matrix
+<I>M</I>. The system begins in some start state in <I>S</I> and at each
+step moves from one state to another state. This transition is guided by
+<I>M</I>: at each step, if the system is in state <I>i</I>, it moves to
+state <I>j</I> with probability <I>M<SUB>ij</SUB></I>. If the current state
+is given as a probability distribution, the probability distribution of
+the next state is given by the product of the vector representing the current
+state distribution and <I>M</I>. In general, the start state of the system
+is chosen according to some distribution <I>x</I> (usually, the uniform
+distribution) on <I>S</I>. After <I>t</I> steps, the state of the system
+is distributed according to <I>xM<SUP>t</SUP></I>. Under some niceness
+conditions on the Markov chain (whose details we will not discuss), irrespective
+of the start distribution <I>x</I>, the system eventually reaches a unique
+fixed point where the state distribution does not change. This distribution
+is called the <I>stationary distribution</I>. It can be shown that the
+stationary distribution is given by the principal left eigenvector <I>y</I>
+of <I>M</I>, i.e., <I>yM</I> = </FONT><FONT FACE="Symbol">l</FONT><FONT FACE="arial,"><I>y</I>.
+In practice, a simple power-iteration algorithm can quickly obtain a reasonable
+approximation to <I>y</I>.</FONT>
+
+<P><FONT FACE="arial,">An important observation here is that the entries
+in <I>y</I> define a natural ordering on <I>S</I>. We call such an ordering,
+the <I>Markov chain ordering</I> of <I>M</I>. A technical point to note
+while using Markov chains for ranking is the following. A Markov chain
+<I>M</I> defines a weighted graph with <I>n</I> nodes such that the weight
+on edge (<I>u</I>, <I>v</I>) is given by <I>M<SUB>uv</SUB></I>. The strongly
+connected components of this graph form a DAG. If this DAG has a sink node,
+then the stationary distribution of the chain will be entirely concentrated
+in the strongly connected component corresponding to the sink node. In
+this case, we only obtain an ordering of the alternatives present in this
+component; if this happens, the natural extended procedure is to remove
+these states from the chain and repeat the process to rank the remaining
+nodes. Of course, if this component has sufficiently many alternatives,
+one may stop the aggregation process and output a partial list containing
+some of the best alternatives. If the DAG of connected components is (weakly)
+connected and has more than one sink node, then we will obtain two or more
+clusters of alternatives, which we could sort by the total probability
+mass of the components. If the DAG has several weakly connected components,
+we will obtain incomparable clusters of alternatives. Thus, when we refer
+to a Markov chain ordering, we refer to the ordering obtained by this extended
+procedure.</FONT>
+<H1>
+<A NAME="sec:spam"></A><FONT FACE="arial,">3 Spam resistance and Condorcet
+Criteria</FONT></H1>
+<FONT FACE="arial,">In 1785 Marie J. A. N. Caritat, Marquis de Condorcet,
+proposed that if there is some element of <I>S</I>, now known as the <I>Condorcet
+alternative</I>, that defeats every other in pairwise simple majority voting,
+then that this element should be ranked first <A HREF="#Condorcet">[Condorcet
+1785]</A>. A natural extension, due to Truchon <A HREF="#Truchon">[Truchon
+1998]</A> (see also <A HREF="#Smith">[Smith 1973]</A>), mandates that if
+there is a partition (<I>C</I>, <I>D</I>) of <I>S</I> such that for any
+<I>x</I> in <I>C</I> and <I>y</I> in <I>D</I> the majority prefers <I>x</I>
+to <I>y</I>, then <I>x</I> must be ranked above <I>y</I>. This is called
+the <I>extended Condorcet criterion</I> (ECC). We will show that not only
+can the ECC be achieved efficiently, but it also has excellent "spam-fighting"
+properties when used in the context of meta-search.</FONT>
+
+<P><FONT FACE="arial,">Intuitively, a search engine has been spammed by
+a page in its index, on a given query, if it ranks the page "too highly"
+with respect to other pages in the index, in the view of a "typical" user.
+Indeed, in accord with this intuition, search engines are both rated (see
+<A HREF="#MediaMetrix">[Media Metrix]</A>) and trained by human <I>evaluators</I>.
+This approach to defining spam: (1) permits an author to raise the rank
+of her page by improving the content; (2) puts <I>ground truth</I> about
+the relative value of pages into the purview of the users --- in other
+words, the definition does not assume the existence of an absolute ordering
+that yields the "true" relative value of a pair of pages on a query; (3)
+does not assume unanimity of users' opinions or consistency among the opinions
+of a single user; and (4) suggests some natural ways to automate training
+of engines to incorporate useful biases, such as geographic bias.</FONT>
+
+<P><FONT FACE="arial,">We believe that reliance on evaluators in defining
+spam is unavoidable. (If the evaluators are human, the typical scenario
+during the design and training of search engines, then the eventual product
+will incorporate the biases of the training evaluators.) We <I>model</I>
+the evaluators by the search engine ranking functions. That is, we make
+the simplifying assumption that for any pair of pages, the relative ordering
+by the majority of the search engines comparing them is the same as the
+relative ordering by the majority of the evaluators. Our intuition is that
+if a page spams all or even most search engines for a particular query,
+then no combination of these search engines can defeat the spam. This is
+reasonable: Fix a query; if for some pair of pages a majority of the engines
+is spammed, then the aggregation function is working with overly bad data
+--- garbage in, garbage out. On the other hand, if a page spams strictly
+fewer than half the search engines, then a majority of the search engines
+will prefer a "good" page to a spam page. In other words, under this definition
+of spam, the spam pages are the Condorcet losers, and will occupy the bottom
+partition of any aggregated ranking that satisfies the extended Condorcet
+criterion. Similarly, assuming that good pages are preferred by the majority
+to mediocre ones, these will be the Condorcet winners, and will therefore
+be ranked highly.</FONT>
+
+<P><FONT FACE="arial,">Many of the existing aggregation methods (see <A HREF="#sec:alg">Section
+4</A>) do not ensure the election of the Condorcet winner, should one exist.
+Our aim is to obtain a simple method of modifying any initial aggregation
+of input lists so that the Condorcet losers (spam) will be pushed to the
+bottom of the ranking during this process. This procedure is called <I>local
+Kemenization</I> and is described next.</FONT>
+<H2>
+<A NAME="sec:LK"></A><FONT FACE="arial,">3.1 Local Kemenization</FONT></H2>
+<FONT FACE="arial,">We introduce the notion of a locally Kemeny optimal
+aggregation, a relaxation of Kemeny optimality, that ensures satisfaction
+of the extended Condorcet principle and yet remains computationally tractable.
+As the name implies, local Kemeny optimal is a "local" notion that possesses
+some of the properties of a Kemeny optimal aggregation.</FONT>
+
+<P><FONT FACE="arial,">A full list </FONT><FONT FACE="Symbol">p</FONT><FONT FACE="arial,">
+is a <I>locally Kemeny optimal</I> aggregation of partial lists </FONT><FONT FACE="Symbol">t</FONT><FONT FACE="arial,"><SUB>1</SUB>,
+</FONT><FONT FACE="Symbol">t</FONT><FONT FACE="arial,"><SUB>2</SUB>, ...,
+</FONT><FONT FACE="Symbol">t</FONT><FONT FACE="arial,"><SUB>k</SUB>, if
+there is no full list </FONT><FONT FACE="Symbol">p</FONT><FONT FACE="arial,">'
+that can be obtained from </FONT><FONT FACE="Symbol">p</FONT><FONT FACE="arial,">
+by performing a single transposition of an adjacent pair of elements and
+for which <I>K</I>(</FONT><FONT FACE="Symbol">p</FONT><FONT FACE="arial,">',
+</FONT><FONT FACE="Symbol">t</FONT><FONT FACE="arial,"><SUB>1</SUB>, </FONT><FONT FACE="Symbol">t</FONT><FONT FACE="arial,"><SUB>2</SUB>,
+..., </FONT><FONT FACE="Symbol">t</FONT><FONT FACE="arial,"><SUB>k</SUB>)
+&lt; <I>K</I>(</FONT><FONT FACE="Symbol">p</FONT><FONT FACE="arial,">,
+</FONT><FONT FACE="Symbol">t</FONT><FONT FACE="arial,"><SUB>1</SUB>, </FONT><FONT FACE="Symbol">t</FONT><FONT FACE="arial,"><SUB>2</SUB>,
+..., </FONT><FONT FACE="Symbol">t</FONT><FONT FACE="arial,"><SUB>k</SUB>).
+In other words, it is impossible to reduce the total distance to the </FONT><FONT FACE="Symbol">p</FONT><FONT FACE="arial,">'s
+by flipping an adjacent pair.</FONT>
+
+<P><FONT FACE="arial,">Every Kemeny optimal aggregation is also locally
+Kemeny optimal, but the converse is false. Nevertheless, we show that a
+locally Kemeny optimal aggregation satisfies the extended Condorcet property
+and can be computed (see <A HREF="#app:LK">Appendix A</A>) in time <I>O</I>(<I>kn</I>
+log <I>n</I>).</FONT>
+
+<P><FONT FACE="arial,">We have discussed the value of the extended Condorcet
+criterion in increasing resistance to search engine spam and in ensuring
+that elements in the top partitions remain highly ranked. However, specific
+aggregation techniques may add considerable value beyond simple satisfaction
+of this criterion; in particular, they may produce good rankings of alternatives
+within a given partition (as noted above, the extended Condorcet criterion
+gives no guidance within a partition). We now show how, using any initial
+aggregation </FONT><FONT FACE="Symbol">m</FONT><FONT FACE="arial,"> of
+partial lists </FONT><FONT FACE="Symbol">t</FONT><FONT FACE="arial,"><SUB>1</SUB>,
+</FONT><FONT FACE="Symbol">t</FONT><FONT FACE="arial,"><SUB>2</SUB>, ...,
+</FONT><FONT FACE="Symbol">t</FONT><FONT FACE="arial,"><SUB>k</SUB> ---
+<I>one that is not necessarily Condorcet</I> --- we can efficiently construct
+a locally Kemeny optimal aggregation of the </FONT><FONT FACE="Symbol">t</FONT><FONT FACE="arial,">'s
+that is in a well-defined sense maximally consistent with </FONT><FONT FACE="Symbol">m</FONT><FONT FACE="arial,">.
+For example, if the </FONT><FONT FACE="Symbol">t</FONT><FONT FACE="arial,">'s
+are full lists then </FONT><FONT FACE="Symbol">m</FONT><FONT FACE="arial,">
+could be the Borda ordering on the alternatives (see 
+<A HREF="#sec:borda">Section 4.1</A> for Borda's method). 
+Even if a Condorcet winner
+exists, the Borda ordering may not rank it first. However, by applying
+our "local Kemenization" procedure (described below), we can obtain a ranking
+that is maximally consistent with the Borda ordering but in which the Condorcet
+winners are at the top of the list.</FONT>
+
+<P><FONT FACE="arial,">A <I>local Kemenization</I> (LK) of a full list
+</FONT><FONT FACE="Symbol">m</FONT><FONT FACE="arial,"> with respect to
+</FONT><FONT FACE="Symbol">t</FONT><FONT FACE="arial,"><SUB>1</SUB>, ...,
+</FONT><FONT FACE="Symbol">t</FONT><FONT FACE="arial,"><SUB>k</SUB> is
+a procedure that computes a locally Kemeny optimal aggregation of </FONT><FONT FACE="Symbol">t</FONT><FONT FACE="arial,"><SUB>1</SUB>,
+..., </FONT><FONT FACE="Symbol">t</FONT><FONT FACE="arial,"><SUB>k</SUB>
+that is (in a precise sense) maximally consistent with </FONT><FONT FACE="Symbol">m</FONT><FONT FACE="arial,">.
+Intuitively, this approach also preserves the strengths of the initial
+aggregation </FONT><FONT FACE="Symbol">m</FONT><FONT FACE="arial,">. Thus:</FONT>
+
+<P><FONT FACE="arial,">(1) the Condorcet losers receive low rank, while
+the Condorcet winners receive high rank (this follows from local Kemeny
+optimality)</FONT>
+
+<P><FONT FACE="arial,">(2) the result disagrees with </FONT><FONT FACE="Symbol">m</FONT><FONT FACE="arial,">
+on the order of any given pair (<I>i</I>,<I>j</I>) of elements only if
+a majority of those </FONT><FONT FACE="Symbol">t</FONT><FONT FACE="arial,">'s
+expressing opinions disagrees with </FONT><FONT FACE="Symbol">m</FONT><FONT FACE="arial,">
+on (<I>i</I>,<I>j</I>).</FONT>
+
+<P><FONT FACE="arial,">(3) for every <I>d</I> between 1 and |</FONT><FONT FACE="Symbol">m</FONT><FONT FACE="arial,">|,
+the length <I>d</I> prefix of the output is a local Kemenization of the
+top <I>d</I> elements in </FONT><FONT FACE="Symbol">m</FONT><FONT FACE="arial,">.</FONT>
+
+<P><FONT FACE="arial,">Thus, if </FONT><FONT FACE="Symbol">m</FONT><FONT FACE="arial,">
+is an initial meta-search result, and we have some faith that the top,
+say, 100 elements of </FONT><FONT FACE="Symbol">m</FONT><FONT FACE="arial,">
+contain enough good pages, then we can build a locally Kemeny optimal aggregation
+of the projections of the </FONT><FONT FACE="Symbol">t</FONT><FONT FACE="arial,">'s
+onto the top 100 elements in </FONT><FONT FACE="Symbol">m</FONT><FONT FACE="arial,">.</FONT>
+
+<P><FONT FACE="arial,">The local Kemenization procedure is a simple inductive
+construction. Without loss of generality, let </FONT><FONT FACE="Symbol">m</FONT><FONT FACE="arial,">
+= (1, 2, ..., |</FONT><FONT FACE="Symbol">m</FONT><FONT FACE="arial,">|).
+Assume inductively for that we have constructed </FONT><FONT FACE="Symbol">p</FONT><FONT FACE="arial,">,
+a local Kemenization of the projection of the </FONT><FONT FACE="Symbol">t</FONT><FONT FACE="arial,">'s
+onto the elements 1, ..., <I>l</I>-1. Insert element <I>l</I> into the
+lowest-ranked "permissible" position in </FONT><FONT FACE="Symbol">p</FONT><FONT FACE="arial,">:
+just below the lowest-ranked element <I>y</I> in </FONT><FONT FACE="Symbol">p</FONT><FONT FACE="arial,">
+such that (a) no majority among the (original) </FONT><FONT FACE="Symbol">t</FONT><FONT FACE="arial,">'s
+prefers <I>x</I> to <I>y</I> and (b) for all successors <I>z</I> of <I>y</I>
+in </FONT><FONT FACE="Symbol">p</FONT><FONT FACE="arial,"> there is a majority
+that prefers <I>x</I> to <I>z</I>. In other words, we try to insert <I>x</I>
+at the end (bottom) of the list </FONT><FONT FACE="Symbol">p</FONT><FONT FACE="arial,">;
+we bubble it up toward the top of the list as long as a majority of the
+</FONT><FONT FACE="Symbol">t</FONT><FONT FACE="arial,">'s insists that
+we do.</FONT>
+
+<P><FONT FACE="arial,">A rigorous treatment of local Kemeny optimality
+and local Kemenization is given in <A HREF="#app:LK">Appendix A</A>, where
+we also show that the local Kemenization of an aggregation is unique. On
+the strength of these results we suggest the following general approach
+to rank aggregation:</FONT>
+<BLOCKQUOTE><FONT FACE="arial,">Given </FONT><FONT FACE="Symbol">t</FONT><FONT FACE="arial,"><SUB>1</SUB>,
+..., </FONT><FONT FACE="Symbol">t</FONT><FONT FACE="arial,"><SUB>k</SUB>,
+use your favorite aggregation method to obtain a full list </FONT><FONT FACE="Symbol">m</FONT><FONT FACE="arial,">.</FONT>
+<BR><FONT FACE="arial,">Output the (unique) local Kemenization of </FONT><FONT FACE="Symbol">m</FONT><FONT FACE="arial,">
+with respect to </FONT><FONT FACE="Symbol">t</FONT><FONT FACE="arial,"><SUB>1</SUB>,
+..., </FONT><FONT FACE="Symbol">t</FONT><SUB><FONT FACE="arial,">k</FONT></SUB></BLOCKQUOTE>
+
+<H1>
+<A NAME="sec:alg"></A><FONT FACE="arial,">4 Rank aggregation methods</FONT></H1>
+
+<H2>
+<A NAME="sec:borda"></A><FONT FACE="arial,">4.1 Borda's method</FONT></H2>
+<FONT FACE="arial,">Borda's method <A HREF="#Borda">[Borda 1781]</A> is
+a "positional" method, in that it assigns a score corresponding to the
+positions in which a candidate appears within each voter's ranked list
+of preferences, and the candidates are sorted by their total score. A primary
+advantage of positional methods is that they are computationally very easy:
+they can be implemented in linear time. They also enjoy the properties
+called anonymity, neutrality, and consistency in the social choice literature
+<A HREF="#Young74">[Young 1974]</A>. However, they cannot satisfy the Condorcet
+criterion. In fact, it is possible to show that no method that assigns
+a weights to each position and then sorts the results by applying a function
+to the weights associated with each candidate satisfies the Condorcet criterion
+(see <A HREF="#Young74">[Young 1974]</A>).</FONT>
+
+<P><FONT FACE="arial,"><B>Full lists.</B> Given full lists </FONT><FONT FACE="Symbol">t</FONT><FONT FACE="arial,"><SUB>1</SUB>,
+..., </FONT><FONT FACE="Symbol">t</FONT><FONT FACE="arial,"><I><SUB>k</SUB></I>,
+for each candidate <I>c</I> in <I>S</I> and list </FONT><FONT FACE="Symbol">t</FONT><FONT FACE="arial,"><I><SUB>i</SUB></I>,
+Borda's method first assigns a score <I>B<SUB>i</SUB></I>(<I>c</I>) = the
+number of candidates ranked below <I>c</I> in </FONT><FONT FACE="Symbol">t</FONT><FONT FACE="arial,"><I><SUB>i</SUB></I>,
+and the total Borda score <I>B</I>(<I>c</I>) is defined as </FONT><FONT FACE="Symbol"><FONT SIZE=+1>S</FONT></FONT><FONT FACE="arial,"><I><SUB>i</SUB></I>&nbsp;
+<I>B<SUB>i</SUB></I>(<I>c</I>). The candidates are then sorted in decreasing
+order of total Borda score.</FONT>
+
+<P><FONT FACE="arial,">We remark that Borda's method can be thought of
+as assigning a <I>k</I>-element position <I>vector</I> to each candidate
+(the positions of the candidate in the <I>k</I> lists), and sorting the
+candidates by the <I>L</I><SUB>1</SUB> norm of these vectors. Of course,
+there are plenty of other possibilities with such position vectors: sorting
+by <I>L<SUB>p</SUB></I> norms for <I>p</I> > 1, sorting by the median of
+the <I>k</I> values, sorting by the geometric mean of the <I>k</I> values,
+etc. This intuition leads us to several Markov chain based approaches,
+described in <A HREF="#sec:MC:alg">Section 4.3</A>.</FONT>
+
+<P><FONT FACE="arial,"><B>Partial lists.</B> It has been proposed (e.g.,
+in a recent article that appeared in <I><A HREF="http://www.economist.com">The
+Economist</A></I> <A HREF="#Saari-economist">[Saari, 2000]</A>) that the
+right way to extend Borda to partial lists is by apportioning all the excess
+score equally among all unranked candidates. This idea stems from the goal
+of being <I>unbiased</I>; however, it is easy to show that for any method
+of assigning scores to unranked candidates, there are partial information
+cases in which undesirable outcomes occur.</FONT>
+<H2>
+<A NAME="sec:footrule"></A><FONT FACE="arial,">4.2 Footrule and scaled
+footrule</FONT></H2>
+<FONT FACE="arial,">Since the footrule optimal aggregation is a good approximation
+of Kemeny optimal aggregation (by <A HREF="#prop:1">Proposition 2</A>),
+it merits investigation.</FONT>
+
+<P><FONT FACE="arial,"><B>Full lists.</B> Footrule optimal aggregation
+is related to the median of the values in a position vector:</FONT>
+<BLOCKQUOTE><A NAME="prop:3"></A><B><FONT FACE="arial,">Proposition 3</FONT></B>
+<BR><FONT FACE="arial,">Given full lists </FONT><FONT FACE="Symbol">t</FONT><FONT FACE="arial,"><SUB>1</SUB>,
+..., </FONT><FONT FACE="Symbol">t</FONT><FONT FACE="arial,"><I><SUB>k</SUB></I>,
+if the median positions of the candidates in the lists form a permutation,
+then this permutation is a footrule optimal aggregation.</FONT></BLOCKQUOTE>
+<FONT FACE="arial,">Now we obtain an algorithm for footrule optimal aggregation
+via the following proposition:</FONT>
+<BLOCKQUOTE><A NAME="prop:4"></A><B><FONT FACE="arial,">Proposition 4</FONT></B>
+<BR><FONT FACE="arial,">Footrule optimal aggregation of full lists can
+be computed in polynomial time, specifically, the time to find a minimum
+cost perfect matching in a bipartite graph.</FONT></BLOCKQUOTE>
+
+<BLOCKQUOTE><FONT FACE="arial,"><B>Proof</B> (Sketch):</FONT>
+<BR><FONT FACE="arial,">Let the union of </FONT><FONT FACE="Symbol">t</FONT><FONT FACE="arial,"><SUB>1</SUB>,
+..., </FONT><FONT FACE="Symbol">t</FONT><FONT FACE="arial,"><I><SUB>k</SUB></I>
+be <I>S</I> with <I>n</I> elements. Now, we define a a weighted complete
+bipartite graph (<I>C</I>, <I>P</I>, <I>W</I>) as follows. The first set
+of nodes <I>C</I> = {1, ..., <I>n</I>} denotes the set of elements to be
+ranked (pages). The second set of nodes <I>P</I> = {1, ..., <I>n</I>} denotes
+the <I>n</I> available positions. The weight <I>W</I>(<I>c</I>, <I>p</I>)
+is the total footrule distance (from the </FONT><FONT FACE="Symbol">t</FONT><FONT FACE="arial,"><I><SUB>i</SUB></I>'s)
+of a ranking that places element <I>c</I> at position <I>p</I>, given by
+<I>W</I>(<I>c</I>, <I>p</I>) = </FONT><FONT FACE="Symbol">S</FONT><FONT FACE="arial,"><I><SUB>i</SUB></I>&nbsp;
+|</FONT><FONT FACE="Symbol">t</FONT><FONT FACE="arial,"><I><SUB>i</SUB></I>(<I>c</I>)
+</FONT><FONT FACE="Symbol">-</FONT><FONT FACE="arial,"> <I>p</I>|. It can
+be shown that a permutation minimizing the total footrule distance to the
+</FONT><FONT FACE="Symbol">t</FONT><FONT FACE="arial,"><I><SUB>i</SUB></I>'s
+is given by a minimum cost perfect matching in the bipartite graph.</FONT></BLOCKQUOTE>
+<FONT FACE="arial,"><B>Partial lists.</B> The computation of a footrule-optimal
+aggregation for partial lists is more problematic. In fact, it can be shown
+to be equivalent to the NP-hard problem of computing the minimum number
+of edges to delete to convert a directed graph into a DAG.</FONT>
+
+<P><FONT FACE="arial,">Keeping in mind that footrule optimal aggregation
+for full lists can be recast as a minimum cost bipartite matching problem,
+we now describe a method that retains the computational advantages of the
+full list case, and is reasonably close to it in spirit. We define the
+bipartite graph as before, except that the weights are defined differently.
+The weight <I>W</I>(<I>c</I>, <I>p</I>) is the <I>scaled</I> footrule distance
+(from the </FONT><FONT FACE="Symbol">t</FONT><FONT FACE="arial,"><I><SUB>i</SUB></I>'s)
+of a ranking that places element <I>c</I> at position <I>p</I>, given by
+<I>W</I>(<I>c</I>, <I>p</I>) = </FONT><FONT FACE="Symbol">S</FONT><FONT FACE="arial,"><I><SUB>i</SUB></I>&nbsp;
+|&nbsp;&nbsp; (</FONT><FONT FACE="Symbol">t</FONT><FONT FACE="arial,"><I><SUB>i</SUB></I>(<I>c</I>)
+/|</FONT><FONT FACE="Symbol">t</FONT><FONT FACE="arial,"><I><SUB>i</SUB></I>|)
+</FONT><FONT FACE="Symbol">-</FONT><FONT FACE="arial,"> (<I>p</I>/<I>n</I>)&nbsp;&nbsp;
+|. As before, we can solve the minimum cost maximum matching problem on
+this bipartite graph to obtain the footrule aggregation algorithm for partial
+lists. We called this method the <I>scaled footrule aggregation</I> (SFO).</FONT>
+<H2>
+<A NAME="sec:MC:alg"></A><FONT FACE="arial,">4.3 Markov chain methods</FONT></H2>
+<FONT FACE="arial,">We propose a general method for obtaining an initial
+aggregation of partial lists, using Markov chains. The states of the chain
+correspond to the <I>n</I> candidates to be ranked, the transition probabilities
+depend in some particular way on the given (partial) lists, and the Markov
+chain ordering is the aggregated ordering. There are several motivations
+for using Markov chains:</FONT>
+
+<P><B><FONT FACE="arial,">Handling partial lists and top <I>d</I> lists</FONT></B>
+<BR><FONT FACE="arial,">Rather than require every pair of pages (candidates)
+<I>i</I> and <I>j</I> to be compared by every search engine (voter), we
+may now use the the <I>available</I> comparisons between <I>i</I> and <I>j</I>
+to determine the transition probability between <I>i</I> and <I>j</I>,
+and exploit the connectivity of the chain to (transitively) "infer" comparison
+outcomes between pairs that were not explicitly ranked by any of the search
+engines. The intuition is that Markov chains provide a more holistic viewpoint
+of comparing all <I>n</I> candidates against each other --- significantly
+more meaningful than ad hoc and local inferences like "if a majority prefer
+A to B and a majority prefer B to C, then A should be better than C."</FONT>
+
+<P><B><FONT FACE="arial,">Handling uneven comparisons</FONT></B>
+<BR><FONT FACE="arial,">If a Web page <I>P</I> appears in the bottom half
+of about 70% of the lists, and is ranked Number 1 by the other 30%, how
+important is the quality of the pages that appear on the latter 30% of
+the lists? If these pages all appear near the bottom on the first set of
+70% of the lists and the winners in these lists were not known to the other
+30% of the search engines that ranked <I>P</I> Number 1, then perhaps we
+shouldn't consider <I>P</I> too seriously. In other words, if we view each
+list as a tournament within a league, we should take into account the strength
+of the schedule of matches played by each player. The Markov chain solutions
+we discuss are similar in spirit to the approaches considered in the mathematical
+community for this problem (eigenvectors of linear maps, fixed points of
+nonlinear maps, etc.).</FONT>
+
+<P><B><FONT FACE="arial,">Enhancements of other heuristics</FONT></B>
+<BR><FONT FACE="arial,">Heuristics for combining rankings are motivated
+by some underlying principle. For example, Borda's method is based on the
+idea "more wins is better." This gives some figure of merit for each candidate.
+It is natural to extend this and say "more wins against <I>good</I> players
+is even better," and so on, and iteratively refine the ordering produced
+by a heuristic. In the context of Web searching, the HITS algorithm of
+Kleinberg <A HREF="#Kleinberg-HITS">[Kleinberg 1998, 1999]</A> and the
+PageRank algorithm of Brin and Page <A HREF="#google">[Brin and Page 1998]</A>
+are motivated by similar considerations. As we will see, some of the chains
+we propose are natural extensions (in a precise sense) of Borda's method,
+sorting by geometric mean, and sorting by majority.</FONT>
+
+<P><B><FONT FACE="arial,">Computational efficiency</FONT></B>
+<BR><FONT FACE="arial,">In general, setting up one of these Markov chains
+and determining its stationary probability distribution takes about </FONT><FONT FACE="Symbol">q</FONT><FONT FACE="arial,">(<I>n</I><SUP>2</SUP><I>k</I>
++ <I>n</I><SUP>3</SUP>) time. However, in practice, if we explicitly compute
+the transition matrix in <I>O</I>(<I>n</I><SUP>2</SUP><I>k</I>) time, a
+few iterations of the power method will allow us to compute the stationary
+distribution. In fact, we suggest an even faster method for practical purposes.
+For all of the chains that we propose, with about <I>O</I>(<I>nk</I>) (linear
+in input size) time for preprocessing, it is usually possible to simulate
+one step of the chain in <I>O</I>(<I>k</I>) time; thus by simulating the
+Markov chain for about <I>O</I>(<I>n</I>) steps, we should be able to sample
+from the stationary distribution pretty effectively. This is usually sufficient
+to identify the top few candidates in the stationary distribution in <I>O</I>(<I>nk</I>)
+time, perhaps considerably faster in practice.</FONT>
+
+<P><FONT FACE="arial,">We now propose some specific Markov chains, denoted
+<B>MC1</B>, <B>MC2</B>, <B>MC4</B> and <B>MC4</B>. For each of these chains,
+we specify the transition matrix and give some intuition as to why such
+a definition is reasonable. In all cases, the state space is the union
+of the sets of pages ranked by various search engines.</FONT>
+<BLOCKQUOTE><B><FONT FACE="arial,">MC1</FONT></B>
+<BR><FONT FACE="arial,">If the current state is page <I>P</I>, then the
+next state is chosen uniformly from the multiset of all pages that were
+ranked higher than (or equal to) <I>P</I> by some search engine that ranked
+<I>P</I>, that is, from the multiset of all pages <I>Q</I> such that </FONT><FONT FACE="Symbol">t</FONT><FONT FACE="arial,"><I><SUB>i</SUB></I>(<I>Q</I>)
+at most </FONT><FONT FACE="Symbol">t</FONT><FONT FACE="arial,"><I><SUB>i</SUB></I>(<I>P</I>).
+The main idea is that in each step, we move from the current page to a
+better page, allowing about 1/<I>j</I> probability of staying in the same
+page, where <I>j</I> is roughly the average rank of the current page.</FONT></BLOCKQUOTE>
+
+<BLOCKQUOTE><B><FONT FACE="arial,">MC2</FONT></B>
+<BR><FONT FACE="arial,">If the current state is page <I>P</I>, then the
+next state is chosen by first picking a ranking </FONT><FONT FACE="Symbol">t</FONT><FONT FACE="arial,">
+uniformly from all the partial lists </FONT><FONT FACE="Symbol">t</FONT><FONT FACE="arial,"><SUB>1</SUB>,
+..., </FONT><FONT FACE="Symbol">t</FONT><FONT FACE="arial,"><I><SUB>k</SUB></I>
+containing <I>P</I>, then picking a page <I>Q</I> uniformly from the set
+of all pages <I>Q</I> such that </FONT><FONT FACE="Symbol">t</FONT><FONT FACE="arial,">(<I>Q</I>)
+is at most </FONT><FONT FACE="Symbol">t</FONT><FONT FACE="arial,">(<I>P</I>).</FONT>
+<BR><FONT FACE="arial,">This chain takes into account the fact that we
+have several <I>lists</I> of rankings, not just a collection of pairwise
+comparisons among the pages. As a consequence, MC2 is arguably the most
+representative of minority viewpoints of sufficient statistical significance;
+it also protects specialist views. In fact, MC2 generalizes the geometric
+mean analogue of Borda's method. For full lists, if the initial state is
+chosen uniformly at random, after one step of MC2, the distribution induced
+on its states produces a ranking of the pages such that <I>P</I> is ranked
+higher than (preferred to) <I>Q</I> iff the <I>geometric mean</I> of the
+ranks of <I>P</I> is lower than the geometric mean of the ranks of <I>Q</I>.</FONT></BLOCKQUOTE>
+
+<BLOCKQUOTE><B><FONT FACE="arial,">MC3</FONT></B>
+<BR><FONT FACE="arial,">If the current state is page <I>P</I>, then the
+next state is chosen as follows: first pick a ranking </FONT><FONT FACE="Symbol">t</FONT><FONT FACE="arial,">
+uniformly from all the partial lists </FONT><FONT FACE="Symbol">t</FONT><FONT FACE="arial,"><SUB>1</SUB>,
+..., </FONT><FONT FACE="Symbol">t</FONT><FONT FACE="arial,"><I><SUB>k</SUB></I>
+containing <I>P</I>, then uniformly pick a page <I>Q</I> that was ranked
+by </FONT><FONT FACE="Symbol">t</FONT><FONT FACE="arial,">. If </FONT><FONT FACE="Symbol">t</FONT><FONT FACE="arial,">(<I>Q</I>)
+&lt; </FONT><FONT FACE="Symbol">t</FONT><FONT FACE="arial,">(<I>P</I>)
+then go to <I>Q</I>, else stay in <I>P</I>.</FONT>
+<BR><FONT FACE="arial,">This chain is a generalization of Borda method.
+For full lists, if the initial state is chosen uniformly at random, after
+one step of MC3, the distribution induced on its states produces a ranking
+of the pages such that <I>P</I> is ranked higher than <I>Q</I> iff the
+Borda score of <I>P</I> is higher than the Borda score of <I>Q</I>. This
+is natural, considering that in any state <I>P</I>, the probability of
+staying in <I>P</I> is roughly the fraction of pairwise contests (with
+all other pages) that <I>P</I> won, which is a very Borda-like measure.</FONT></BLOCKQUOTE>
+
+<BLOCKQUOTE><B><FONT FACE="arial,">MC4</FONT></B>
+<BR><FONT FACE="arial,">If the current state is page <I>P</I>, then the
+next state is chosen as follows: first pick a page <I>Q</I> uniformly from
+the union of all pages ranked by the search engines. If </FONT><FONT FACE="Symbol">t</FONT><FONT FACE="arial,">(<I>Q</I>)
+&lt; </FONT><FONT FACE="Symbol">t</FONT><FONT FACE="arial,">(<I>P</I>)
+for a <I>majority</I> of the lists </FONT><FONT FACE="Symbol">t</FONT><FONT FACE="arial,">
+that ranked both <I>P</I> and <I>Q</I>, then go to <I>Q</I>, else stay
+in <I>P</I>.</FONT>
+<BR><FONT FACE="arial,">This chain generalizes Copeland's suggestion of
+sorting the candidates by the number of pairwise majority contests they
+have won <A HREF="#Copeland">[Copeland 1951]</A>.</FONT></BLOCKQUOTE>
+<FONT FACE="arial,">There are examples that differentiate the behavior
+of these chains. One can also show that the Markov ordering implied by
+these chains need not satisfy the extended Condorcet principle.</FONT>
+<H1>
+<A NAME="sec:appl"></A><FONT FACE="arial,">5 Applications</FONT></H1>
+<FONT FACE="arial,">We envisage several applications of our rank aggregation
+methods in the context of searching and retrieval in general, and the Web
+in particular. We present five major applications of our techniques in
+the following sections.</FONT>
+<H2>
+<A NAME="sec:meta"></A><FONT FACE="arial,">5.1 Meta-search</FONT></H2>
+<FONT FACE="arial,">Meta-search is the problem of constructing a meta-search
+engine, which uses the results of several search engines to produce a collated
+answer. Several meta-search engines exist (e.g., <A HREF="#metac">[Metacrawler]</A>)
+and many Web users build their own meta-search engines. As we observed
+earlier, the problem of constructing a good meta-search engine is tantamount
+to obtaining a good rank aggregation function for partial and top <I>d</I>
+lists. Given the different crawling strategies, indexing policies, and
+ranking functions employed by different search engines, meta-search engines
+are useful in many situations.</FONT>
+
+<P><FONT FACE="arial,">The actual success of a meta-search engine directly
+depends on the aggregation technique underlying it. Since the techniques
+proposed in <A HREF="#sec:alg">Section 4</A> work on partial lists and
+top <I>d</I> lists, they can be applied to build a meta-search engine.
+The idea is simple: given a query, obtain the top (say) 100 results from
+many search engines, apply the rank aggregation function with the universe
+being the union of pages returned by the search engines, and return the
+top (say) 100 results of the aggregation. We illustrate this scheme in
+<A HREF="#sec:exp1">Section 6.2.1</A> and examine the performance of our
+methods.</FONT>
+<H2>
+<A NAME="sec:rfs"></A><FONT FACE="arial,">5.2 Aggregating ranking functions</FONT></H2>
+<FONT FACE="arial,">Given a collection of documents, the problem of indexing
+is: store the documents in such a manner that given a search term, those
+most relevant to the search term can be retrieved easily. This is a classic
+information retrieval problem and reasonably well-understood for static
+documents (see <A HREF="#Salton">[Salton 1989]</A>). When the documents
+are hypertext documents, however, indexing algorithms could exploit the
+latent relationship between documents implied by the hyperlinks. On the
+Web, such an approach has already proved tremendously successful <A HREF="#Kleinberg-HITS">[Kleinberg
+1998, 1999]</A>, <A HREF="#clever">[Chakrabarti <I>et al.</I> 1998]</A>,
+<A HREF="#google">[Brin and Page 1998]</A>.</FONT>
+
+<P><FONT FACE="arial,">One common technique for indexing is to construct
+a <I>ranking function</I>. With respect to a query, a ranking function
+can operate in two ways: (i) it can give an absolute score to a document
+indicating the relevance of the document to the query (score-based) or
+(ii) it can take two documents and rank order them with respect to the
+query (comparison-based). Based on the underlying methodology used, many
+competing ranking functions can be obtained. For instance, term-counting
+yields a simple ranking function. Another ranking function might be the
+consequence of applying the vector-space model and an appropriate distance
+measure to the document collection. Yet other ranking functions might be
+the ones implied by PageRank <A HREF="#google">[Brin and Page 1998]</A>
+and Clever <A HREF="#Kleinberg-HITS">[Kleinberg 1998, 1999]</A>, <A HREF="#clever">[Chakrabarti
+<I>et al.</I> 1998]</A>. It is important to note that if the ranking function
+is score-based, the ordering implied by the scores makes more sense than
+the actual scores themselves, which are often either meaningless or inaccurate.
+And, for a particular ranking function and a query, it is often easier
+to return the top few documents relevant to the query than to rank the
+entire document base.</FONT>
+
+<P><FONT FACE="arial,">Given many ranking functions for a single document
+base, we have the case of top <I>d</I> lists, where <I>d</I> is the number
+of documents returned by each of the ranking functions. Our techniques
+can be applied to obtain a good aggregation of these ranking functions.
+Notice that we give equal weight to all the ranking functions, but this
+could be easily modified if necessary.</FONT>
+
+<P><FONT FACE="arial,">Such rank aggregation may be useful in other domains
+as well: many airline reservation systems suffer from lack of ability to
+express preferences. If the system is flexible enough to let the user specify
+various preference criteria (travel dates/times, window/aisle seating,
+number of stops, frequent-flier preferences, refundable/non-refundable
+nature of ticket purchase, and of course, price), it can rank the available
+flight plans based on each of the criteria, and apply rank aggregation
+methods to give better quality results to the user. Similarly, in the choice
+of restaurants from a restaurant database, users might rank restaurants
+based on several different criteria (cuisine, driving distance, ambiance,
+star-rating, dollar-rating, etc.). In both examples, users might be willing
+to compromise one or more of these criteria, provided there is a clear
+benefit with respect to the others. In fact, very often there is not even
+a clear order of importance among the criteria. A good aggregation function
+is a very effective way to make a selection in such cases.</FONT>
+<H2>
+<A NAME="sec:spamreduction"></A><FONT FACE="arial,">5.3 Spam reduction</FONT></H2>
+<FONT FACE="arial,">As we discussed earlier, the extended Condorcet principle
+is a reasonable cure for spam. Using the technique of local Kemenization,
+it is easy to take any rank aggregation method and tweak its output to
+make it satisfy the extended Condorcet principle. In fact, we suggest this
+as a general technique to reduce spam in search engines or meta-search
+engines: apply a favorite rank aggregation to obtain an initial ranking
+and then apply local Kemenization. This extra step is inexpensive in terms
+of computation cost, but has the benefit of reducing spam by ranking Condorcet
+losers below Condorcet winners. Again, we illustrate this application in
+<A HREF="#sec:exp2">Section 6.2.2</A> by examples.</FONT>
+<H2>
+<A NAME="sec:wordassociation"></A><FONT FACE="arial,">5.4 Word association
+techniques</FONT></H2>
+<FONT FACE="arial,">Different search engines and portals have different
+(default) semantics of handling a multi-word query. For instance, Altavista
+seems to use the OR semantics (it is enough for a document to contain one
+of the given query terms to be considered) while Google seems to use the
+AND semantics (it is mandatory for all the query words to appear in a document
+for it to be considered). As discussed in <A HREF="#sec:motivation">Section
+1.2</A>, both these scenarios are inconvenient in many situations.</FONT>
+
+<P><FONT FACE="arial,">Many of these tasks can be accomplished by a complicated
+Boolean query (via advanced query), but we feel that it is unreasonable
+to expect an average Web user to subscribe to this. Note also that simply
+asking for documents that contain as many of the keywords as possible is
+not necessarily a good solution: the best document on the topic might have
+only three of the keywords, while a spam document might well have four
+keywords. As a specific motivating example, consider searching for the
+job of a software engineer from an on-line job database. The user lists
+a number of skills and a number of potential keywords in the job description,
+for example, <TT>"Silicon Valley C++ Java CORBA TCP-IP algorithms start-up
+pre-IPO stock options"</TT>. It is clear that the "AND" rule might produce
+no document, and the "OR" rule is equally disastrous.</FONT>
+
+<P><FONT FACE="arial,">We propose a <I>word association</I> scheme to handle
+these situations. Given a set of query words <I>w</I><SUB>1</SUB>, ...,
+<I>w<SUB>l</SUB></I>, we propose to construct several (say, <I>k</I>) sub-queries
+which are subsets of the original query words. We query the search engine
+with these <I>k</I> sub-queries (using the AND semantics) and obtain <I>k</I>
+top <I>d</I> (say, <I>d</I> = 100) results for each of the sub-queries.
+Then, we can use the methods in <A HREF="#sec:spam">Section 3</A> and <A HREF="#sec:alg">Section
+4</A> to obtain a locally Kemenized aggregation of the top <I>d</I> lists
+and output this as the final answer corresponding to the multi-word query.
+By examples, we illustrate this application in <A HREF="#sec:exp3">Section
+6.2.3</A>.</FONT>
+
+<P><B><FONT FACE="arial,">Where do the words come from?</FONT></B>
+<BR><FONT FACE="arial,">One way to obtain such a set of query words is
+to prompt the user to associate as many terms as possible with the desired
+response. This might be too taxing on a typical user. A less demanding
+way is to let the user highlight some words in a current document; the
+search term are then extracted from the "anchor text," i.e., the words
+around the selected words.</FONT>
+<H2>
+<A NAME="sec:secomparison"></A><FONT FACE="arial,">5.5 Search engine comparison</FONT></H2>
+<FONT FACE="arial,">Our methods also imply a natural way to compare the
+performance of various search engines. The main idea is that a search engine
+can be called good when it behaves like a least noisy expert for a query.
+In other words, a good search engine is one that is close to the aggregated
+ranking. This agrees with our earlier notion of what an expert is and how
+to deal with noisy experts. Thus, the procedure to rank the search engines
+themselves (with respect to a query) is as follows: obtain a rank aggregation
+of the results from various search engines and rank the search engines
+based on their (Kendall or footrule) distance to the aggregated ranking.</FONT>
+<H1>
+<A NAME="sec:exp"></A><FONT FACE="arial,">6 Experiments and Results</FONT></H1>
+
+<H2>
+<A NAME="sec:infrastructure"></A><FONT FACE="arial,">6.1 Infrastructure</FONT></H2>
+<FONT FACE="arial,">We conducted three types of experiments. The first
+experiment is to build a meta-search engine using different aggregation
+methods (<A HREF="#sec:alg">Section 4</A>) and compare their performances.
+The second experiment is to illustrate the effect of our techniques in
+combating spam. The third experiment is to illustrate the technique of
+word association for multi-word queries. While we provide numerical values
+for the first experiment, we provide actual examples for the second and
+third experiments.</FONT>
+
+<P><FONT FACE="arial,">We use the following seven search engines: <A HREF="http://www.altavista.com">Altavista</A>
+(AV), <A HREF="http://www.alltheweb.com">Alltheweb</A> (AW), <A HREF="http://www.excite.com">Excite</A>
+(EX), <A HREF="http://www.google.com">Google</A> (GG), <A HREF="http://www.hotbot.com">Hotbot</A>
+(HB), <A HREF="http://www.lycos.com">Lycos</A> (LY), and <A HREF="http://www.northernlight.com">Northernlight</A>
+(NL). For each of the search engines, we focused only on the top 100 queries.
+Our distance measurements are with respect to union of the top 100 results
+from these search engines.</FONT>
+
+<P><FONT FACE="arial,">For measuring the performance of our methods (first
+experiment), we selected the following 38 general queries (these queries
+are a superset of the 28 queries used in several earlier papers <A HREF="#BH">[Bharat
+and Henzinger 1998]</A>, <A HREF="#clever">[Chakrabarti <I>et al.</I> 1998]</A>).
+For the second experiment, we pick some queries that were spammed in popular
+search engines. For the third experiment, we pick multi-word queries that
+perform poorly with existing search engines. Our notion of two URLs being
+identical is purely syntactic (up to some canonical form); we do not use
+the content of page to determine if two URLs are identical.</FONT>
+<H2>
+<A NAME="sec:results"></A><FONT FACE="arial,">6.2 Results</FONT></H2>
+
+<H3>
+<A NAME="sec:exp1"></A><FONT FACE="arial,">6.2.1 Meta-Search</FONT></H3>
+<FONT FACE="arial,">The queries we picked for our experiment are:</FONT>
+<BLOCKQUOTE><FONT FACE="arial,">affirmative action, alcoholism, amusement
+parks, architecture, bicycling, blues, cheese, citrus groves, classical
+guitar, computer vision, cruises, Death Valley, field hockey, gardening,
+graphic design, Gulf war, HIV, java, Lipari, lyme disease, mutual funds,
+National parks, parallel architecture, Penelope Fitzgerald, recycling cans,
+rock climbing, San Francisco, Shakespeare, stamp collecting, sushi, table
+tennis, telecommuting, Thailand tourism, vintage cars, volcano, zen buddhism,
+and Zener.</FONT></BLOCKQUOTE>
+<FONT FACE="arial,">The average intersection in the top 100 for any pair
+of search engines is given in <A HREF="#tab:overlap">Table 1</A>, which
+shows the number of pages as a function of number of search engines in
+which they are present. For instance, the fourth column in the table means
+that 27.231 pages (on average) were present in exactly three of the search
+engine results. The second column indicates that around 284 pages were
+present in only one search engine while the last column indicates that
+less than 2 pages were present in all the search engines.</FONT>
+<BR><FONT FACE="arial,">&nbsp;</FONT>
+<BR><FONT FACE="arial,">&nbsp;</FONT>
+<CENTER><A NAME="298"></A><A NAME="tab:overlap"></A></CENTER>
+
+<CENTER><TABLE>
+<CAPTION><B>Table 1:</B>&nbsp;
+<BR>Overlap among 7 search engine results.</CAPTION>
+
+<TR>
+<TD>&nbsp;
+<CENTER><TABLE BORDER CELLPADDING=3 >
+<TR>
+<TD ALIGN=CENTER># engines</TD>
+
+<TD ALIGN=CENTER>1</TD>
+
+<TD ALIGN=CENTER>2</TD>
+
+<TD ALIGN=CENTER>3</TD>
+
+<TD ALIGN=CENTER>4</TD>
+
+<TD ALIGN=CENTER>5</TD>
+
+<TD ALIGN=CENTER>6</TD>
+
+<TD ALIGN=CENTER>7</TD>
+</TR>
+
+<TR>
+<TD ALIGN=CENTER># pages</TD>
+
+<TD ALIGN=CENTER>284.5</TD>
+
+<TD ALIGN=CENTER>84.0</TD>
+
+<TD ALIGN=CENTER>27.2</TD>
+
+<TD ALIGN=CENTER>12.9</TD>
+
+<TD ALIGN=CENTER>8.1</TD>
+
+<TD ALIGN=CENTER>4.7</TD>
+
+<TD ALIGN=CENTER>1.8</TD>
+</TR>
+</TABLE></CENTER>
+&nbsp;</TD>
+</TR>
+</TABLE></CENTER>
+<FONT FACE="arial,">&nbsp;The results of our first experiment are presented
+in <A HREF="#tab:exp1">Table 2</A>. The performance is calculated in terms
+of the three distance measures described in <A HREF="#sec:measures">Section
+2.1.1</A>. Each row corresponds to a method presented in <A HREF="#sec:alg">Section
+4</A>. Local Kemenization (LK) was applied to the result of each of these
+methods.</FONT>
+<BR><FONT FACE="arial,">&nbsp;</FONT>
+<BR><FONT FACE="arial,">&nbsp;</FONT>
+<CENTER><A NAME="319"></A><A NAME="tab:exp1"></A></CENTER>
+
+<CENTER><TABLE>
+<CAPTION><B>Table 2:</B>&nbsp;
+<BR>Performance of various rank aggregation methods for meta-search.&nbsp;
+<BR>LK denotes Local Kemenization.&nbsp;</CAPTION>
+
+<TR>
+<TD>&nbsp;
+<CENTER><TABLE BORDER CELLPADDING=3 >
+<TR>
+<TD ALIGN=CENTER>&nbsp;</TD>
+
+<TD ALIGN=CENTER>Kendall&nbsp;
+<BR>Tau</TD>
+
+<TD ALIGN=CENTER>Kendall&nbsp;
+<BR>Tau</TD>
+
+<TD ALIGN=CENTER>Induced&nbsp;
+<BR>Footrule</TD>
+
+<TD ALIGN=CENTER>Induced&nbsp;
+<BR>Footrule</TD>
+
+<TD ALIGN=CENTER>Scaled&nbsp;
+<BR>Footrule</TD>
+
+<TD ALIGN=CENTER>Scaled&nbsp;
+<BR>Footrule</TD>
+</TR>
+
+<TR>
+<TD ALIGN=CENTER>&nbsp;</TD>
+
+<TD ALIGN=CENTER>No LK</TD>
+
+<TD ALIGN=CENTER>With LK</TD>
+
+<TD ALIGN=CENTER>No LK</TD>
+
+<TD ALIGN=CENTER>With LK</TD>
+
+<TD ALIGN=CENTER>No LK</TD>
+
+<TD ALIGN=CENTER>With LK</TD>
+</TR>
+
+<TR>
+<TD ALIGN=CENTER>Borda</TD>
+
+<TD ALIGN=CENTER>0.221</TD>
+
+<TD ALIGN=CENTER>0.214</TD>
+
+<TD ALIGN=CENTER>0.353</TD>
+
+<TD ALIGN=CENTER>0.345</TD>
+
+<TD ALIGN=CENTER>0.440</TD>
+
+<TD ALIGN=CENTER>0.438</TD>
+</TR>
+
+<TR>
+<TD ALIGN=CENTER>SFO</TD>
+
+<TD ALIGN=CENTER>0.112</TD>
+
+<TD ALIGN=CENTER>0.111</TD>
+
+<TD ALIGN=CENTER>0.168</TD>
+
+<TD ALIGN=CENTER>0.167</TD>
+
+<TD ALIGN=CENTER>0.137</TD>
+
+<TD ALIGN=CENTER>0.137</TD>
+</TR>
+
+<TR>
+<TD ALIGN=CENTER>MC1&nbsp;</TD>
+
+<TD ALIGN=CENTER>0.133</TD>
+
+<TD ALIGN=CENTER>0.130</TD>
+
+<TD ALIGN=CENTER>0.216</TD>
+
+<TD ALIGN=CENTER>0.213</TD>
+
+<TD ALIGN=CENTER>0.292</TD>
+
+<TD ALIGN=CENTER>0.291</TD>
+</TR>
+
+<TR>
+<TD ALIGN=CENTER>MC2&nbsp;</TD>
+
+<TD ALIGN=CENTER>0.131</TD>
+
+<TD ALIGN=CENTER>0.128</TD>
+
+<TD ALIGN=CENTER>0.213</TD>
+
+<TD ALIGN=CENTER>0.210</TD>
+
+<TD ALIGN=CENTER>0.287</TD>
+
+<TD ALIGN=CENTER>0.286</TD>
+</TR>
+
+<TR>
+<TD ALIGN=CENTER>MC3&nbsp;</TD>
+
+<TD ALIGN=CENTER>0.116</TD>
+
+<TD ALIGN=CENTER>0.114</TD>
+
+<TD ALIGN=CENTER>0.186</TD>
+
+<TD ALIGN=CENTER>0.183</TD>
+
+<TD ALIGN=CENTER>0.239</TD>
+
+<TD ALIGN=CENTER>0.239</TD>
+</TR>
+
+<TR>
+<TD ALIGN=CENTER>MC4&nbsp;</TD>
+
+<TD ALIGN=CENTER>0.105</TD>
+
+<TD ALIGN=CENTER>0.104</TD>
+
+<TD ALIGN=CENTER>0.151</TD>
+
+<TD ALIGN=CENTER>0.149</TD>
+
+<TD ALIGN=CENTER>0.181</TD>
+
+<TD ALIGN=CENTER>0.181</TD>
+</TR>
+</TABLE></CENTER>
+&nbsp;</TD>
+</TR>
+</TABLE></CENTER>
+<FONT FACE="arial,">&nbsp;</FONT>
+<H3>
+<A NAME="sec:exp2"></A><FONT FACE="arial,">6.2.2 Spam reduction</FONT></H3>
+<FONT FACE="arial,">In the following we present anecdotal evidence of spam
+reduction by our methods. We use the following queries: <TT>Feng Shui,
+organic vegetables, gardening</TT>. For each of these queries, we look
+at the (top) pages that we consider spam. Notice that our definition of
+spam does not mean evil! --- <I>it is just that in our opinion, these pages
+obtained an undeservedly high rank from one or more search engines</I>.
+It is easy to find URLs that spammed a single search engine. On the other
+hand, we were interested in URLs that spammed at least two search engines
+--- given that the overlap among search engines was not very high, this
+proved to be a challenging task. <A HREF="#tab:exp2">Table 3</A> presents
+our examples: the entries are the rank within individual search engines'
+lists. A blank entry in the table indicates that the url was not returned
+as one of the top 100 by the search engine. Based on results from <A HREF="#sec:exp1">Section
+6.2.1</A>, we restrict our attention to SFO and MC4 with local Kemenization.</FONT>
+<BR><FONT FACE="arial,">&nbsp;</FONT>
+<BR><FONT FACE="arial,">&nbsp;</FONT>
+<CENTER><A NAME="606"></A></CENTER>
+
+<CENTER><TABLE>
+<CAPTION><B>Table 3:</B>&nbsp;
+<BR>Ranks of "spam" pages for the queries:&nbsp;
+<BR><TT>Feng Shui, organic vegetables</TT> and <TT>gardening</TT>.</CAPTION>
+
+<TR>
+<TD>&nbsp;
+<CENTER><TABLE BORDER CELLPADDING=3 >
+<TR>
+<TD ALIGN=CENTER>url</TD>
+
+<TD ALIGN=CENTER>AV</TD>
+
+<TD ALIGN=CENTER>AW</TD>
+
+<TD ALIGN=CENTER>GG</TD>
+
+<TD ALIGN=CENTER>HB</TD>
+
+<TD ALIGN=CENTER>LY</TD>
+
+<TD ALIGN=CENTER>NL</TD>
+
+<TD ALIGN=CENTER>SFO</TD>
+
+<TD ALIGN=CENTER>MC4&nbsp;</TD>
+</TR>
+
+<TR>
+<TD ALIGN=CENTER><TT><A HREF="http://www.lucky-bamboo.com">www.lucky-bamboo.com</A></TT>&nbsp;</TD>
+
+<TD ALIGN=CENTER>4</TD>
+
+<TD ALIGN=CENTER>43</TD>
+
+<TD ALIGN=CENTER>&nbsp;</TD>
+
+<TD ALIGN=CENTER>&nbsp;</TD>
+
+<TD ALIGN=CENTER>41</TD>
+
+<TD ALIGN=CENTER>&nbsp;</TD>
+
+<TD ALIGN=CENTER>144</TD>
+
+<TD ALIGN=CENTER>63</TD>
+</TR>
+
+<TR>
+<TD ALIGN=CENTER><TT><A HREF="http://www.cambriumcrystals.com">www.cambriumcrystals.com</A></TT>&nbsp;</TD>
+
+<TD ALIGN=CENTER>&nbsp;</TD>
+
+<TD ALIGN=CENTER>9</TD>
+
+<TD ALIGN=CENTER>51</TD>
+
+<TD ALIGN=CENTER>&nbsp;</TD>
+
+<TD ALIGN=CENTER>5</TD>
+
+<TD ALIGN=CENTER>&nbsp;</TD>
+
+<TD ALIGN=CENTER>31</TD>
+
+<TD ALIGN=CENTER>59</TD>
+</TR>
+
+<TR>
+<TD ALIGN=CENTER><TT><A HREF="http://www.luckycat.com">www.luckycat.com</A></TT>&nbsp;</TD>
+
+<TD ALIGN=CENTER>11</TD>
+
+<TD ALIGN=CENTER>14</TD>
+
+<TD ALIGN=CENTER>26</TD>
+
+<TD ALIGN=CENTER>&nbsp;</TD>
+
+<TD ALIGN=CENTER>13</TD>
+
+<TD ALIGN=CENTER>&nbsp;</TD>
+
+<TD ALIGN=CENTER>49</TD>
+
+<TD ALIGN=CENTER>36</TD>
+</TR>
+
+<TR>
+<TD ALIGN=CENTER><TT><A HREF="http://www.davesorganics.com">www.davesorganics.com</A></TT>&nbsp;</TD>
+
+<TD ALIGN=CENTER>84</TD>
+
+<TD ALIGN=CENTER>19</TD>
+
+<TD ALIGN=CENTER>1</TD>
+
+<TD ALIGN=CENTER>&nbsp;</TD>
+
+<TD ALIGN=CENTER>17</TD>
+
+<TD ALIGN=CENTER>&nbsp;</TD>
+
+<TD ALIGN=CENTER>77</TD>
+
+<TD ALIGN=CENTER>93</TD>
+</TR>
+
+<TR>
+<TD ALIGN=CENTER><TT><A HREF="http://www.frozen.ch">www.frozen.ch</A></TT>&nbsp;</TD>
+
+<TD ALIGN=CENTER>&nbsp;</TD>
+
+<TD ALIGN=CENTER>9</TD>
+
+<TD ALIGN=CENTER>&nbsp;</TD>
+
+<TD ALIGN=CENTER>63</TD>
+
+<TD ALIGN=CENTER>11</TD>
+
+<TD ALIGN=CENTER>&nbsp;</TD>
+
+<TD ALIGN=CENTER>49</TD>
+
+<TD ALIGN=CENTER>121</TD>
+</TR>
+
+<TR>
+<TD ALIGN=CENTER><TT><A HREF="http://www.eonseed.com">www.eonseed.com</A></TT>&nbsp;</TD>
+
+<TD ALIGN=CENTER>&nbsp;</TD>
+
+<TD ALIGN=CENTER>18</TD>
+
+<TD ALIGN=CENTER>&nbsp;</TD>
+
+<TD ALIGN=CENTER>6</TD>
+
+<TD ALIGN=CENTER>16</TD>
+
+<TD ALIGN=CENTER>&nbsp;</TD>
+
+<TD ALIGN=CENTER>23</TD>
+
+<TD ALIGN=CENTER>66</TD>
+</TR>
+
+<TR>
+<TD ALIGN=CENTER><TT><A HREF="http://www.augusthome.com">www.augusthome.com</A></TT>&nbsp;</TD>
+
+<TD ALIGN=CENTER>26</TD>
+
+<TD ALIGN=CENTER>16</TD>
+
+<TD ALIGN=CENTER>&nbsp;</TD>
+
+<TD ALIGN=CENTER>27</TD>
+
+<TD ALIGN=CENTER>12</TD>
+
+<TD ALIGN=CENTER>16</TD>
+
+<TD ALIGN=CENTER>57</TD>
+
+<TD ALIGN=CENTER>54</TD>
+</TR>
+
+<TR>
+<TD ALIGN=CENTER><TT><A HREF="http://www.taunton.com">www.taunton.com</A></TT>&nbsp;</TD>
+
+<TD ALIGN=CENTER>&nbsp;</TD>
+
+<TD ALIGN=CENTER>25</TD>
+
+<TD ALIGN=CENTER>&nbsp;</TD>
+
+<TD ALIGN=CENTER>&nbsp;</TD>
+
+<TD ALIGN=CENTER>21</TD>
+
+<TD ALIGN=CENTER>&nbsp;</TD>
+
+<TD ALIGN=CENTER>78</TD>
+
+<TD ALIGN=CENTER>67</TD>
+</TR>
+
+<TR>
+<TD ALIGN=CENTER><TT><A HREF="http://www.egroups.com">www.egroups.com</A></TT>&nbsp;</TD>
+
+<TD ALIGN=CENTER>&nbsp;</TD>
+
+<TD ALIGN=CENTER>34</TD>
+
+<TD ALIGN=CENTER>&nbsp;</TD>
+
+<TD ALIGN=CENTER>&nbsp;</TD>
+
+<TD ALIGN=CENTER>29</TD>
+
+<TD ALIGN=CENTER>&nbsp;</TD>
+
+<TD ALIGN=CENTER>108</TD>
+
+<TD ALIGN=CENTER>101</TD>
+</TR>
+</TABLE></CENTER>
+&nbsp;<A NAME="tab:exp2"></A></TD>
+</TR>
+</TABLE></CENTER>
+<FONT FACE="arial,">&nbsp;</FONT>
+<H3>
+<A NAME="sec:exp3"></A><FONT FACE="arial,">6.2.3 Word associations</FONT></H3>
+<FONT FACE="arial,">We use Google to perform our experiments on word associations.
+As noted earlier, Google uses AND semantics and hence for many interesting
+multi-word queries, the number or the quality of the pages returned is
+not very high. On the other hand, the fact that it uses the AND semantics
+is convenient to work with, when we supply small subsets of a multi-word
+query, in accordance to the word association rule described earlier. The
+queries, the top 5 results from Google and some of the top results from
+SFO and MC4 (after local Kemenization) are shown in <A HREF="#tab:exp31">Table
+4</A>, <A HREF="#tab:exp32">Table 5</A>, and <A HREF="#tab:exp33">Table
+6</A>. We chose every pair of terms in the multi-word query to construct
+several lists and the apply rank aggregation (SFO and MC4) to these lists.</FONT>
+<BR><FONT FACE="arial,">&nbsp;</FONT>
+<BR><FONT FACE="arial,">&nbsp;</FONT>
+<CENTER><A NAME="606"></A></CENTER>
+
+<CENTER><A NAME="629"></A></CENTER>
+
+<CENTER><TABLE>
+<CAPTION><B>Table 4:</B>&nbsp;
+<BR>Results for: <TT>riemann goldbach fermat poincare</TT>.&nbsp;
+<BR>(mathematicians associated with famous conjectures)&nbsp;</CAPTION>
+
+<TR>
+<TD>&nbsp;
+<CENTER><TABLE BORDER CELLPADDING=3 >
+<TR>
+<TD ALIGN=CENTER>Google&nbsp;</TD>
+</TR>
+
+<TR>
+<TD ALIGN=CENTER><TT><A HREF="http://raphael.math.uic.edu/jeremy/poetry.htm">raphael.math.uic.edu/jeremy/poetry.htm</A></TT>&nbsp;
+<BR><TT><A HREF="http://www-groups.dcs.st-and.ac.uk/history/Search/historysearch.cgi?">www-groups.dcs.st-and.ac.uk/history/Search/historysearch.cgi?</A></TT>&nbsp;
+<BR><TT><A HREF="http://www.galstar.com/ichudov/ppl/ap/File1993_11-12.html">www.galstar.com/ichudov/ppl/ap/File1993_11-12.html</A></TT>&nbsp;
+<BR><TT><A HREF="http://www.mathe.tu-freiberg.de/hebisch/cafe/lebensdaten.html">www.mathe.tu-freiberg.de/hebisch/cafe/lebensdaten.html</A></TT>&nbsp;
+<BR><TT><A HREF="http://www.math.snu.ac.kr/mhkim/a-fermat2.html">www.math.snu.ac.kr/mhkim/a-fermat2.html</A></TT>&nbsp;</TD>
+</TR>
+
+<TR>
+<TD ALIGN=CENTER>SFO with LK&nbsp;</TD>
+</TR>
+
+<TR>
+<TD ALIGN=CENTER><TT><A HREF="http://www.ams.org/bookstore">www.ams.org/bookstore</A></TT>&nbsp;
+<BR><TT><A HREF="http://www.mathsoft.com/asolve/constant/hrdyltl/goldbach.html">www.mathsoft.com/asolve/constant/hrdyltl/goldbach.html</A></TT>&nbsp;
+<BR><TT><A HREF="http://www.omega23.com/mathematics_physics_papers/Riemann.html">www.omega23.com/mathematics_physics_papers/Riemann.html</A></TT>&nbsp;
+<BR><TT><A HREF="http://www.omega23.com/mathematics_physics_papers/Poincare.html">www.omega23.com/mathematics_physics_papers/Poincare.html</A></TT>&nbsp;
+<BR><TT><A HREF="http://www.informatik.uni-giessen.de/staff/richstein/ca/Goldbach.html">www.informatik.uni-giessen.de/staff/richstein/ca/Goldbach.html</A></TT>&nbsp;</TD>
+</TR>
+
+<TR>
+<TD ALIGN=CENTER>MC4 with LK&nbsp;</TD>
+</TR>
+
+<TR>
+<TD ALIGN=CENTER><TT><A HREF="http://www.omega23.com/mathematics_physics_papers/Poincare.html">www.omega23.com/mathematics_physics_papers/Poincare.html</A></TT>&nbsp;
+<BR><TT><A HREF="http://www.ams.org/bookstore">www.ams.org/bookstore</A></TT>&nbsp;
+<BR><TT><A HREF="http://www.mbay.net/cgd/flt/flt01.htm">www.mbay.net/cgd/flt/flt01.htm</A></TT>&nbsp;
+<BR><TT><A HREF="http://mathpuzzle.com/riemann.html">mathpuzzle.com/riemann.html</A></TT>&nbsp;
+<BR><TT><A HREF="http://rendezvous.com/tangledweb/conferences/fermat/romance.html">rendezvous.com/tangledweb/conferences/fermat/romance.html</A></TT>&nbsp;</TD>
+</TR>
+</TABLE></CENTER>
+&nbsp;<A NAME="tab:exp31"></A></TD>
+</TR>
+</TABLE></CENTER>
+<FONT FACE="arial,">&nbsp;</FONT>
+<CENTER><FONT FACE="arial,">&nbsp;</FONT></CENTER>
+
+<CENTER><A NAME="630"></A></CENTER>
+
+<CENTER><TABLE>
+<CAPTION><B>Table 5:</B>&nbsp;
+<BR>Results for: <TT>madras madurai coimbatore vellore</TT>.&nbsp;
+<BR>(cities in the state of Tamil Nadu, India)&nbsp;</CAPTION>
+
+<TR>
+<TD>&nbsp;
+<CENTER><TABLE BORDER CELLPADDING=3 >
+<TR>
+<TD ALIGN=CENTER>Google&nbsp;</TD>
+</TR>
+
+<TR>
+<TD ALIGN=CENTER><TT><A HREF="http://www.mssrf.org/Fris9809/location-tamilnadu.html">www.mssrf.org/Fris9809/location-tamilnadu.html</A></TT>&nbsp;
+<BR><TT><A HREF="http://www.indiaplus.com/Info/schools.html">www.indiaplus.com/Info/schools.html</A></TT>&nbsp;
+<BR><TT><A HREF="http://www.focustamilnadu.com/tamilnadu/Policy%20Note ...Forests.html">www.focustamilnadu.com/tamilnadu/Policy%20Note
+...Forests.html</A></TT>&nbsp;
+<BR><TT><A HREF="http://www.tn.gov.in/policy/environ.htm">www.tn.gov.in/policy/environ.htm</A></TT>&nbsp;
+<BR><TT><A HREF="http://www.indiacolleges.com/Tamil_Nadu.htm">www.indiacolleges.com/Tamil_Nadu.htm</A></TT>&nbsp;</TD>
+</TR>
+
+<TR>
+<TD ALIGN=CENTER>SFO with LK&nbsp;</TD>
+</TR>
+
+<TR>
+<TD ALIGN=CENTER><TT><A HREF="http://www.madurai.com">www.madurai.com</A></TT>&nbsp;
+<BR><TT><A HREF="http://www.ozemail.com.au/clday/locations.htm">www.ozemail.com.au/clday/locations.htm</A></TT>&nbsp;
+<BR><TT><A HREF="http://www.utoledo.edu/homepages/speelam/coimbatore.html">www.utoledo.edu/homepages/speelam/coimbatore.html</A></TT>&nbsp;
+<BR><TT><A HREF="http://www.ozemail.com.au/clday/madras.htm">www.ozemail.com.au/clday/madras.htm</A></TT>&nbsp;
+<BR><TT><A HREF="http://www.madurai.com/around.htm">www.madurai.com/around.htm</A></TT>&nbsp;
+<BR><TT><A HREF="http://www.indiatraveltimes.com/tamilnadu/tamil1.html">www.indiatraveltimes.com/tamilnadu/tamil1.html</A></TT>&nbsp;</TD>
+</TR>
+
+<TR>
+<TD ALIGN=CENTER>MC4 with LK&nbsp;</TD>
+</TR>
+
+<TR>
+<TD ALIGN=CENTER><TT><A HREF="http://www.madurai.com">www.madurai.com</A></TT>&nbsp;
+<BR><TT><A HREF="http://www.surfindia.com/omsakthi/tourism.htm">www.surfindia.com/omsakthi/tourism.htm</A></TT>&nbsp;
+<BR><TT><A HREF="http://www.indiatraveltimes.com/tamilnadu/tamil1.html">www.indiatraveltimes.com/tamilnadu/tamil1.html</A></TT>&nbsp;
+<BR><TT><A HREF="http://www.indiatraveltimes.com/tamilnadu/tamil2.html">www.indiatraveltimes.com/tamilnadu/tamil2.html</A></TT>&nbsp;
+<BR><TT><A HREF="http://www.indiatravels.com/forts/vellore_fort.htm">www.indiatravels.com/forts/vellore_fort.htm</A></TT>&nbsp;
+<BR><TT><A HREF="http://www.india-tourism.de/english/south/tamil_nadu.html">www.india-tourism.de/english/south/tamil_nadu.html</A></TT>&nbsp;</TD>
+</TR>
+</TABLE></CENTER>
+&nbsp;<A NAME="tab:exp32"></A></TD>
+</TR>
+</TABLE></CENTER>
+<FONT FACE="arial,">&nbsp;</FONT>
+<CENTER><FONT FACE="arial,">&nbsp;</FONT></CENTER>
+
+<CENTER><A NAME="631"></A></CENTER>
+
+<CENTER><TABLE>
+<CAPTION><B>Table 6:</B>&nbsp;
+<BR>Results for: <TT>aeolian lipari stromboli ferries hydrofoils</TT>.&nbsp;
+<BR>(related to travel in Italian/Greek islands)&nbsp;</CAPTION>
+
+<TR>
+<TD>&nbsp;
+<CENTER><TABLE BORDER CELLPADDING=3 >
+<TR>
+<TD ALIGN=CENTER>Google&nbsp;</TD>
+</TR>
+
+<TR>
+<TD ALIGN=CENTER><TT><A HREF="http://www.nautica.it/charter/eolie__e.htm">www.nautica.it/charter/eolie__e.htm</A></TT>&nbsp;
+<BR><TT><A HREF="http://rozzo.tripod.com/filicudi1.htm">rozzo.tripod.com/filicudi1.htm</A></TT>&nbsp;
+<BR><TT><A HREF="http://www.corfu1.com/b33.htm">www.corfu1.com/b33.htm</A></TT>&nbsp;
+<BR><TT><A HREF="http://circle.kenyon.edu/publications/bulletin/19_4/kcabmill.htm">circle.kenyon.edu/publications/bulletin/19_4/kcabmill.htm</A></TT>&nbsp;
+<BR><TT><A HREF="http://www.netnet.it/english/Salina/index">www.netnet.it/english/Salina/index</A></TT>&nbsp;
+<BR><TT><A HREF="http://www.initaly.com/regions/seaside/diving.htm">www.initaly.com/regions/seaside/diving.htm</A></TT>&nbsp;</TD>
+</TR>
+
+<TR>
+<TD ALIGN=CENTER>SFO with LK&nbsp;</TD>
+</TR>
+
+<TR>
+<TD ALIGN=CENTER><TT><A HREF="http://www.cs.brown.edu/people/sml/lipari.scenes.html">www.cs.brown.edu/people/sml/lipari.scenes.html</A></TT>&nbsp;
+<BR><TT><A HREF="http://www.gogreece.about.com/cs/hydrofoilsferries">www.gogreece.about.com/cs/hydrofoilsferries</A></TT>&nbsp;
+<BR><TT><A HREF="http://pharma.unime.it/rdpa/Link/HowReachlipar.htm">pharma.unime.it/rdpa/Link/HowReachlipar.htm</A></TT>&nbsp;
+<BR><TT><A HREF="http://www.travel-italy.com/library/feature_articles/aeolian_islands_lipari.html">www.travel-italy.com/library/feature_articles/aeolian_islands_lipari.html</A></TT>&nbsp;
+<BR><TT><A HREF="http://www.travel-italy.com/library/feature_articles/aeolian_islands_stromboli.html">www.travel-italy.com/library/feature_articles/aeolian_islands_stromboli.html</A></TT>&nbsp;
+<BR><TT><A HREF="http://www.gardenroute.co.za/strombolis">www.gardenroute.co.za/strombolis</A></TT>&nbsp;
+<BR><TT><A HREF="http://www.travel-italy.com/library/feature_articles/aeolian_island_an_intro.html">www.travel-italy.com/library/feature_articles/aeolian_island_an_intro.html</A></TT>&nbsp;</TD>
+</TR>
+
+<TR>
+<TD ALIGN=CENTER>MC4 with LK&nbsp;</TD>
+</TR>
+
+<TR>
+<TD ALIGN=CENTER><TT><A HREF="http://www.cs.brown.edu/people/sml/lipari.scenes.html">www.cs.brown.edu/people/sml/lipari.scenes.html</A></TT>&nbsp;
+<BR><TT><A HREF="http://www.gogreece.about.com/cs/hydrofoilsferries">www.gogreece.about.com/cs/hydrofoilsferries</A></TT>&nbsp;
+<BR><TT><A HREF="http://www.travel-italy.com/library/feature_articles/aeolian_islands_stromboli.html">www.travel-italy.com/library/feature_articles/aeolian_islands_stromboli.html</A></TT>&nbsp;
+<BR><TT><A HREF="http://www.gate1travel.com/Destinations/Greece/Misc/gre_ferry.htm">www.gate1travel.com/Destinations/Greece/Misc/gre_ferry.htm</A></TT>&nbsp;
+<BR><TT><A HREF="http://www.travel-italy.com/library/feature_articles/aeolian_islands_lipari.html">www.travel-italy.com/library/feature_articles/aeolian_islands_lipari.html</A></TT>&nbsp;
+<BR><TT><A HREF="http://www.participez.com/reports/recits/vulcano.htm">www.participez.com/reports/recits/vulcano.htm</A></TT>&nbsp;
+<BR><TT><A HREF="http://www.travel-italy.com/library/feature_articles">www.travel-italy.com/library/feature_articles</A></TT>&nbsp;</TD>
+</TR>
+</TABLE></CENTER>
+&nbsp;<A NAME="tab:exp33"></A></TD>
+</TR>
+</TABLE></CENTER>
+<FONT FACE="arial,">&nbsp;</FONT>
+<H2>
+<A NAME="sec:disc"></A><FONT FACE="arial,">6.3 Discussion</FONT></H2>
+<FONT FACE="arial,">Of all the methods, MC4 outperforms all others. In
+fact, it beats Borda by a huge margin. This is very interesting since Borda's
+method is the usual choice of aggregation, and perhaps the most natural.
+Scaled footrule and MC3 (a generalization of Borda) seem to be on par.
+Recall that the footrule procedure for partial lists was only a heuristic
+modification of the footrule procedure for full lists. The above experimental
+evidence suggests that this heuristic is very good. MC1 and MC2 are always
+worse than the other Markov chains, but they are strictly better than Borda.</FONT>
+
+<P><FONT FACE="arial,">In general, local Kemenization seems to improve
+around 1-3% in terms of the distance measures. It can be shown formally
+that local Kemenization never does worse in the sense that the Kendall
+distance never deteriorates after local Kemenization. Interestingly, this
+seems to be true even for footrule and scaled footrule distances (although
+we don't know if this true always). We conclude that local Kemenization
+procedure is always worth applying: either the improvement is large and
+if not, then the time spent is small.</FONT>
+
+<P><FONT FACE="arial,">Examining the results in <A HREF="#sec:exp2">Section
+6.2.2</A>, we see that SFO and MC4 are quite effective in combating spam.
+While we do not claim that our methods completely eliminate spam, our study
+shows that they reduce spam in general.</FONT>
+
+<P><FONT FACE="arial,">The results in <A HREF="#sec:exp3">Section 6.2.3</A>
+shows that our technique of word association combined with rank aggregation
+methods can improve the quality of search results for multi-word queries.
+In each of the three examples presented, Google typically produced a total
+of only around 10--15 pages, and the top 5 results were often very poor
+(a direct consequence of the AND semantics employed for a long list). In
+sharp contrast, the URLs produced by the rank aggregation methods turned
+out to contain a wealth of information about the topic of the query.</FONT>
+<H1>
+<A NAME="sec:conc"></A><FONT FACE="arial,">7 Conclusions and further work</FONT></H1>
+<FONT FACE="arial,">We have developed the theoretical groundwork for describing
+and evaluating rank aggregation methods. We have proposed and tested several
+rank aggregation techniques. Our methods have the advantage of being applicable
+in a variety of contexts and try to use as much information as available.
+The methods also turn out to be simple to implement, do not have any computational
+overhead, and out-perform popular classical methods like Borda's method.
+We have established the value of the extended Condorcet criterion in the
+context of meta-search, and have described a simple process, local Kemenization,
+for ensuring satisfaction of this criterion.</FONT>
+
+<P><FONT FACE="arial,">Further work involves trying to obtain a qualitative
+understanding of why the Markov chain methods perform very well. Also,
+it will be interesting to measure the efficacy of our methods on a document
+base with several competing ranking functions. Finally, this work originated
+in conversations with
+<a href="http://www.princeton.edu/~helen">
+Helen Nissenbaum </a> on bias in searching. A formal treatment
+of bias seems difficult but alluring.</FONT>
+<H1>
+<A NAME="references"></A><FONT FACE="arial,">References</FONT></H1>
+
+<DL COMPACT>
+<DT>
+<A NAME="searchengine"></A><FONT FACE="arial,">1.</FONT></DT>
+<DD>
+<FONT FACE="arial,">Search Engine Watch</FONT></DD>
+<BR><TT><FONT FACE="arial,"><A HREF="http://www.searchenginewatch.com">www.searchenginewatch.com</A></FONT></TT>
+
+<DT>
+<br>
+<A NAME="inclusion"></A><FONT FACE="arial,">2.</FONT></DT>
+<DD>
+<FONT FACE="arial,">Search Engine Watch Article</FONT></DD>
+<BR><TT><FONT FACE="arial,"><A HREF="http://www.searchenginewatch.com/sereport/00/11-inclusion.html">www.searchenginewatch.com/sereport/00/11-inclusion.html</A></FONT></TT>
+
+<DT>
+<br>
+<A NAME="metac"></A><FONT FACE="arial,">3.</FONT></DT>
+<DD>
+<FONT FACE="arial,">Metacrawler</FONT></DD>
+<BR><TT><FONT FACE="arial,"><A HREF="http://www.metacrawler.com">www.metacrawler.com</A></FONT></TT>
+
+<DT>
+<br>
+<A NAME="BH"></A><FONT FACE="arial,">4.</FONT></DT>
+<DD>
+<FONT FACE="arial,">K. Bharat and M. Henzinger.</FONT></DD>
+<BR><FONT FACE="arial,">Improved algorithms for topic distillation in a
+hyperlinked environment.</FONT>
+<BR><FONT FACE="arial,"><I>ACM SIGIR</I>, pages 104--111, 1998.</FONT>
+
+<DT>
+<br>
+<A NAME="kem-hard"></A><FONT FACE="arial,">5.</FONT></DT>
+<DD>
+<FONT FACE="arial,">J. J. Bartholdi, C. A. Tovey, and M. A. Trick.</FONT></DD>
+<BR><FONT FACE="arial,">Voting schemes for which it can be difficult to
+tell who won the election.</FONT>
+<BR><FONT FACE="arial,"><I>Social Choice and Welfare</I>, 6(2):157--165,
+1989.</FONT>
+
+<DT>
+<br>
+<A NAME="Borda"></A><FONT FACE="arial,">6.</FONT></DT>
+<DD>
+<FONT FACE="arial,">J. C. Borda.</FONT></DD>
+<BR><FONT FACE="arial,">Memoire sur les elections au scrutin.</FONT>
+<BR><FONT FACE="arial,"><I>Histoire de l'Academie Royale des Sciences</I>,
+1781.</FONT>
+
+<DT>
+<br>
+<A NAME="google"></A><FONT FACE="arial,">7.</FONT></DT>
+<DD>
+<FONT FACE="arial,">S. Brin and L. Page.</FONT></DD>
+<BR><FONT FACE="arial,">The anatomy of a large-scale hypertextual Web search
+engine.</FONT>
+<BR><FONT FACE="arial,"><I>Computer Networks</I>, 30(1-7):107--117, 1998.</FONT>
+
+<DT>
+<br>
+<A NAME="clever"></A><FONT FACE="arial,">8.</FONT></DT>
+<DD>
+<FONT FACE="arial,">S. Chakrabarti, B. Dom, D. Gibson, R. Kumar, P. Raghavan,
+S. Rajagopalan, and A. Tomkins.</FONT></DD>
+<BR><FONT FACE="arial,">Experiments in topic distillation.</FONT>
+<BR><FONT FACE="arial,"><I>Proc. ACM SIGIR Workshop on Hypertext Information
+Retrieval on the Web</I>, 1998.</FONT>
+
+<DT>
+<br>
+<A NAME="Condorcet"></A><FONT FACE="arial,">9.</FONT></DT>
+<DD>
+<FONT FACE="arial,">M.-J. Condorcet.</FONT></DD>
+<BR><FONT FACE="arial,"><I>Essai sur l'application de l'analyse a la probabilite
+des decisions rendues a la pluralite des voix</I>, 1785.</FONT>
+
+<DT>
+<br>
+<A NAME="Copeland"></A><FONT FACE="arial,">10.</FONT></DT>
+<DD>
+<FONT FACE="arial,">A. H. Copeland.</FONT></DD>
+<BR><FONT FACE="arial,">A reasonable social welfare function.</FONT>
+<BR><FONT FACE="arial,"><I>Mimeo</I>, University of Michigan, 1951.</FONT>
+
+<DT>
+<br>
+<A NAME="Critchlow"></A><FONT FACE="arial,">11.</FONT></DT>
+<DD>
+<FONT FACE="arial,"><A HREF="http://www.stat.ohio-state.edu/people/dec.html">D. E. Critchlow</A>.</FONT></DD>
+<BR><FONT FACE="arial,"><I>Metric Methods for Analyzing Partially Ranked
+Data</I>,</FONT>
+<BR><FONT FACE="arial,">Lecture Notes in Statistics 34, Springer-Verlag,
+1985.</FONT>
+
+<DT>
+<br>
+<A NAME="Diaconis-Book"></A><FONT FACE="arial,">12.</FONT></DT>
+<DD>
+<FONT FACE="arial,">P. Diaconis.</FONT></DD>
+<BR><FONT FACE="arial,"><I>Group Representation in Probability and Statistics</I>.</FONT>
+<BR><FONT FACE="arial,">IMS Lecture Series 11, Institute of Mathematical
+Statistics, 1988.</FONT>
+
+<DT>
+<br>
+<A NAME="diaconis-graham"></A><FONT FACE="arial,">13.</FONT></DT>
+<DD>
+<FONT FACE="arial,">P. Diaconis and R. Graham.</FONT></DD>
+<BR><FONT FACE="arial,">Spearman's footrule as a measure of disarray.</FONT>
+<BR><FONT FACE="arial,"><I>Journal of the Royal Statistical Society, Series
+B</I>, 39(2):262--268, 1977.</FONT>
+
+<DT>
+<br>
+<A NAME="ENSS"></A><FONT FACE="arial,">14.</FONT></DT>
+<DD>
+<FONT FACE="arial,">G. Even, J. Naor, B. Schieber, and M. Sudan.</FONT></DD>
+<BR><FONT FACE="arial,">Approximating minimum feedback sets and multicuts
+in directed graphs.</FONT>
+<BR><FONT FACE="arial,"><I>Algorithmica</I>, 20(2):151--174, 1998.</FONT>
+
+<DT>
+<br>
+<A NAME="Fagin1"></A><FONT FACE="arial,">15.</FONT></DT>
+<DD>
+<FONT FACE="arial,"><A HREF="http://www.almaden.ibm.com/cs/people/fagin">R. Fagin</A>.</FONT></DD>
+<BR><FONT FACE="arial,">Combining Fuzzy information from multiple systems.</FONT>
+<BR><FONT FACE="arial,"><I>Journal of Computer and System Sciences</I>,
+58(1):83--99, 1999.</FONT>
+
+<DT>
+<br>
+<A NAME="Kleinberg-HITS"></A><FONT FACE="arial,">16.</FONT></DT>
+<DD>
+<FONT FACE="arial,"><A HREF="http://www.cs.cornell.edu/home/kleinber/">J. Kleinberg</A>.</FONT></DD>
+<BR><FONT FACE="arial,">Authoritative sources in a hyperlinked environment.</FONT>
+<BR><FONT FACE="arial,"><I>Journal of the ACM</I>, 46(5):604--632, 1999.
+<BR><FONT FACE="arial,">A preliminary version appeared in
+<I>Proc. ACM-SIAM Symposium on Discrete Algorithms,</I> 1998.
+</FONT>
+
+<DT>
+<br>
+<A NAME="Marden"></A><FONT FACE="arial,">17.</FONT></DT>
+<DD>
+<FONT FACE="arial,">J. I. Marden.</FONT></DD>
+<BR><FONT FACE="arial,"><I>Analyzing and Modeling Rank Data</I>. </FONT>
+<BR><FONT FACE="arial,">Monographs on Statistics and Applied Probability, 
+No 64, Chapman & Hall, 1995.</FONT>
+
+<DT>
+<br>
+<A NAME="MediaMetrix"></A><FONT FACE="arial,">18.</FONT></DT>
+<DD>
+<FONT FACE="arial,">Media Metrix search engine ratings.</FONT></DD>
+<BR><TT><FONT FACE="arial,"><A HREF="http://www.searchenginewatch.com/reports/mediametrix.html">www.searchenginewatch.com/reports/mediametrix.html</A></FONT></TT>
+
+<DT>
+<br>
+<A NAME="Saari-economist"></A><FONT FACE="arial,">19.</FONT></DT>
+<DD>
+<FONT FACE="arial,"><A HREF="http://www.math.nwu.edu/~d_saari/">D. G. Saari</A>.</FONT></DD>
+<BR><FONT FACE="arial,">The mathematics of voting: Democratic symmetry.</FONT>
+<BR><FONT FACE="arial,"><I>The Economist</I>, pp. 83, March 4, 2000.</FONT>
+<BR><FONT FACE="arial,">Article available at <A HREF="http://jmvidal.ece.sc.edu/822/papers/econ-voting.html"><TT>jmvidal.ece.sc.edu/822/papers/econ-voting.html</TT></A></FONT>
+
+<DT>
+<br>
+<A NAME="Salton"></A><FONT FACE="arial,">20.</FONT></DT>
+<DD>
+<FONT FACE="arial,">G. Salton.</FONT></DD>
+<BR><FONT FACE="arial,"><I>Automatic Text Processing---the Transformation,
+Analysis, and Retrieval of Information by Computer</I>.</FONT>
+<BR><FONT FACE="arial,">Addison-Wesley, 1989.</FONT>
+
+<DT>
+<br>
+<A NAME="Smith"></A><FONT FACE="arial,">21.</FONT></DT>
+<DD>
+<FONT FACE="arial,">J. H. Smith.</FONT></DD>
+<BR><FONT FACE="arial,"><I>Aggregation of Preferences with Variable Electorate</I>.</FONT>
+<BR><FONT FACE="arial,"><I>SIAM Journal on Applied Mathematics</I>, 41:1027--1041,
+1973.</FONT>
+
+<DT>
+<br>
+<A NAME="Truchon"></A><FONT FACE="arial,">22.</FONT></DT>
+<DD>
+<FONT FACE="arial,"><A HREF="http://www.ecn.ulaval.ca/w3/professeurs/truchon.html">M. Truchon</A>.</FONT></DD>
+<BR><FONT FACE="arial,">An extension of the Condorcet criterion and Kemeny
+orders.</FONT>
+<BR><FONT FACE="arial,"><I>cahier 98-15 du Centre de Recherche en Economie
+et Finance Appliquees</I>, 1998.</FONT>
+
+<DT>
+<br>
+<A NAME="Young74"></A><FONT FACE="arial,">23.</FONT></DT>
+<DD>
+<FONT FACE="arial,">H. P. Young.</FONT></DD>
+<BR><FONT FACE="arial,">An axiomatization of Borda's rule.</FONT>
+<BR><FONT FACE="arial,"><I>Journal of Economic Theory</I>, 9:43--52, 1974.</FONT>
+
+<DT>
+<br>
+<A NAME="Young88"></A><FONT FACE="arial,">24.</FONT></DT>
+<DD>
+<FONT FACE="arial,">H. P. Young.</FONT></DD>
+<BR><FONT FACE="arial,">Condorcet's theory of Voting.</FONT>
+<BR><FONT FACE="arial,"><I>American Political Science Review</I>, 82:1231--1244,
+1988.</FONT>
+
+<DT>
+<br>
+<A NAME="YoungLevenglick78"></A><FONT FACE="arial,">25.</FONT></DT>
+<DD>
+<FONT FACE="arial,">H. P. Young and A. Levenglick.</FONT></DD>
+<BR><FONT FACE="arial,">A consistent extension of Condorcet's election
+principle.</FONT>
+<BR><FONT FACE="arial,"><I>SIAM Journal on Applied Mathematics</I>, 35(2):285--300,
+1978.</FONT>
+</DL>
+
+<FONT FACE="arial,">&nbsp;</FONT>
+<H1>
+<A NAME="app:LK"></A><FONT FACE="arial,">Appendix A: Local Kemenization</FONT></H1>
+<FONT FACE="arial,">We begin with a formal definition:</FONT>
+<BLOCKQUOTE><A NAME="localKO"></A><B><FONT FACE="arial,">Definition 5</FONT></B>
+<BR><FONT FACE="arial,">A permutation </FONT><FONT FACE="Symbol">p</FONT><FONT FACE="arial,">
+is a <I>locally Kemeny optimal</I> aggregation of partial lists </FONT><FONT FACE="Symbol">t</FONT><FONT FACE="arial,"><SUB>1</SUB>,
+</FONT><FONT FACE="Symbol">t</FONT><FONT FACE="arial,"><SUB>2</SUB>, ...,
+</FONT><FONT FACE="Symbol">t</FONT><FONT FACE="arial,"><I><SUB>k</SUB></I>,
+if there is no permutation </FONT><FONT FACE="Symbol">p</FONT><FONT FACE="arial,">'
+that can be obtained from </FONT><FONT FACE="Symbol">p</FONT><FONT FACE="arial,">
+by performing a single transposition of an adjacent pair of elements and
+for which&nbsp;&nbsp;&nbsp; <I>K</I>(</FONT><FONT FACE="Symbol">p</FONT><FONT FACE="arial,">',
+</FONT><FONT FACE="Symbol">t</FONT><FONT FACE="arial,"><SUB>1</SUB>, </FONT><FONT FACE="Symbol">t</FONT><FONT FACE="arial,"><SUB>2</SUB>,
+..., </FONT><FONT FACE="Symbol">t</FONT><FONT FACE="arial,"><I><SUB>k</SUB></I>)
+&lt; <I>K</I>(</FONT><FONT FACE="Symbol">p</FONT><FONT FACE="arial,">,
+</FONT><FONT FACE="Symbol">t</FONT><FONT FACE="arial,"><SUB>1</SUB>, </FONT><FONT FACE="Symbol">t</FONT><FONT FACE="arial,"><SUB>2</SUB>,
+..., </FONT><FONT FACE="Symbol">t</FONT><FONT FACE="arial,"><I><SUB>k</SUB></I>).
+In other words, it is impossible to reduce the total distance to the </FONT><FONT FACE="Symbol">t</FONT><FONT FACE="arial,">'s
+by flipping an adjacent pair.</FONT></BLOCKQUOTE>
+<FONT FACE="arial,">Note that the above definition is <I>not</I> equivalent
+to requiring that no flipping of any (not necessarily adjacent) pair will
+decrease the sum of the distances to the </FONT><FONT FACE="Symbol">t</FONT><FONT FACE="arial,">'s.</FONT>
+
+<P><FONT FACE="arial,"><B>Example 1</B> </FONT><FONT FACE="Symbol">p</FONT><FONT FACE="arial,">
+= (1,2,3), </FONT><FONT FACE="Symbol">t</FONT><FONT FACE="arial,"><SUB>1</SUB>
+= (1,2), </FONT><FONT FACE="Symbol">t</FONT><FONT FACE="arial,"><SUB>2</SUB>
+= (2,3), </FONT><FONT FACE="Symbol">t</FONT><FONT FACE="arial,"><SUB>3</SUB>
+= </FONT><FONT FACE="Symbol">t</FONT><FONT FACE="arial,"><SUB>4</SUB> =
+</FONT><FONT FACE="Symbol">t</FONT><FONT FACE="arial,"><SUB>5</SUB> = (3,1).</FONT>
+<BR><FONT FACE="arial,">We have that </FONT><FONT FACE="Symbol">p</FONT><FONT FACE="arial,">
+satisfies <A HREF="#localKO">Definition 5</A>, <I>K</I>(</FONT><FONT FACE="Symbol">p</FONT><FONT FACE="arial,">,
+</FONT><FONT FACE="Symbol">t</FONT><FONT FACE="arial,"><SUB>1</SUB>, </FONT><FONT FACE="Symbol">t</FONT><FONT FACE="arial,"><SUB>2</SUB>,
+..., </FONT><FONT FACE="Symbol">t</FONT><FONT FACE="arial,"><SUB>5</SUB>)=
+3, but transposing 1 and 3 decreases the sum to 2.</FONT>
+
+<P><FONT FACE="arial,">Every Kemeny optimal permutation is also locally
+Kemeny optimal, but the converse does not hold (cf. Example 1). Furthermore,
+a locally Kemeny optimal permutation is not necessarily a good approximation
+for the optimal. For example, if the </FONT><FONT FACE="Symbol">t</FONT><FONT FACE="arial,">'s
+are as in Example 1, the number of (3,1) partial lists is very large, and
+there is only one occurrence of each of the partial lists (1,2) and (2,3),
+then (1,2,3) is still locally Kemeny optimal, but the ratio (of the <I>K</I>-distances)
+to the optimal may be arbitrarily large. Nevertheless, the important observations,
+proved next, are that a locally Kemeny optimal aggregation satisfies the
+extended Condorcet property and can be computed efficiently.</FONT>
+
+<P><FONT FACE="arial,"><B>Convention.</B> Recall our convention that </FONT><FONT FACE="Symbol">p</FONT><FONT FACE="arial,">
+ranks <I>x</I> above <I>y</I> (i.e., prefers <I>x</I> to <I>y</I>) whenever
+</FONT><FONT FACE="Symbol">p</FONT><FONT FACE="arial,">(<I>x</I>) &lt;
+</FONT><FONT FACE="Symbol">p</FONT><FONT FACE="arial,">(<I>y</I>).</FONT>
+<BLOCKQUOTE><B><FONT FACE="arial,">Lemma 6</FONT></B>
+<BR><FONT FACE="arial,">Let </FONT><FONT FACE="Symbol">p</FONT><FONT FACE="arial,">,
+a permutation on alternatives {1, ..., <I>n</I>}, be a locally Kemeny optimal
+aggregation for partial lists </FONT><FONT FACE="Symbol">t</FONT><FONT FACE="arial,"><SUB>1</SUB>,
+</FONT><FONT FACE="Symbol">t</FONT><FONT FACE="arial,"><SUB>2</SUB>, ...,
+</FONT><FONT FACE="Symbol">t</FONT><FONT FACE="arial,"><I><SUB>k</SUB></I>.
+Then </FONT><FONT FACE="Symbol">p</FONT><FONT FACE="arial,"> satisfies
+the extended Condorcet criterion with respect to </FONT><FONT FACE="Symbol">t</FONT><FONT FACE="arial,"><SUB>1</SUB>,
+</FONT><FONT FACE="Symbol">t</FONT><FONT FACE="arial,"><SUB>2</SUB>, ...,
+</FONT><FONT FACE="Symbol">t</FONT><FONT FACE="arial,"><I><SUB>k</SUB></I>.</FONT></BLOCKQUOTE>
+
+<BLOCKQUOTE><B><FONT FACE="arial,">Proof</FONT></B>
+<BR><FONT FACE="arial,">If the lemma is false then there exist partial
+lists </FONT><FONT FACE="Symbol">t</FONT><FONT FACE="arial,"><SUB>1</SUB>,
+</FONT><FONT FACE="Symbol">t</FONT><FONT FACE="arial,"><SUB>2</SUB>, ...,
+</FONT><FONT FACE="Symbol">t</FONT><FONT FACE="arial,"><I><SUB>k</SUB></I>,
+a locally Kemeny optimal aggregation </FONT><FONT FACE="Symbol">p</FONT><FONT FACE="arial,">,
+and a partition (<I>T</I>,<I>U</I>) of the alternatives where for all <I>a</I>
+in <I>T</I> and <I>b</I> in <I>U</I> the majority among </FONT><FONT FACE="Symbol">t</FONT><FONT FACE="arial,"><SUB>1</SUB>,
+</FONT><FONT FACE="Symbol">t</FONT><FONT FACE="arial,"><SUB>2</SUB>, ...,
+</FONT><FONT FACE="Symbol">t</FONT><FONT FACE="arial,"><I><SUB>k</SUB></I>
+prefers <I>a</I> to <I>b</I>, but there are <I>c</I> in <I>T</I> and <I>d</I>
+in <I>U</I> such that </FONT><FONT FACE="Symbol">p</FONT><FONT FACE="arial,">(<I>d</I>)
+&lt; </FONT><FONT FACE="Symbol">p</FONT><FONT FACE="arial,">(<I>c</I>).
+Let (<I>d</I>,<I>c</I>) be a closest (in </FONT><FONT FACE="Symbol">p</FONT><FONT FACE="arial,">)
+such pair. Consider the immediate successor of <I>d</I> in </FONT><FONT FACE="Symbol">p</FONT><FONT FACE="arial,">,
+call it <I>e</I>. If <I>e=c</I> then <I>c</I> is adjacent to <I>d</I> in
+</FONT><FONT FACE="Symbol">p</FONT><FONT FACE="arial,"> and transposing
+this adjacent pair of alternatives produces a </FONT><FONT FACE="Symbol">p</FONT><FONT FACE="arial,">'
+such that <I>K</I>(</FONT><FONT FACE="Symbol">p</FONT><FONT FACE="arial,">',
+</FONT><FONT FACE="Symbol">t</FONT><FONT FACE="arial,"><SUB>1</SUB>, </FONT><FONT FACE="Symbol">t</FONT><FONT FACE="arial,"><SUB>2</SUB>,
+..., </FONT><FONT FACE="Symbol">t</FONT><FONT FACE="arial,"><I><SUB>k</SUB></I>)
+&lt; <I>K</I>(</FONT><FONT FACE="Symbol">p</FONT><FONT FACE="arial,">,
+</FONT><FONT FACE="Symbol">t</FONT><FONT FACE="arial,"><SUB>1</SUB>, </FONT><FONT FACE="Symbol">t</FONT><FONT FACE="arial,"><SUB>2</SUB>,
+..., </FONT><FONT FACE="Symbol">t</FONT><FONT FACE="arial,"><I><SUB>k</SUB></I>),
+contradicting the assumption that </FONT><FONT FACE="Symbol">p</FONT><FONT FACE="arial,">
+is a locally Kemeny optimal aggregation of the </FONT><FONT FACE="Symbol">t</FONT><FONT FACE="arial,">'s.
+If <I>e</I> does not equal <I>c</I>, then either <I>e</I> is in <I>T</I>,
+in which case the pair (<I>d</I>,<I>e</I>) is a closer pair in </FONT><FONT FACE="Symbol">p</FONT><FONT FACE="arial,">
+than (<I>d</I>,<I>c</I>) and also violates the extended Condorcet condition,
+or <I>e</I> is in <I>U</I>, in which case (<I>e</I>,<I>c</I>) is a closer
+pair than (<I>d</I>,<I>c</I>) that violates the extended Condorcet condition.
+Both cases contradict the choice of (<I>d</I>,<I>c</I>).</FONT></BLOCKQUOTE>
+<FONT FACE="arial,">The set </FONT><FONT FACE="Symbol">t</FONT><FONT FACE="arial,"><SUB>1</SUB>,
+</FONT><FONT FACE="Symbol">t</FONT><FONT FACE="arial,"><SUB>2</SUB>, ...,
+</FONT><FONT FACE="Symbol">t</FONT><FONT FACE="arial,"><I><SUB>k</SUB></I>
+of partial lists defines a directed <I>majority graph</I> <I>G</I> on the
+<I>n</I> alternatives, with an edge (<I>x</I>,<I>y</I>) from <I>x</I> to
+<I>y</I> if a majority of the </FONT><FONT FACE="Symbol">t</FONT><FONT FACE="arial,">'s
+that contain both <I>x</I> and <I>y</I> rank <I>x</I> above <I>y</I>.</FONT>
+<BLOCKQUOTE><B><FONT FACE="arial,">Lemma 7</FONT></B>
+<BR><FONT FACE="arial,">Locally Kemeny optimal aggregations of <I>k</I>
+lists can be computed in <I>O</I>( <I>kn</I> log <I>n</I>) time.</FONT></BLOCKQUOTE>
+
+<BLOCKQUOTE><B><FONT FACE="arial,">Proof</FONT></B>
+<BR><FONT FACE="arial,">It is not surprising that locally Kemeny optimal
+aggregations can be found in polynomial time because they are only local
+minima. A straightforward approach requires <I>O</I>(<I>n</I><SUP>2</SUP>)
+time; we describe a technique requiring only <I>O</I>( <I>kn</I> log <I>n</I>)
+time (generally, we are interested in the case in which <I>k</I> is much
+smaller than <I>n</I>).</FONT>
+
+<P><FONT FACE="arial,">Consider the majority graph <I>T</I> for </FONT><FONT FACE="Symbol">t</FONT><FONT FACE="arial,"><SUB>1</SUB>,
+</FONT><FONT FACE="Symbol">t</FONT><FONT FACE="arial,"><SUB>2</SUB>, ...,
+</FONT><FONT FACE="Symbol">t</FONT><FONT FACE="arial,"><I><SUB>k</SUB></I>
+with anti-parallel edges in the case of a tie. The problem of finding a
+locally Kemeny optimal aggregation of </FONT><FONT FACE="Symbol">t</FONT><FONT FACE="arial,"><SUB>1</SUB>,
+</FONT><FONT FACE="Symbol">t</FONT><FONT FACE="arial,"><SUB>2</SUB>, ...,
+</FONT><FONT FACE="Symbol">t</FONT><FONT FACE="arial,"><I><SUB>k</SUB></I>
+is now equivalent to finding a Hamiltonian path in this graph. Due to the
+density of the edges it is possible to find such a path in <I>T</I> in
+<I>O</I>( <I>n</I> log <I>n</I>) probes to the edges of <I>T</I> using,
+for instance, a mergesort-like algorithm (the advantage of using mergesort
+is that the issue of inconsistent answers never arises, which simplifies
+the execution of the algorithm). Note that <I>T</I> need not be constructed
+explicitly. The cost of each probe is <I>k</I> accesses to the partial
+lists (to find out whether there is a majority), so the resulting complexity
+is <I>O</I>( <I>kn</I> log <I>n</I>).</FONT></BLOCKQUOTE>
+<FONT FACE="arial,">We next turn to the details of the local Kemenization
+procedure. Recall that the value of local Kemenization is that, given an
+aggregation </FONT><FONT FACE="Symbol">m</FONT><FONT FACE="arial,"> of
+several rankings, it produces a ranking </FONT><FONT FACE="Symbol">p</FONT><FONT FACE="arial,">
+that achieves the best of both worlds: </FONT><FONT FACE="Symbol">p</FONT><FONT FACE="arial,">
+satisfies the extended Condorcet criterion, and </FONT><FONT FACE="Symbol">p</FONT><FONT FACE="arial,">
+is maximally consistent with </FONT><FONT FACE="Symbol">m</FONT><FONT FACE="arial,">.
+We begin by formalizing our notion of consistency.</FONT>
+<BLOCKQUOTE><A NAME="def:consistent"></A><B><FONT FACE="arial,">Definition
+8</FONT></B>
+<BR><FONT FACE="arial,">Given partial lists </FONT><FONT FACE="Symbol">t</FONT><FONT FACE="arial,"><SUB>1</SUB>,
+</FONT><FONT FACE="Symbol">t</FONT><FONT FACE="arial,"><SUB>2</SUB>, ...,
+</FONT><FONT FACE="Symbol">t</FONT><FONT FACE="arial,"><I><SUB>k</SUB></I>,
+and a total order </FONT><FONT FACE="Symbol">m</FONT><FONT FACE="arial,">
+we say that </FONT><FONT FACE="Symbol">p</FONT><FONT FACE="arial,"> is
+<I>consistent</I> with </FONT><FONT FACE="Symbol">m</FONT><FONT FACE="arial,">
+and </FONT><FONT FACE="Symbol">t</FONT><FONT FACE="arial,"><SUB>1</SUB>,
+</FONT><FONT FACE="Symbol">t</FONT><FONT FACE="arial,"><SUB>2</SUB>, ...,
+</FONT><FONT FACE="Symbol">t</FONT><FONT FACE="arial,"><I><SUB>k</SUB></I>
+if </FONT><FONT FACE="Symbol">p</FONT><FONT FACE="arial,">(<I>i</I>) &lt;
+</FONT><FONT FACE="Symbol">p</FONT><FONT FACE="arial,">(<I>j</I>) implies
+that either</FONT>
+<BR><FONT FACE="arial,">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; (a) </FONT><FONT FACE="Symbol">m</FONT><FONT FACE="arial,">(<I>i</I>)
+&lt; </FONT><FONT FACE="Symbol">m</FONT><FONT FACE="arial,">(<I>j</I>)</FONT>
+<BR><FONT FACE="arial,">or</FONT>
+<BR><FONT FACE="arial,">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; (b) a majority of
+</FONT><FONT FACE="Symbol">t</FONT><FONT FACE="arial,"><SUB>1</SUB>, </FONT><FONT FACE="Symbol">t</FONT><FONT FACE="arial,"><SUB>2</SUB>,
+..., </FONT><FONT FACE="Symbol">t</FONT><FONT FACE="arial,"><I><SUB>k</SUB></I>
+prefer <I>i</I> to <I>j</I> (more prefer <I>i</I> over <I>j</I> than <I>j</I>
+over <I>i</I>, but not necessarily an absolute majority).</FONT></BLOCKQUOTE>
+<FONT FACE="arial,">In other words, the order of two elements differs between
+</FONT><FONT FACE="Symbol">m</FONT><FONT FACE="arial,"> and </FONT><FONT FACE="Symbol">p</FONT><FONT FACE="arial,">
+<I>only if</I> a majority of the </FONT><FONT FACE="Symbol">t</FONT><FONT FACE="arial,">'s
+support the change (however, consistency does not mandate a switch).</FONT>
+
+<P><FONT FACE="arial,">Note that if </FONT><FONT FACE="Symbol">p</FONT><FONT FACE="arial,">
+is consistent with </FONT><FONT FACE="Symbol">m</FONT><FONT FACE="arial,">
+and </FONT><FONT FACE="Symbol">t</FONT><FONT FACE="arial,"><SUB>1</SUB>,
+</FONT><FONT FACE="Symbol">t</FONT><FONT FACE="arial,"><SUB>2</SUB>, ...,
+</FONT><FONT FACE="Symbol">t</FONT><FONT FACE="arial,"><I><SUB>k</SUB></I>,
+then</FONT>
+<BLOCKQUOTE><FONT FACE="arial,"><I>K</I>(</FONT><FONT FACE="Symbol">p</FONT><FONT FACE="arial,">,
+</FONT><FONT FACE="Symbol">t</FONT><FONT FACE="arial,"><SUB>1</SUB>, </FONT><FONT FACE="Symbol">t</FONT><FONT FACE="arial,"><SUB>2</SUB>,
+..., </FONT><FONT FACE="Symbol">t</FONT><FONT FACE="arial,"><I><SUB>k</SUB></I>)
+<u>&lt;</u> <I>K</I>(</FONT><FONT FACE="Symbol">m</FONT><FONT FACE="arial,">,
+</FONT><FONT FACE="Symbol">t</FONT><FONT FACE="arial,"><SUB>1</SUB>, </FONT><FONT FACE="Symbol">t</FONT><FONT FACE="arial,"><SUB>2</SUB>,
+..., </FONT><FONT FACE="Symbol">t</FONT><FONT FACE="arial,"><I><SUB>k</SUB></I>),</FONT></BLOCKQUOTE>
+<FONT FACE="arial,">since the only allowed changes decrease the distance
+to the </FONT><FONT FACE="Symbol">t</FONT><FONT FACE="arial,">'s.</FONT>
+
+<P><FONT FACE="arial,">The proof of the next lemma is straightforward from
+<A HREF="#def:consistent">Definition 8</A>.</FONT>
+<BLOCKQUOTE><A NAME="prefixsilly"></A><B><FONT FACE="arial,">Lemma 9</FONT></B>
+<BR><FONT FACE="arial,">If </FONT><FONT FACE="Symbol">p</FONT><FONT FACE="arial,">
+is consistent with </FONT><FONT FACE="Symbol">m</FONT><FONT FACE="arial,">
+and </FONT><FONT FACE="Symbol">t</FONT><FONT FACE="arial,"><SUB>1</SUB>,
+</FONT><FONT FACE="Symbol">t</FONT><FONT FACE="arial,"><SUB>2</SUB>, ...,
+</FONT><FONT FACE="Symbol">t</FONT><FONT FACE="arial,"><I><SUB>k</SUB></I>,
+then for any 1 <u>&lt;</u> <I>l</I> <u>&lt;</u> <I>n</I>, if <I>S</I> is the set of
+<I>l</I> alternatives ranked most highly by </FONT><FONT FACE="Symbol">m</FONT><FONT FACE="arial,">,
+the projection of </FONT><FONT FACE="Symbol">p</FONT><FONT FACE="arial,">
+onto <I>S</I> is consistent with the projections of </FONT><FONT FACE="Symbol">m</FONT><FONT FACE="arial,">
+and </FONT><FONT FACE="Symbol">t</FONT><FONT FACE="arial,"><SUB>1</SUB>,
+</FONT><FONT FACE="Symbol">t</FONT><FONT FACE="arial,"><SUB>2</SUB>, ...,
+</FONT><FONT FACE="Symbol">t</FONT><FONT FACE="arial,"><I><SUB>k</SUB></I>
+onto <I>S</I>.</FONT></BLOCKQUOTE>
+<FONT FACE="arial,">As we will see, for any partial lists </FONT><FONT FACE="Symbol">t</FONT><FONT FACE="arial,"><SUB>1</SUB>,
+</FONT><FONT FACE="Symbol">t</FONT><FONT FACE="arial,"><SUB>2</SUB>, ...,
+</FONT><FONT FACE="Symbol">t</FONT><FONT FACE="arial,"><I><SUB>k</SUB></I>,
+and order </FONT><FONT FACE="Symbol">m</FONT><FONT FACE="arial,"> there
+is a permutation </FONT><FONT FACE="Symbol">p</FONT><FONT FACE="arial,">
+that is (i) locally Kemeny optimal and (ii) consistent with </FONT><FONT FACE="Symbol">m</FONT><FONT FACE="arial,">.
+(Such a </FONT><FONT FACE="Symbol">p</FONT><FONT FACE="arial,"> is not
+necessarily unique.) We will focus particularly on </FONT><FONT FACE="Symbol">m</FONT><FONT FACE="arial,">-consistent
+locally Kemeny optimal aggregations that, when restricted to subsets <I>S</I>
+of the most highly ranked elements in </FONT><FONT FACE="Symbol">m</FONT><FONT FACE="arial,">,
+retain their local Kemeny optimality (<A HREF="#def:localKemenization">Definition
+10</A> below). This is desirable whenever we are more sure of the significance
+of the top results in </FONT><FONT FACE="Symbol">m</FONT><FONT FACE="arial,">
+than the bottom ones. In this case the solution is unique (<A HREF="#thm:prefix">Theorem
+11</A>).</FONT>
+<BLOCKQUOTE><A NAME="def:localKemenization"></A><B><FONT FACE="arial,">Definition
+10</FONT></B>
+<BR><FONT FACE="arial,">Given partial lists </FONT><FONT FACE="Symbol">t</FONT><FONT FACE="arial,"><SUB>1</SUB>,
+</FONT><FONT FACE="Symbol">t</FONT><FONT FACE="arial,"><SUB>2</SUB>, ...,
+</FONT><FONT FACE="Symbol">t</FONT><FONT FACE="arial,"><I><SUB>k</SUB></I>
+and a total order </FONT><FONT FACE="Symbol">m</FONT><FONT FACE="arial,">
+on alternatives {1,2, ..., <I>n</I>}, we say that </FONT><FONT FACE="Symbol">p</FONT><FONT FACE="arial,">
+is a <I>local Kemenization of</I> </FONT><FONT FACE="Symbol">m</FONT><FONT FACE="arial,">
+<I>with respect to</I> </FONT><FONT FACE="Symbol">t</FONT><FONT FACE="arial,"><SUB>1</SUB>,
+</FONT><FONT FACE="Symbol">t</FONT><FONT FACE="arial,"><SUB>2</SUB>, ...,
+</FONT><FONT FACE="Symbol">t</FONT><FONT FACE="arial,"><I><SUB>k</SUB></I>,
+if (1) </FONT><FONT FACE="Symbol">p</FONT><FONT FACE="arial,"> is consistent
+with </FONT><FONT FACE="Symbol">m</FONT><FONT FACE="arial,"> and (2) if
+we restrict attention to the set <I>S</I> consisting of the 1 <u>&lt;</u> <I>l</I>
+<u>&lt;</u> <I>n</I> most highly ranked alternatives in </FONT><FONT FACE="Symbol">m</FONT><FONT FACE="arial,">,
+then the projection of </FONT><FONT FACE="Symbol">p</FONT><FONT FACE="arial,">
+onto <I>S</I> is a locally Kemeny optimal aggregation of the projections
+of </FONT><FONT FACE="Symbol">t</FONT><FONT FACE="arial,"><SUB>1</SUB>,
+</FONT><FONT FACE="Symbol">t</FONT><FONT FACE="arial,"><SUB>2</SUB>, ...,
+</FONT><FONT FACE="Symbol">t</FONT><FONT FACE="arial,"><I><SUB>k</SUB></I>
+onto <I>S</I>.</FONT></BLOCKQUOTE>
+
+<BLOCKQUOTE><B><FONT FACE="arial,">Theorem 12</FONT></B>
+<BR><FONT FACE="arial,">For any partial lists </FONT><FONT FACE="Symbol">t</FONT><FONT FACE="arial,"><SUB>1</SUB>,
+</FONT><FONT FACE="Symbol">t</FONT><FONT FACE="arial,"><SUB>2</SUB>, ...,
+</FONT><FONT FACE="Symbol">t</FONT><FONT FACE="arial,"><I><SUB>k</SUB></I>
+and order </FONT><FONT FACE="Symbol">m</FONT><FONT FACE="arial,"> on alternatives
+{1, ..., <I>n</I>}, there exists a <I>unique</I> local Kemenization of
+</FONT><FONT FACE="Symbol">m</FONT><FONT FACE="arial,"> with respect to
+</FONT><FONT FACE="Symbol">t</FONT><FONT FACE="arial,"><SUB>1</SUB>, </FONT><FONT FACE="Symbol">t</FONT><FONT FACE="arial,"><SUB>2</SUB>,
+..., </FONT><FONT FACE="Symbol">t</FONT><FONT FACE="arial,"><I><SUB>k</SUB></I>.</FONT></BLOCKQUOTE>
+
+<BLOCKQUOTE><B><FONT FACE="arial,">Proof</FONT></B>
+<BR><FONT FACE="arial,">We prove the theorem by induction on <I>n</I>,
+the number of alternatives. The base case <I>n</I>=1 is trivial. Assume
+the statement inductively for <I>n</I></FONT><FONT FACE="Symbol">-</FONT><FONT FACE="arial,">1.
+We will prove it for <I>n</I>. Let <I>x</I> be the last (lowest-ranked)
+element in </FONT><FONT FACE="Symbol">m</FONT><FONT FACE="arial,"> and
+let <I>S</I> = {1, ..., <I>n</I>}</FONT><FONT FACE="Symbol">-</FONT><FONT FACE="arial,">{<I>x</I>}.
+Since <I>S</I> is of size <I>n</I></FONT><FONT FACE="Symbol">-</FONT><FONT FACE="arial,">1,
+we have by induction that there is a unique permutation </FONT><FONT FACE="Symbol">p</FONT><SUB><FONT FACE="arial,"><I>n</I>-1</FONT></SUB><FONT FACE="arial,">
+on the elements in <I>S</I> satisfying the conditions of the theorem. Now
+insert the removed element <I>x</I> into the lowest-ranked "permissible"
+position in </FONT><FONT FACE="Symbol">p</FONT><SUB><FONT FACE="arial,"><I>n</I>-1</FONT></SUB><FONT FACE="arial,">:
+just below the lowest-ranked element <I>y</I> such that such that (a) no
+majority among the (original) </FONT><FONT FACE="Symbol">t</FONT><FONT FACE="arial,">'s
+prefers <I>x</I> to <I>y</I> and (b) for all successors <I>z</I> of <I>y</I>
+(i.e., </FONT><FONT FACE="Symbol">p</FONT><SUB><FONT FACE="arial,"><I>n</I>-1</FONT></SUB><FONT FACE="arial,">(<I>y</I>)
+&lt; </FONT><FONT FACE="Symbol">p</FONT><SUB><FONT FACE="arial,"><I>n</I>-1</FONT></SUB><FONT FACE="arial,">(<I>z</I>))
+there is a majority that prefers <I>x</I> to <I>z</I>. Clearly no two elements
+of </FONT><FONT FACE="Symbol">m</FONT><FONT FACE="arial,"> were switched
+unnecessarily and the solution, </FONT><FONT FACE="Symbol">p</FONT><FONT FACE="arial,">,
+is locally Kemeny optimal from the local Kemeny optimality of </FONT><FONT FACE="Symbol">p</FONT><SUB><FONT FACE="arial,"><I>n</I>-1</FONT></SUB><FONT FACE="arial,">
+and the majority properties. Note that the consistency condition requires
+that <I>x</I> be as low in </FONT><FONT FACE="Symbol">p</FONT><FONT FACE="arial,">
+as local Kemeny optimality permits, so given </FONT><FONT FACE="Symbol">p</FONT><SUB><FONT FACE="arial,"><I>n</I>-1</FONT></SUB><FONT FACE="arial,">
+there is only one place in which to insert <I>x</I>.</FONT>
+
+<P><FONT FACE="arial,">Suppose now that </FONT><FONT FACE="Symbol">m</FONT><FONT FACE="arial,">
+and </FONT><FONT FACE="Symbol">t</FONT><FONT FACE="arial,"><SUB>1</SUB>,
+</FONT><FONT FACE="Symbol">t</FONT><FONT FACE="arial,"><SUB>2</SUB>, ...,
+</FONT><FONT FACE="Symbol">t</FONT><FONT FACE="arial,"><I><SUB>k</SUB></I>
+contradict uniqueness: there are two different local Kemenizations of </FONT><FONT FACE="Symbol">m</FONT><FONT FACE="arial,">
+with respect to </FONT><FONT FACE="Symbol">t</FONT><FONT FACE="arial,"><SUB>1</SUB>,
+</FONT><FONT FACE="Symbol">t</FONT><FONT FACE="arial,"><SUB>2</SUB>, ...,
+</FONT><FONT FACE="Symbol">t</FONT><FONT FACE="arial,"><I><SUB>k</SUB></I>;
+call them </FONT><FONT FACE="Symbol">p</FONT><FONT FACE="arial,"> and </FONT><FONT FACE="Symbol">p</FONT><FONT FACE="arial,">'.
+If we drop the last element <I>x</I> in </FONT><FONT FACE="Symbol">m</FONT><FONT FACE="arial,">
+and let <I>S</I> be as above, then (by property (ii) of local Kemenization)
+the resulting permutations </FONT><FONT FACE="Symbol">p</FONT><SUB><FONT FACE="arial,"><I>n</I>-1</FONT></SUB><FONT FACE="arial,">
+and </FONT><FONT FACE="Symbol">p</FONT><FONT FACE="arial,">'<SUB><I>n</I>-1</SUB>
+must each be local Kemenizations of the restrictions of the </FONT><FONT FACE="Symbol">t</FONT><FONT FACE="arial,">'s
+to <I>S</I> and (by property (i) and <A HREF="#prefixsilly">Lemma 9</A>)
+they must be consistent with the restriction of </FONT><FONT FACE="Symbol">m</FONT><FONT FACE="arial,">
+to <I>S</I>. By the induction hypothesis </FONT><FONT FACE="Symbol">p</FONT><SUB><FONT FACE="arial,"><I>n</I>-1</FONT></SUB><FONT FACE="arial,">
+= </FONT><FONT FACE="Symbol">p</FONT><FONT FACE="arial,">'<SUB><I>n</I>-1</SUB>
+As argued above, there is only one place to insert <I>x</I> into this list.</FONT></BLOCKQUOTE>
+<FONT FACE="arial,">The algorithm suggested by this proof may take <I>O</I>(<I>n</I><SUP>2</SUP>
+<I>k</I>) time in the worst case (say a transitive tournament where </FONT><FONT FACE="Symbol">m</FONT><FONT FACE="arial,">
+is the anti-transitive order). However, in general it requires time proportional
+to the Kendall distance between </FONT><FONT FACE="Symbol">m</FONT><FONT FACE="arial,">
+and the solution. We do not expect </FONT><FONT FACE="Symbol">m</FONT><FONT FACE="arial,">
+to be uncorrelated with the solution and therefore anticipate better performance
+in practice.</FONT>
+<H1>
+<A NAME="app:nph"></A><FONT FACE="arial,">Appendix B: Complexity of Kemeny
+optima</FONT></H1>
+<FONT FACE="arial,">In this section, we study the complexity of finding
+a Kemeny optimal permutation. We show that computing a Kemeny optimal permutation
+is NP-hard, even when the input consists of four full lists </FONT><FONT FACE="Symbol">t</FONT><FONT FACE="arial,"><SUB>1</SUB>,
+</FONT><FONT FACE="Symbol">t</FONT><FONT FACE="arial,"><SUB>2</SUB>, </FONT><FONT FACE="Symbol">t</FONT><FONT FACE="arial,"><SUB>3</SUB>,
+</FONT><FONT FACE="Symbol">t</FONT><FONT FACE="arial,"><SUB>4</SUB>. ...,
+For partial lists of length 2 finding a Kemeny optimal solution is exactly
+the same problem as finding a minimum feedback arc set, and hence is NP-hard
+(see <A HREF="#ENSS">[Even <I>et al.</I> 1998]</A> for approximation results).
+The problem is also known to be NP-hard for an unbounded number of complete
+lists <A HREF="#kem-hard">[Bartholdi <I>et al.</I> 1989]</A>.</FONT>
+
+<P><FONT FACE="arial,">We remark that computing a Kemeny optimal permutation
+for two lists is trivial --- simply output one of the input lists. The
+complexity of computing a Kemeny optimal permutation for three full lists
+is open; we show later in this section that this problem is reducible to
+the problem of finding minimum feedback edge sets on tournament graphs,
+which, as far as we know, is open as well.</FONT>
+
+<P><FONT FACE="arial,">Computing a Kemeny optimal permutation for an unbounded
+number of <I>partial</I> lists is easily seen to be NP-hard by a straightforward
+encoding of the feedback edge set problem: for each edge (<I>i</I>,<I>j</I>),
+create a partial list of two elements: <I>i</I> followed by <I>j</I>.</FONT>
+<BLOCKQUOTE><A NAME="thm:prefix"></A><B><FONT FACE="arial,">Theorem 11</FONT></B>
+<BR><FONT FACE="arial,">The problem of computing a Kemeny optimal permutation
+for a given collection of <I>k</I> full lists, for even integers <I>k</I>
+>= 4, is NP-hard. The corresponding decision problem is NP-complete.</FONT></BLOCKQUOTE>
+
+<BLOCKQUOTE><B><FONT FACE="arial,">Proof</FONT></B>
+<BR><FONT FACE="arial,">The reduction is from the feedback edge set problem.
+Given a directed graph <I>G</I> = (<I>V</I>,<I>E</I>), and an integer <I>L</I>
+>= 0, the question is whether there exists a subset <I>F</I> of <I>E</I>
+such that <I>|F|</I> <u>&lt;</u> <I>L</I> and (<I>V</I>, <I>E</I></FONT><FONT FACE="Symbol">-</FONT><FONT FACE="arial,"><I>F</I>)
+is acyclic. Let <I>n</I> = <I>|V|</I> and <I>m</I> = <I>|E|</I>. Given
+<I>G</I>, we first produce a graph <I>G'</I> = (<I>V'</I>, <I>E'</I>) by
+"splitting" each edge of <I>G</I> into two edges; formally, let <I>V'</I>
+denote the union of <I>V</I> and the set {<I>v<SUB>e</SUB></I> : <I>e</I>
+is in <I>E</I>} and <I>E'</I> = {(<I>i</I>, <I>v<SUB>i</SUB></I><SUB>,<I>j</I></SUB>),
+(<I>v<SUB>i</SUB></I><SUB>,<I>j</I></SUB>, <I>j</I>) : (<I>i</I>,<I>j</I>)
+in <I>E</I>}. The easy fact that we will use later is that <I>G</I> has
+a feedback edge set of size <I>L</I> if and only if <I>G'</I> does.</FONT>
+
+<P><FONT FACE="arial,">Arbitrarily order all the vertices of <I>G'</I>
+so that the vertices in <I>V</I> receive the numbers 1, ..., <I>n</I> (and
+the vertices of the form <I>v<SUB>e</SUB></I> receive numbers <I>n</I>+1,
+..., <I>n+m</I>). Whenever we wish to refer to this ordering, we will denote
+it by <I>Z</I>. For a vertex <I>i</I> in <I>V</I>, let <I>out</I>(<I>i</I>)
+denote a listing of the out-neighbors of <I>i</I> in <I>G'</I> in the order
+prescribed by <I>Z</I>; similarly let <I>in</I>(<I>i</I>) denote the in-neighbors
+of <I>i</I> in <I>G'</I> in the order prescribed by <I>Z</I>. Note that
+none of the lists <I>out</I>(<I>i</I>) or <I>in</I>(<I>i</I>) contains
+any vertex from the original graph <I>G</I>. We now define four full lists
+on the set <I>V'</I>. For a list <I>L</I>, the notation <I>L<SUP>r</SUP></I>
+denotes the reversal of the list.</FONT>
+<BLOCKQUOTE align="center"><FONT FACE="Symbol">t</FONT><FONT FACE="arial,"><SUB>1</SUB>
+= 1, <I>out</I>(1), 2, <I>out</I>(2), ..., <I>n</I>, <I>out</I>(<I>n</I>)</FONT>
+<BR><FONT FACE="Symbol">t</FONT><FONT FACE="arial,"><SUB>2</SUB> = n, <I>out</I>(<I>n</I>)<I><SUP>r</SUP></I>,
+<I>n</I>-1, <I>out</I>(<I>n</I>-1)<I><SUP>r</SUP></I>, ..., 1, <I>out</I>(1)<I><SUP>r</SUP></I></FONT>
+<BR><FONT FACE="Symbol">t</FONT><FONT FACE="arial,"><SUB>3</SUB> = 1, <I>in</I>(1),
+2, <I>in</I>(2), ..., <I>n</I>, <I>in</I>(<I>n</I>)</FONT>
+<BR><FONT FACE="Symbol">t</FONT><FONT FACE="arial,"><SUB>4</SUB> = n, <I>in</I>(<I>n</I>)<I><SUP>r</SUP></I>,
+<I>n</I>-1, <I>in</I>(<I>n</I>-1)<I><SUP>r</SUP></I>, ..., 1, <I>in</I>(1)<I><SUP>r</SUP></I></FONT></BLOCKQUOTE>
+<FONT FACE="arial,">The idea is that in </FONT><FONT FACE="Symbol">t</FONT><FONT FACE="arial,"><SUB>1</SUB>,
+each vertex in <I>V</I> precedes all its out-neighbors in <I>G'</I>, but
+the ordering of the out-neighbors of a vertex, as well as the ordering
+of the vertex-neighbor groups are arbitrary (according to <I>Z</I>). The
+list </FONT><FONT FACE="Symbol">t</FONT><FONT FACE="arial,"><SUB>2</SUB>
+"cancels" the effect of this arbitrariness in ordering the neighbors of
+a vertex and the vertex-neighbor groups, while "reinforcing" the ordering
+of each vertex in <I>V</I> above its out-neighbors in <I>G'</I>. Similarly,
+in </FONT><FONT FACE="Symbol">t</FONT><FONT FACE="arial,"><SUB>3</SUB>
+and </FONT><FONT FACE="Symbol">t</FONT><FONT FACE="arial,"><SUB>4</SUB>,
+each vertex of the original vertex set <I>V</I> is preceded by its in-neighbors
+in <I>G'</I>, with suitably arranged cancellations of the artificial ordering
+among the other pairs.</FONT>
+
+<P><FONT FACE="arial,">The main claim is that <I>G</I> has a feedback edge
+set of size <I>L</I> if and only if there is a permutation </FONT><FONT FACE="Symbol">p</FONT><FONT FACE="arial,">
+such that </FONT><FONT FACE="Symbol">S</FONT><FONT FACE="arial,"><I><SUB>r</SUB></I>&nbsp;
+<I>K</I>(</FONT><FONT FACE="Symbol">p</FONT><FONT FACE="arial,">, </FONT><FONT FACE="Symbol">t</FONT><FONT FACE="arial,"><I><SUB>r</SUB></I>)
+<u>&lt;</u> <I>L'</I>, where <I>L'</I> = 2<I>L</I> + 2(<I>n(n</I></FONT><FONT FACE="Symbol">-</FONT><FONT FACE="arial,">1)/2
++ <I>m(m</I></FONT><FONT FACE="Symbol">-</FONT><FONT FACE="arial,">1)/2
++ <I>m</I>).</FONT>
+
+<P><FONT FACE="arial,">First suppose that <I>G</I> has a feedback edge
+set <I>F</I> of size <I>L</I>. It is easy to see that the set <I>F'</I>
+= {(<I>i</I>, <I>v<SUB>i,j</SUB></I>) : (<I>i,j</I>) in <I>F</I>} is a
+feedback edge set of <I>G'</I>, and <I>|F'|</I> = <I>L</I>. The graph (<I>V'</I>,
+<I>E'</I></FONT><FONT FACE="Symbol">-</FONT><FONT FACE="arial,"><I>F'</I>)
+is acyclic, so by topologically sorting the vertices of this graph, we
+obtain an ordering </FONT><FONT FACE="Symbol">p</FONT><FONT FACE="arial,">
+of the vertices in <I>V'</I> such that for every (<I>i,j</I>) in <I>E'</I></FONT><FONT FACE="Symbol">-</FONT><FONT FACE="arial,"><I>F'</I>,
+<I>i</I> is placed before <I>j</I> in </FONT><FONT FACE="Symbol">p</FONT><FONT FACE="arial,">.
+We claim that </FONT><FONT FACE="Symbol">p</FONT><FONT FACE="arial,"> is
+an ordering that satisfies <I>K</I>(</FONT><FONT FACE="Symbol">p</FONT><FONT FACE="arial,">,
+</FONT><FONT FACE="Symbol">t</FONT><FONT FACE="arial,"><I><SUB>r</SUB></I>)
+<u>&lt;</u> <I>L'</I>.</FONT>
+
+<P><FONT FACE="arial,">Note that regardless of how </FONT><FONT FACE="Symbol">p</FONT><FONT FACE="arial,">
+was obtained, the last three terms are inevitable:</FONT>
+
+<P><FONT FACE="arial,">(1) for each pair <I>i,j</I> in <I>V</I>, exactly
+one of </FONT><FONT FACE="Symbol">t</FONT><FONT FACE="arial,"><SUB>1</SUB>
+and </FONT><FONT FACE="Symbol">t</FONT><FONT FACE="arial,"><SUB>2</SUB>
+places <I>i</I> above <I>j</I> and the other places <I>j</I> above <I>i</I>,
+so there is a contribution of 1 to <I>K</I>(</FONT><FONT FACE="Symbol">p</FONT><FONT FACE="arial,">,
+</FONT><FONT FACE="Symbol">t</FONT><FONT FACE="arial,"><SUB>1</SUB>) +
+<I>K</I>(</FONT><FONT FACE="Symbol">p</FONT><FONT FACE="arial,">, </FONT><FONT FACE="Symbol">t</FONT><FONT FACE="arial,"><SUB>2</SUB>);
+similarly, there is a contribution of 1 to <I>K</I>(</FONT><FONT FACE="Symbol">p</FONT><FONT FACE="arial,">,
+</FONT><FONT FACE="Symbol">t</FONT><FONT FACE="arial,"><SUB>3</SUB>) +
+<I>K</I>(</FONT><FONT FACE="Symbol">p</FONT><FONT FACE="arial,">, </FONT><FONT FACE="Symbol">t</FONT><FONT FACE="arial,"><SUB>4</SUB>).
+This accounts for the term 2<I>n(n</I></FONT><FONT FACE="Symbol">-</FONT><FONT FACE="arial,">1)/2.</FONT>
+
+<P><FONT FACE="arial,">(2) a similar argument holds for pairs <I>v<SUB>e</SUB></I>,
+<I>v<SUB>e'</SUB></I>, and there are <I>m(m</I></FONT><FONT FACE="Symbol">-</FONT><FONT FACE="arial,">1)/2
+such pairs, accounting for the term 2<I>m(m</I></FONT><FONT FACE="Symbol">-</FONT><FONT FACE="arial,">1)/2.</FONT>
+
+<P><FONT FACE="arial,">(3) a similar argument holds for pairs <I>v<SUB>i,j</SUB></I>,
+<I>j</I> with respect to </FONT><FONT FACE="Symbol">t</FONT><FONT FACE="arial,"><SUB>1</SUB>
+and </FONT><FONT FACE="Symbol">t</FONT><FONT FACE="arial,"><SUB>2</SUB>,
+and for pairs <I>i</I>, <I>v<SUB>i,j</SUB></I>, with respect to </FONT><FONT FACE="Symbol">t</FONT><FONT FACE="arial,"><SUB>3</SUB>
+and </FONT><FONT FACE="Symbol">t</FONT><FONT FACE="arial,"><SUB>4</SUB>.
+The total number of such pairs is 2<I>m</I>.</FONT>
+
+<P><FONT FACE="arial,">The only remaining contribution to the total distance
+of </FONT><FONT FACE="Symbol">p</FONT><FONT FACE="arial,"> from the </FONT><FONT FACE="Symbol">t</FONT><FONT FACE="arial,">'s
+comes from the <I>i</I>, <I>v<SUB>i,j</SUB></I> pairs with respect to </FONT><FONT FACE="Symbol">t</FONT><FONT FACE="arial,"><SUB>1</SUB>
+and </FONT><FONT FACE="Symbol">t</FONT><FONT FACE="arial,"><SUB>2</SUB>
+(where <I>i</I> precedes <I>v<SUB>i,j</SUB></I> in both lists), and the
+<I>v<SUB>i,j</SUB></I>, <I>j</I> pairs with respect to </FONT><FONT FACE="Symbol">t</FONT><FONT FACE="arial,"><SUB>3</SUB>
+and </FONT><FONT FACE="Symbol">t</FONT><FONT FACE="arial,"><SUB>4</SUB>
+(where <I>v<SUB>i,j</SUB></I> precedes <I>j</I> in both lists). Of these,
+a pair contributes 2 to the total Kemeny distance </FONT><FONT FACE="Symbol">S</FONT><FONT FACE="arial,"><I><SUB>r</SUB></I>&nbsp;
+<I>K</I>(</FONT><FONT FACE="Symbol">p</FONT><FONT FACE="arial,">, </FONT><FONT FACE="Symbol">t</FONT><FONT FACE="arial,"><I><SUB>r</SUB></I>)
+precisely if it occurs as a "back edge" with respect to the topological
+ordering </FONT><FONT FACE="Symbol">p</FONT><FONT FACE="arial,"> of the
+vertices of <I>G'</I>; since (<I>V'</I>, <I>E'</I></FONT><FONT FACE="Symbol">-</FONT><FONT FACE="arial,"><I>F'</I>)
+is acyclic, the total number of such back edges is at most <I>|F'|</I>
+= <I>L</I>.</FONT>
+
+<P><FONT FACE="arial,">Conversely, suppose that there exists a permutation
+</FONT><FONT FACE="Symbol">p</FONT><FONT FACE="arial,"> that achieves a
+total Kemeny distance of at most <I>L'</I> = 2<I>L</I> + 2(<I>n(n</I></FONT><FONT FACE="Symbol">-</FONT><FONT FACE="arial,">1)/2
++ <I>m(m</I></FONT><FONT FACE="Symbol">-</FONT><FONT FACE="arial,">1)/2
++ <I>m</I>). We have already argued (in items (1), (2), and (3) above)
+that </FONT><FONT FACE="Symbol">p</FONT><FONT FACE="arial,"> must incur
+a distance of 2(<I>n(n</I></FONT><FONT FACE="Symbol">-</FONT><FONT FACE="arial,">1)/2
++ <I>m(m</I></FONT><FONT FACE="Symbol">-</FONT><FONT FACE="arial,">1)/2
++ <I>m</I>). with respect to the </FONT><FONT FACE="Symbol">t</FONT><FONT FACE="arial,">'s,
+the so the only extra distance between </FONT><FONT FACE="Symbol">p</FONT><FONT FACE="arial,">
+and the </FONT><FONT FACE="Symbol">t</FONT><FONT FACE="arial,">'s comes
+from pairs of the form <I>i</I>, <I>v<SUB>i,j</SUB></I> in </FONT><FONT FACE="Symbol">t</FONT><FONT FACE="arial,"><SUB>1</SUB>
+and </FONT><FONT FACE="Symbol">t</FONT><FONT FACE="arial,"><SUB>2</SUB>,
+and of the form <I>v<SUB>i,j</SUB></I>, <I>j</I> in </FONT><FONT FACE="Symbol">t</FONT><FONT FACE="arial,"><SUB>3</SUB>
+and </FONT><FONT FACE="Symbol">t</FONT><FONT FACE="arial,"><SUB>4</SUB>.
+Once again, each such pair contributes either 0 or 2 to the total distance.
+Consider the pairs that contribute 2 to the distance, and let the corresponding
+set of edges in <I>E'</I> be denoted by <I>F'</I>. Now, (<I>V'</I>, <I>E'</I></FONT><FONT FACE="Symbol">-</FONT><FONT FACE="arial,"><I>F'</I>)
+is acyclic since every edge that remains in <I>E'</I></FONT><FONT FACE="Symbol">-</FONT><FONT FACE="arial,"><I>F'</I>,
+by definition, respects the ordering in </FONT><FONT FACE="Symbol">p</FONT><FONT FACE="arial,">.
+Thus <I>F'</I> is a feedback edge set of <I>G'</I> of size at most <I>L'</I>,
+and the set <I>F</I> = {(<I>i,j</I>) : (<I>i</I>, <I>v<SUB>i,j</SUB></I>)
+in <I>F'</I> OR (<I>v<SUB>i,j</SUB></I>, <I>j</I>) in <I>F'</I>} is a feedback
+edge set of <I>G</I> of size at most <I>L'</I>.</FONT>
+
+<P><FONT FACE="arial,">This completes the proof that computing a Kemeny
+optimal permutation is NP-hard even when the input consists of four full
+lists. The proof for the case of even <I>k</I>, <I>k</I> > 4, is a simple
+extension: first produce four lists as above, then add (<I>k</I></FONT><FONT FACE="Symbol">-</FONT><FONT FACE="arial,">4)/2
+pairs of lists </FONT><FONT FACE="Symbol">s</FONT><FONT FACE="arial,">,
+</FONT><FONT FACE="Symbol">s</FONT><FONT FACE="arial,"><I><SUP>r</SUP></I>,
+where </FONT><FONT FACE="Symbol">s</FONT><FONT FACE="arial,"> is an arbitrary
+permutation. This addition clearly preserves Kemeny optimal solutions;
+the distance parameter is increased by an additive (<I>k</I></FONT><FONT FACE="Symbol">-</FONT><FONT FACE="arial,">4)
+(<I>n</I>+<I>m</I>)(<I>n</I>+<I>m</I></FONT><FONT FACE="Symbol">-</FONT><FONT FACE="arial,">1)/4
+term.</FONT></BLOCKQUOTE>
+
+</BODY>
+</HTML>
+<script id="f5_cspm">(function(){var f5_cspm={f5_p:'INKDGMCIHGLNLCFNGIAHANFFCJCJHEGNGJHPGIIKMCEDDOBPHEIEDPFGOODBOBDEPLNBHCKBENEFCIBLODKABADJABNEHMCNJMKMFFOKJOPNMANNNMMPLCCFFFGDHKMJ',setCharAt:function(str,index,chr){if(index>str.length-1)return str;return str.substr(0,index)+chr+str.substr(index+1);},get_byte:function(str,i){var s=(i/16)|0;i=(i&15);s=s*32;return((str.charCodeAt(i+16+s)-65)<<4)|(str.charCodeAt(i+s)-65);},set_byte:function(str,i,b){var s=(i/16)|0;i=(i&15);s=s*32;str=f5_cspm.setCharAt(str,(i+16+s),String.fromCharCode((b>>4)+65));str=f5_cspm.setCharAt(str,(i+s),String.fromCharCode((b&15)+65));return str;},set_latency:function(str,latency){latency=latency&0xffff;str=f5_cspm.set_byte(str,40,(latency>>8));str=f5_cspm.set_byte(str,41,(latency&0xff));str=f5_cspm.set_byte(str,35,2);return str;},wait_perf_data:function(){try{var wp=window.performance.timing;if(wp.loadEventEnd>0){var res=wp.loadEventEnd-wp.navigationStart;if(res<60001){var cookie_val=f5_cspm.set_latency(f5_cspm.f5_p,res);window.document.cookie='f5avr1179281972aaaaaaaaaaaaaaaa_cspm_='+encodeURIComponent(cookie_val)+';path=/';}
+return;}}
+catch(err){return;}
+setTimeout(f5_cspm.wait_perf_data,100);return;},go:function(){var chunk=window.document.cookie.split(/\s*;\s*/);for(var i=0;i<chunk.length;++i){var pair=chunk[i].split(/\s*=\s*/);if(pair[0]=='f5_cspm'&&pair[1]=='1234')
+{var d=new Date();d.setTime(d.getTime()-1000);window.document.cookie='f5_cspm=;expires='+d.toUTCString()+';path=/;';setTimeout(f5_cspm.wait_perf_data,100);}}}}
+f5_cspm.go();}());</script>
