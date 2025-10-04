@@ -111,12 +111,12 @@ class Odoo18ContributingScraper:
                 add_link(a_tag['href'])
 
         # Посилання з основного контенту
+        # Вибираємо лише центральний контент
         main_content = (
-            soup.find('main') or
+            soup.select_one('main article') or
             soup.find('article') or
             soup.find('div', class_='document') or
-            soup.find('div', role='main') or
-            soup.find('body')
+            soup.find('div', role='main')
         )
         if main_content:
             for a_tag in main_content.find_all('a', href=True):
@@ -135,10 +135,15 @@ class Odoo18ContributingScraper:
         for unwanted in soup.find_all(['nav', 'aside', 'header', 'footer', 'script', 'style']):
             unwanted.decompose()
 
+        # Видаляємо елементи з роллю навігації (footer/related/navigation блоки)
+        for nav_role in soup.find_all(attrs={'role': 'navigation'}):
+            nav_role.decompose()
+
         # Видаляємо за класами навігації/декору
         for unwanted_class in [
             'sidebar', 'navigation', 'breadcrumb', 'menu',
-            'navbar', 'footer', 'header', 'btn', 'button', 'prev-next', 'toc', 'pager'
+            'navbar', 'footer', 'header', 'btn', 'button', 'prev-next', 'toc', 'pager',
+            'related', 'o_page_toc'
         ]:
             for element in soup.find_all(class_=lambda x: x and unwanted_class in str(x).lower()):
                 element.decompose()
@@ -175,7 +180,8 @@ class Odoo18ContributingScraper:
             classes = ' '.join(element_class).lower()
             skip_classes = [
                 'sidebar', 'breadcrumb', 'navigation', 'menu',
-                'navbar', 'btn', 'button', 'prev-next', 'footer', 'header', 'toc', 'pager'
+                'navbar', 'btn', 'button', 'prev-next', 'footer', 'header', 'toc', 'pager',
+                'related', 'o_page_toc'
             ]
             if any(skip in classes for skip in skip_classes):
                 return
@@ -193,6 +199,9 @@ class Odoo18ContributingScraper:
                     return
 
             text = element.get_text(" ", strip=True)
+            # Фільтруємо службові заголовки навігації
+            if text and text.strip().lower() in ('navigation', 'on this page'):
+                return
             if text and len(text) > 2:
                 text_list.append({'type': element.name, 'text': text})
             # Не return — всередині заголовків інколи бувають інші елементи
