@@ -4,7 +4,7 @@ import ffmpeg
 import whisper
 
 # 🔧 ВСТАВ СЮДИ ШЛЯХ ДО СВОГО ФАЙЛУ
-file_path = r"D:\PROJECTs\MY\ScientificCalculations\SC\ScientificCalculations\useful_python_scripts\USEFUL-SCRIPTs\NDP-0123.mp4"
+file_path = r"report_plus.mp4"
 
 def format_timestamp_simple(seconds):
     """Форматує секунди у формат HH:MM:SS (без мілісекунд)"""
