@@ -5,7 +5,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D  # noqa: F401
 
-from skanfis.fs import FS, LinguisticVariable, TriangleFuzzySet
+from skanfis.fs import FS, LinguisticVariable, GaussianFuzzySet
 from skanfis import scikit_anfis
 
 
@@ -60,33 +60,31 @@ def load_and_transform_excel(excel_path: Path) -> np.ndarray:
     return xxT
 
 
-def _build_triangular_terms(var_min: float, var_max: float, n_terms: int, prefix: str):
-    """Будує список трикутних термів на відрізку [var_min, var_max].
+def _build_gaussian_terms(var_min: float, var_max: float, n_terms: int, prefix: str):
+    """Будує список гаусовських термів на відрізку [var_min, var_max].
 
     Кількість термів n_terms відповідає кількості функцій належності
     (наприклад, 5 – як у налаштуванні Grid partition в MATLAB).
+
+    Центри гаусів розміщуються рівномірно по діапазону,
+    σ вибирається так, щоб сусідні гауси перекривались,
+    подібно до прикладу MATLAB.
     """
 
-    # Створюємо вузли розбиття для термів
-    grid = np.linspace(var_min, var_max, n_terms)
+    # Центри гаусових МФ
+    centers = np.linspace(var_min, var_max, n_terms)
+
+    # Оцінимо стандартне відхилення як відстань між центрами, поділену на 2
+    if n_terms > 1:
+        delta = centers[1] - centers[0]
+        sigma = float(delta / 2.0)
+    else:
+        sigma = float((var_max - var_min) / 2.0) if var_max > var_min else 1.0
 
     terms = []
-    for k in range(n_terms):
-        if k == 0:
-            a = grid[0]
-            b = grid[0]
-            c = grid[1]
-        elif k == n_terms - 1:
-            a = grid[-2]
-            b = grid[-1]
-            c = grid[-1]
-        else:
-            a = grid[k - 1]
-            b = grid[k]
-            c = grid[k + 1]
-
-        term_name = f"{prefix}_{k + 1}"
-        terms.append(TriangleFuzzySet(a=a, b=b, c=c, term=term_name))
+    for k, c in enumerate(centers, start=1):
+        term_name = f"{prefix}_{k}"
+        terms.append(GaussianFuzzySet(mu=float(c), sigma=sigma, term=term_name))
 
     return terms
 
@@ -94,10 +92,9 @@ def _build_triangular_terms(var_min: float, var_max: float, n_terms: int, prefix
 def build_fs_for_two_inputs(xxT: np.ndarray, n_terms: int = 5) -> FS:
     """Створює нечітку систему FS для двох входів і одного виходу.
 
-    Для кожного входу будується n_terms трикутних функцій належності.
-    Тип функцій належності в MATLAB-прикладі – gaussmf, але у примітці
-    дозволено обирати інші типи залежно від об'єкта. Тут використано
-    трикутні МФ для простоти та сумісності з прикладом scikit-anfis.
+    Для кожного входу будується n_terms гаусовських функцій належності
+    (аналог gaussmf у MATLAB-прикладі) з рівномірно розташованими
+    центрами по діапазону даних.
     """
 
     x1 = xxT[:, 0]
@@ -108,9 +105,9 @@ def build_fs_for_two_inputs(xxT: np.ndarray, n_terms: int = 5) -> FS:
 
     fs = FS()
 
-    # Побудова лінгвістичних змінних для X1 та X2
-    x1_terms = _build_triangular_terms(x1_min, x1_max, n_terms, prefix="X1")
-    x2_terms = _build_triangular_terms(x2_min, x2_max, n_terms, prefix="X2")
+    # Побудова лінгвістичних змінних для X1 та X2 з гаусовськими МФ
+    x1_terms = _build_gaussian_terms(x1_min, x1_max, n_terms, prefix="X1")
+    x2_terms = _build_gaussian_terms(x2_min, x2_max, n_terms, prefix="X2")
 
     fs.add_linguistic_variable("X1", LinguisticVariable(x1_terms, concept="Вхід X1"))
     fs.add_linguistic_variable("X2", LinguisticVariable(x2_terms, concept="Вхід X2"))
@@ -131,6 +128,14 @@ def build_fs_for_two_inputs(xxT: np.ndarray, n_terms: int = 5) -> FS:
     fs.add_rules(rules)
 
     return fs
+
+
+def _gaussian_mf(x: np.ndarray, mu: float, sigma: float) -> np.ndarray:
+    """Обчислює значення гаусовської функції належності для масиву x."""
+
+    if sigma <= 0:
+        return (x == mu).astype(float)
+    return np.exp(-0.5 * ((x - mu) / sigma) ** 2)
 
 
 def train_anfis_model(fs: FS, xxT: np.ndarray, n_epochs: int = 50):
@@ -211,6 +216,146 @@ def visualize_results(model, xxT: np.ndarray, output_dir: Path) -> None:
     plt.close()
 
 
+def visualize_training_data(xxT: np.ndarray, output_dir: Path) -> None:
+    """Будує графік Training Data: вихід y від індексу точки (аналог рис. 3.4)."""
+
+    output_dir.mkdir(parents=True, exist_ok=True)
+
+    indices = np.arange(xxT.shape[0])
+    y_true = xxT[:, 2]
+
+    plt.figure(figsize=(7, 5))
+    plt.scatter(indices, y_true, edgecolor="k", facecolors="none")
+    plt.xlabel("data set index")
+    plt.ylabel("Output")
+    plt.title("Training Data (output vs index)")
+    plt.grid(True)
+    plt.tight_layout()
+    plt.savefig(output_dir / "training_data_index.png", dpi=150)
+    plt.close()
+
+
+def visualize_training_vs_fis(model, xxT: np.ndarray, output_dir: Path) -> None:
+    """Будує графік Training data vs FIS output (аналог рис. 3.8)."""
+
+    output_dir.mkdir(parents=True, exist_ok=True)
+
+    indices = np.arange(xxT.shape[0])
+    X = xxT[:, :2]
+    y_true = xxT[:, 2]
+    y_pred = model.predict(X).reshape(-1)
+
+    plt.figure(figsize=(7, 5))
+    # Навчальні дані – кружки
+    plt.scatter(indices, y_true, c="k", marker="o", label="Training data")
+    # Вихід FIS – зірочки
+    plt.scatter(indices, y_pred, c="r", marker="*", label="FIS output")
+    plt.xlabel("Index")
+    plt.ylabel("Output")
+    plt.title("Training data (o) and FIS output (*) vs index")
+    plt.grid(True)
+    plt.legend()
+    plt.tight_layout()
+    plt.savefig(output_dir / "training_vs_fis_index.png", dpi=150)
+    plt.close()
+
+
+def visualize_training_error(model, output_dir: Path) -> None:
+    """Будує графік Training Error vs Epochs, якщо доступна історія втрат.
+
+    Якщо модель не зберігає історію помилки, графік не будується.
+    """
+
+    # Підтримуємо кілька можливих назв атрибутів з історією помилки
+    history = None
+    if hasattr(model, "loss_history_"):
+        history = getattr(model, "loss_history_")
+    elif hasattr(model, "loss_history"):
+        history = getattr(model, "loss_history")
+
+    if history is None:
+        # Немає даних про помилку по епохах – пропускаємо побудову
+        return
+
+    history = np.asarray(history, dtype=float).ravel()
+    if history.size == 0:
+        return
+
+    epochs = np.arange(1, history.size + 1)
+
+    output_dir.mkdir(parents=True, exist_ok=True)
+    plt.figure(figsize=(7, 5))
+    plt.plot(epochs, history, "b*-")
+    plt.xlabel("Epochs")
+    plt.ylabel("Training Error")
+    plt.title("Training Error vs Epochs")
+    plt.grid(True)
+    plt.tight_layout()
+    plt.savefig(output_dir / "training_error_epochs.png", dpi=150)
+    plt.close()
+
+
+def visualize_membership_functions(xxT: np.ndarray, n_terms: int, output_dir: Path) -> None:
+    """Будує графіки функцій приналежності для X1 та X2.
+
+    Використовуються гаусовські МФ, побудовані на інтервалах значень X1 та X2
+    з рівномірно розташованими центрами (аналог налаштувань у FIS editor).
+    """
+
+    output_dir.mkdir(parents=True, exist_ok=True)
+
+    x1 = xxT[:, 0]
+    x2 = xxT[:, 1]
+
+    x1_min, x1_max = float(np.min(x1)), float(np.max(x1))
+    x2_min, x2_max = float(np.min(x2)), float(np.max(x2))
+
+    # Відтворюємо параметри гаусовських МФ так само, як у _build_gaussian_terms
+    x1_centers = np.linspace(x1_min, x1_max, n_terms)
+    x2_centers = np.linspace(x2_min, x2_max, n_terms)
+
+    if n_terms > 1:
+        sigma1 = float((x1_centers[1] - x1_centers[0]) / 2.0)
+        sigma2 = float((x2_centers[1] - x2_centers[0]) / 2.0)
+    else:
+        sigma1 = float((x1_max - x1_min) / 2.0) if x1_max > x1_min else 1.0
+        sigma2 = float((x2_max - x2_min) / 2.0) if x2_max > x2_min else 1.0
+
+    # Графік МФ для X1
+    x_axis1 = np.linspace(x1_min, x1_max, 400)
+    plt.figure(figsize=(7, 5))
+    for k, mu in enumerate(x1_centers, start=1):
+        term_name = f"X1_{k}"
+        y_vals = _gaussian_mf(x_axis1, mu, sigma1)
+        plt.plot(x_axis1, y_vals, label=term_name)
+    plt.xlabel("X1")
+    plt.ylabel("Ступінь належності")
+    plt.title("Функції приналежності для змінної X1")
+    plt.ylim(-0.05, 1.05)
+    plt.grid(True)
+    plt.legend()
+    plt.tight_layout()
+    plt.savefig(output_dir / "mf_X1.png", dpi=150)
+    plt.close()
+
+    # Графік МФ для X2
+    x_axis2 = np.linspace(x2_min, x2_max, 400)
+    plt.figure(figsize=(7, 5))
+    for k, mu in enumerate(x2_centers, start=1):
+        term_name = f"X2_{k}"
+        y_vals = _gaussian_mf(x_axis2, mu, sigma2)
+        plt.plot(x_axis2, y_vals, label=term_name)
+    plt.xlabel("X2")
+    plt.ylabel("Ступінь належності")
+    plt.title("Функції приналежності для змінної X2")
+    plt.ylim(-0.05, 1.05)
+    plt.grid(True)
+    plt.legend()
+    plt.tight_layout()
+    plt.savefig(output_dir / "mf_X2.png", dpi=150)
+    plt.close()
+
+
 def interactive_prediction(model) -> None:
     """Простий інтерфейс для ручного введення двох вхідних параметрів.
 
@@ -266,10 +411,26 @@ def main():
     fs = build_fs_for_two_inputs(xxT, n_terms=5)
 
     print("Крок 3. Навчання ANFIS-моделі (гібридний режим)...")
-    model = train_anfis_model(fs, xxT, n_epochs=50)
+    model = train_anfis_model(fs, xxT, n_epochs=100)
 
-    print("Крок 4. Побудова візуалізацій (розсіювання та поверхня закону керування)...")
+    # Обчислення RMSE на навчальній вибірці (аналог повідомлення Matlab про training RMSE)
+    X_train = xxT[:, :2]
+    y_train_true = xxT[:, 2]
+    y_train_pred = model.predict(X_train).reshape(-1)
+    rmse = float(np.sqrt(np.mean((y_train_true - y_train_pred) ** 2)))
+    print(f"Мінімальний training RMSE (оцінка на навченій моделі) = {rmse:.6f}")
+
+    # Контрольна точка для порівняння з Matlab: x1 = 5, x2 = 21.4
+    test_point = np.array([[5.0, 21.4]], dtype=float)
+    test_y = model.predict(test_point).reshape(-1)[0]
+    print(f"Контрольна точка (x1=5, x2=21.4): прогнозоване y = {test_y:.6f}")
+
+    print("Крок 4. Побудова візуалізацій (Training data, FIS output, помилка, МФ та поверхня)...")
+    visualize_training_data(xxT, results_dir)
+    visualize_training_vs_fis(model, xxT, results_dir)
+    visualize_training_error(model, results_dir)
     visualize_results(model, xxT, results_dir)
+    visualize_membership_functions(xxT, n_terms=5, output_dir=results_dir)
     print(f"Графіки збережено у каталозі: {results_dir}")
 
     print("Крок 5. Інтерактивна перевірка моделі за довільними значеннями x1 та x2.")
