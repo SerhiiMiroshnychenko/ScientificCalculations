@@ -10,8 +10,8 @@ import re
 # INPUT_CSV  — мінімальний CSV з pgAdmin (dbN.csv) за нашим SQL
 # OUTPUT_CSV — готовий b2b-файл для модулів Odoo
 
-INPUT_CSV = Path(r"db1.csv")
-OUTPUT_CSV = Path(r"db1_for_ml.csv")
+INPUT_CSV = Path(r"db8.csv")
+OUTPUT_CSV = Path(r"db8_for_ml.csv")
 
 
 def load_orders(path: Path) -> pd.DataFrame:

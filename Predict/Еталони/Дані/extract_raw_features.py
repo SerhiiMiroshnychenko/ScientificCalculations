@@ -2,8 +2,8 @@ import pandas as pd
 from pathlib import Path
 
 # Конфігурація шляхів
-INPUT_FILE = Path(r"b2b_for_ml.csv")
-OUTPUT_FILE = Path(r"b2b_raw_only.csv")
+INPUT_FILE = Path(r"db8_for_ml.csv")
+OUTPUT_FILE = Path(r"db8_raw_only.csv")
 
 
 def main():

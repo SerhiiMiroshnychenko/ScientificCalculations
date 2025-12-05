@@ -11,37 +11,13 @@
 
 ## 1. Які поля повинні бути в `b2b.csv`
 
-Фактичний робочий `b2b.csv` (з `файл-для-smart_inventory_automation`) містить 19 колонок:
-
-1. `order_id`
-2. `is_successful`
-3. `create_date`
-4. `partner_id`
-5. `order_amount`
-6. `order_messages`
-7. `order_changes`
-8. `partner_success_rate`
-9. `partner_total_orders`
-10. `partner_order_age_days`
 11. `partner_avg_amount`
 12. `partner_success_avg_amount`
-13. `partner_fail_avg_amount`
-14. `partner_total_messages`
-15. `partner_success_avg_messages`
-16. `partner_fail_avg_messages`
-17. `partner_avg_changes`
-18. `partner_success_avg_changes`
-19. `partner_fail_avg_changes`
-
-Усі інші поля (`day_of_week`, `month`, `product_categories`, `payment_term`, `delivery_method`, `source` тощо) **не входять у робочий b2b‑формат** і не є обов’язковими для модулів.
-
----
-
 ## 2. Мінімальний SQL‑запит у pgAdmin для джерела даних
 
 Мета SQL — зібрати тільки те, що потрібно для побудови цих 19 полів:
 
-- на рівні замовлення: `order_id`, `create_date`, `date_order`, `partner_id`, `amount_total`, `messages_count`, `changes_count`, `state`;
+- на рівні замовлення: `order_id`, `create_date`, `date_order`, `partner_id`, `amount_total`, `messages_count`, `changes_count`, `order_lines`, `state`;
 - на рівні клієнта: `customer_id` (= `partner_id`), `partner_create_date`.
 
 ### 2.1. Мінімальний SQL‑запит
@@ -101,6 +77,14 @@ changes AS (
       ON mtv.mail_message_id = mm.id
     WHERE mm.model = 'sale.order'
     GROUP BY mm.res_id
+),
+lines AS (
+    -- Кількість рядків у замовленні
+    SELECT
+        sol.order_id,
+        COUNT(*) AS lines_count
+    FROM sale_order_line AS sol
+    GROUP BY sol.order_id
 )
 SELECT
     b.order_id                                      AS order_id,
@@ -113,12 +97,14 @@ SELECT
     b.total_amount                                  AS total_amount,
     COALESCE(ch.changes_count, 0)                   AS changes_count,
     COALESCE(msg.messages_count, 0)                 AS messages_count,
+    COALESCE(ln.lines_count, 0)                     AS order_lines,
     b.state                                         AS state,
     b.partner_id                                    AS partner_id
 FROM base AS b
 LEFT JOIN prev_orders       AS po   ON po.order_db_id = b.order_db_id
 LEFT JOIN messages          AS msg  ON msg.res_id = b.order_db_id
-LEFT JOIN changes           AS ch   ON ch.res_id = b.order_db_id;
+LEFT JOIN changes           AS ch   ON ch.res_id = b.order_db_id
+LEFT JOIN lines             AS ln   ON ln.order_id = b.order_db_id;
 ```
 
 ### 2.2. Що дає цей SQL
@@ -134,6 +120,7 @@ LEFT JOIN changes           AS ch   ON ch.res_id = b.order_db_id;
 - `total_amount`
 - `messages_count`
 - `changes_count`
+- `order_lines`
 - `state`
 
 Усе інше (`delivery_method`, `payment_term`, `product_categories` тощо) навмисно опущено.
@@ -183,11 +170,12 @@ LEFT JOIN changes           AS ch   ON ch.res_id = b.order_db_id;
    df["order_amount"] = df["total_amount"].astype(float)
    df["order_messages"] = df.get("messages_count", 0)
    df["order_changes"] = df.get("changes_count", 0)
+   df["order_lines"] = df.get("order_lines", 0)
    ```
 
 Отримаємо базовий набір для кожного замовлення:
 
-- `order_id`, `is_successful`, `create_date`, `partner_id`, `order_amount`, `order_messages`, `order_changes`.
+- `order_id`, `is_successful`, `create_date`, `partner_id`, `order_amount`, `order_messages`, `order_changes`, `order_lines`.
 
 ### 4.2. Агрегати по клієнту `partner_*`
 
@@ -273,6 +261,7 @@ b2b = b2b[[
     "order_amount",
     "order_messages",
     "order_changes",
+    "order_lines",
     "partner_success_rate",
     "partner_total_orders",
     "partner_order_age_days",
