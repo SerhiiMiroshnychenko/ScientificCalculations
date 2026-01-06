@@ -1,0 +1,40 @@
+@startuml
+skinparam defaultTextAlignment center
+skinparam rectangleBorderColor #000000
+skinparam rectangleBackgroundColor #EEEEEE
+skinparam rectangleRoundCorner 5
+skinparam rectangleFontSize 12
+skinparam rectangleFontName "Times New Roman"
+skinparam ArrowColor #000000
+
+rectangle "B2B Order Dataset" as input
+
+rectangle "Stage I: Data Preparation for Analysis" as stage1
+
+rectangle "Stage II: Feature Significance Assessment Methods" as stage2
+
+rectangle "AUC\n(Area Under the Curve)" as auc
+rectangle "MI\n(Mutual Information)" as mi
+rectangle "dCor\n(Distance Correlation)" as dcor
+rectangle "LogReg\n(Logistic Regression)" as logreg
+rectangle "DecTree\n(Decision Tree)" as dectree
+
+rectangle "Rank Aggregation\n(Modified Borda)" as aggregation
+
+rectangle "Consolidated Feature\nSignificance Ranking" as output
+
+input -down-> stage1
+stage1 -down-> stage2
+stage2 -down-> auc
+stage2 -down-> mi
+stage2 -down-> dcor
+stage2 -down-> logreg
+stage2 -down-> dectree
+auc -down-> aggregation
+mi -down-> aggregation
+dcor -down-> aggregation
+logreg -down-> aggregation
+dectree -down-> aggregation
+aggregation -down-> output
+
+@enduml

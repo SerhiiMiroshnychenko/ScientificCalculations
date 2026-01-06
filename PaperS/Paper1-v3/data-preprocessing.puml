@@ -1,0 +1,31 @@
+@startuml
+skinparam defaultTextAlignment center
+skinparam rectangleBorderColor #000000
+skinparam rectangleBackgroundColor #EEEEEE
+skinparam rectangleRoundCorner 5
+skinparam rectangleFontSize 12
+skinparam rectangleFontName "Times New Roman"
+skinparam ArrowColor #000000
+
+rectangle "Input Data Array" as input
+
+rectangle "Stage I: Feature Engineering and Removing Irrelevant Variables" as stage1
+
+rectangle "Stage II: Process Missing Values" as stage2
+
+rectangle "Stage III-a: Transform Temporal Variables" as stage3a
+rectangle "Stage III-b: Process Categorical Variables" as stage3b
+rectangle "Stage III-c: Transform Numerical Variables" as stage3c
+
+rectangle "Prepared Data" as output
+
+input -down-> stage1
+stage1 -down-> stage2
+stage2 -down-> stage3a
+stage2 -down-> stage3b
+stage2 -down-> stage3c
+stage3a -down-> output
+stage3b -down-> output
+stage3c -down-> output
+
+@enduml
