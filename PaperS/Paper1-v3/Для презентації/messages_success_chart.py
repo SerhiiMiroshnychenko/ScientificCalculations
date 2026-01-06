@@ -180,9 +180,9 @@ def _create_messages_success_chart(data):
 
         plt.title(
             f'Success Rate by Messages Count\n(each point represents ~{avg_orders} orders)',
-            pad=20, fontsize=12)
-        plt.xlabel('Messages Count Range', fontsize=10)
-        plt.ylabel('Success Rate (%)', fontsize=10)
+            pad=20, fontsize=14)
+        plt.xlabel('Messages Count Range', fontsize=14)
+        plt.ylabel('Success Rate (%)', fontsize=14)
 
         # Налаштовуємо осі
         plt.ylim(-5, 105)  # Додаємо трохи простору зверху і знизу
@@ -190,11 +190,13 @@ def _create_messages_success_chart(data):
         # Показуємо всі мітки, якщо їх менше 10, інакше кожну другу
         if len(data['ranges']) <= 10:
             plt.xticks(range(len(data['ranges'])), data['ranges'],
-                       rotation=45, ha='right')
+                       rotation=45, ha='right', fontsize=14)
         else:
             plt.xticks(range(len(data['ranges']))[::2],
                        [data['ranges'][i] for i in range(0, len(data['ranges']), 2)],
-                       rotation=45, ha='right')
+                       rotation=45, ha='right', fontsize=14)
+
+        plt.yticks(fontsize=14)
 
         plt.grid(True, linestyle='--', alpha=0.7)
 
