@@ -8,7 +8,7 @@ from datetime import datetime
 from io import StringIO
 
 # Configure Arial font for English labels
-use_font('Arial')
+use_font('Times New Roman')
 mpl.rcParams['pdf.fonttype'] = 42
 mpl.rcParams['ps.fonttype'] = 42
 mpl.rcParams['text.usetex'] = False  # Disable LaTeX
@@ -181,10 +181,10 @@ def _create_changes_success_chart(data):
         avg_orders = sum(counts) // len(counts) if counts else 0
 
         plt.title(
-            f'Success Rate by Changes Count\n(each point represents ~{avg_orders} orders, point size shows relative number in range)',
-            pad=20, fontsize=12)
-        plt.xlabel('Changes Count Range', fontsize=10)
-        plt.ylabel('Success Rate (%)', fontsize=10)
+            f'Success Rate by Changes Count\n(each point represents ~{avg_orders} orders)',
+            pad=20, fontsize=14)
+        plt.xlabel('Changes Count Range', fontsize=14)
+        plt.ylabel('Success Rate (%)', fontsize=14)
 
         # Configure axes
         plt.ylim(-5, 105)  # Add some space at top and bottom
@@ -192,11 +192,13 @@ def _create_changes_success_chart(data):
         # Show all labels if less than 10, otherwise every other
         if len(data['ranges']) <= 10:
             plt.xticks(range(len(data['ranges'])), data['ranges'],
-                       rotation=45, ha='right')
+                       rotation=45, ha='right', fontsize=14)
         else:
             plt.xticks(range(len(data['ranges']))[::2],
                        [data['ranges'][i] for i in range(0, len(data['ranges']), 2)],
-                       rotation=45, ha='right')
+                       rotation=45, ha='right', fontsize=14)
+
+        plt.yticks(fontsize=14)
 
         plt.grid(True, linestyle='--', alpha=0.7)
 
