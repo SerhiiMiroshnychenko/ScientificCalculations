@@ -8,7 +8,7 @@ from datetime import datetime
 from io import StringIO
 
 # Configure Arial font for English labels
-use_font('Arial')
+use_font('Times New Roman')
 mpl.rcParams['pdf.fonttype'] = 42
 mpl.rcParams['ps.fonttype'] = 42
 mpl.rcParams['text.usetex'] = False  # Disable LaTeX
@@ -247,11 +247,12 @@ def _create_discount_success_chart(data):
             size1 = max(120, min(260, c1))
             ax_left.scatter(x[1], r1, s=size1, c=color1, alpha=0.7)
             ax_left.text(x[1], r1 + 3, f"{r1:.1f}%\n(n={c1})", ha='center', va='bottom', fontsize=9)
-            ax_left.set_title('Success Rate: No discount vs With discount', fontsize=12, pad=12)
+            ax_left.set_title('Success Rate: No discount vs With discount', fontsize=14, pad=12)
             ax_left.set_xticks(x)
-            ax_left.set_xticklabels(labels)
+            ax_left.set_xticklabels(labels, fontsize=14)
+            ax_left.tick_params(axis='y', labelsize=14)
             ax_left.set_ylim(-5, 112)
-            ax_left.set_ylabel('Success Rate (%)', fontsize=10)
+            ax_left.set_ylabel('Success Rate (%)', fontsize=14)
             ax_left.grid(True, linestyle='--', alpha=0.3, axis='y')
             # Add vertical line to separate discount/no discount blocks
             ax_left.axvline(x=0.9, color='gray', linestyle='--', alpha=0.5, linewidth=1)
@@ -280,17 +281,18 @@ def _create_discount_success_chart(data):
         ax_right.scatter(x_points, y_points, s=sizes, alpha=0.6, c=colors)
         avg_orders = (sum(counts) // len(counts)) if counts else 0
         ax_right.set_title(
-            f'Success Rate by Discount Amount\n(each point ~{avg_orders} orders; size shows relative count)',
-            fontsize=12, pad=12)
-        ax_right.set_xlabel('Discount Amount Range', fontsize=10)
-        ax_right.set_ylabel('Success Rate (%)', fontsize=10)
+            f'Success Rate by Discount Amount\n(each point ~{avg_orders} orders)',
+            fontsize=14, pad=12)
+        ax_right.set_xlabel('Discount Amount Range', fontsize=14)
+        ax_right.set_ylabel('Success Rate (%)', fontsize=14)
         ax_right.set_ylim(-5, 112)
         if len(ranges) <= 10:
             ax_right.set_xticks(range(len(ranges)))
-            ax_right.set_xticklabels(ranges, rotation=45, ha='right')
+            ax_right.set_xticklabels(ranges, rotation=45, ha='right', fontsize=14)
         else:
             ax_right.set_xticks(range(len(ranges))[::2])
-            ax_right.set_xticklabels([ranges[i] for i in range(0, len(ranges), 2)], rotation=45, ha='right')
+            ax_right.set_xticklabels([ranges[i] for i in range(0, len(ranges), 2)], rotation=45, ha='right', fontsize=14)
+        ax_right.tick_params(axis='y', labelsize=14)
         ax_right.grid(True, linestyle='--', alpha=0.7)
         ax_right.axhline(y=0, color='gray', linestyle='-', alpha=0.3)
         ax_right.axhline(y=50, color='gray', linestyle='--', alpha=0.3)

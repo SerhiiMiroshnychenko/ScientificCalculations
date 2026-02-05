@@ -5,7 +5,7 @@ import csv
 from datetime import datetime
 
 # Configure Arial font for English labels
-use_font('Arial')
+use_font('Times New Roman')
 mpl.rcParams['pdf.fonttype'] = 42
 mpl.rcParams['ps.fonttype'] = 42
 mpl.rcParams['text.usetex'] = False
@@ -127,13 +127,14 @@ def _create_dayofweek_success_chart(data):
 
         plt.title(
             f'Success Rate by Day of Week\n(each point represents ~{avg_orders} orders, point size shows relative number per day)',
-            pad=20, fontsize=12)
-        plt.xlabel('Day of Week', fontsize=10)
-        plt.ylabel('Success Rate (%)', fontsize=10)
+            pad=20, fontsize=14)
+        plt.xlabel('Day of Week', fontsize=14)
+        plt.ylabel('Success Rate (%)', fontsize=14)
 
         plt.ylim(-5, 105)
 
-        plt.xticks(range(len(data['ranges'])), data['ranges'], rotation=0, ha='center')
+        plt.xticks(range(len(data['ranges'])), data['ranges'], rotation=0, ha='center', fontsize=14)
+        plt.yticks(fontsize=14)
 
         plt.grid(True, linestyle='--', alpha=0.7)
         plt.axhline(y=0, color='gray', linestyle='-', alpha=0.3)
