@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Програма практичних робіт | Теплова робота конвертора</title>
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700;900&display=swap" rel="stylesheet">
+    
+    <!-- Підключення MathJax для рендерингу LaTeX -->
+    <script>
+        window.MathJax = {
+            tex: {
+                inlineMath: [['$', '$'], ['\\(', '\\)']],
+                displayMath: [['$$', '$$'], ['\\[', '\\]']],
+                processEscapes: true
+            },
+            options: {
+                enableMenu: false
+            }
+        };
+    </script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+
+    <style>
+        .data-flow-card {
+            background: rgba(255, 255, 255, 0.03);
+            border-left: 3px solid var(--accent-orange);
+            padding: 15px;
+            margin-bottom: 15px;
+            text-align: left;
+        }
+        .data-label {
+            color: var(--accent-orange);
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            font-weight: 700;
+            display: block;
+            margin-bottom: 5px;
+        }
+        .data-content {
+            font-size: 0.95rem;
+            color: var(--text-secondary);
+        }
+        .why-content {
+            font-size: 0.9rem;
+            color: var(--text-muted);
+            margin-top: 10px;
+            font-style: italic;
+        }
+        .grid-2 {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+    </style>
+</head>
+<body>
+
+<nav class="navigation">
+    <div class="nav-progress">
+        <div class="progress-bar" id="progressBar"></div>
+    </div>
+    <div class="nav-controls">
+        <button class="nav-btn" id="prevBtn">←</button>
+        <span class="slide-counter"><span id="currentSlide">1</span> / <span id="totalSlides">11</span></span>
+        <button class="nav-btn" id="nextBtn">→</button>
+    </div>
+</nav>
+
+<div class="slides-container" id="slidesContainer">
+
+    <!-- Слайд 1: Титульний -->
+    <section class="slide active" data-slide="1">
+        <div class="slide-content">
+            <h1 class="animate-in">Теплова робота конвертора</h1>
+            <p class="subtitle animate-in" style="animation-delay: 0.2s;">Програма циклу практичних робіт</p>
+            <p class="author-name animate-in" style="animation-delay: 0.3s;">Мірошниченко Сергій Олександрович</p>
+            <div style="text-align: center;" class="animate-in" style="animation-delay: 0.4s;">
+                <p>Наскрізна математична модель плавки</p>
+                <p style="margin-top: 20px; color: var(--text-muted);">Натисніть <kbd>→</kbd> для перегляду деталей</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Слайд 2: Огляд робіт -->
+    <section class="slide" data-slide="2">
+        <div class="slide-content">
+            <h2>7 Етапів Моделювання</h2>
+            <div class="content-grid">
+                <div class="card animate-in">
+                    <span class="card-num">1</span>
+                    <h3>Матеріальний баланс</h3>
+                    <p>Фундамент моделі: розрахунок мас чавуну, брухту, вапна, сталі та шлаку.</p>
+                </div>
+                <div class="card animate-in" style="animation-delay: 0.1s;">
+                    <span class="card-num">2</span>
+                    <h3>Киснева продувка</h3>
+                    <p>Визначення витрат кисню на окиснення домішок та інтенсивності дуття.</p>
+                </div>
+                <div class="card animate-in" style="animation-delay: 0.2s;">
+                    <span class="card-num">3</span>
+                    <h3>Прихід тепла</h3>
+                    <p>Енергія окиснення елементів ($Si, Mn, P, C, Fe$) та фізичне тепло чавуну.</p>
+                </div>
+                <div class="card animate-in" style="animation-delay: 0.3s;">
+                    <span class="card-num">4</span>
+                    <h3>Витрати тепла</h3>
+                    <p>Фізичне тепло продуктів та енергетичні втрати агрегату.</p>
+                </div>
+                <div class="card animate-in" style="animation-delay: 0.4s;">
+                    <span class="card-num">5</span>
+                    <h3>Охолоджувачі</h3>
+                    <p>Керування температурою: розрахунок брухту або руди для балансування.</p>
+                </div>
+                <div class="card animate-in" style="animation-delay: 0.5s;">
+                    <span class="card-num">6</span>
+                    <h3>Шлаковий режим</h3>
+                    <p>Захист футерівки через $MgO$-насичення та аналіз впливу доломіту.</p>
+                </div>
+                <div class="card animate-in" style="animation-delay: 0.6s;">
+                    <span class="card-num">7</span>
+                    <h3>Енергоефективність</h3>
+                    <p>Оптимізація допалювання $CO$ ($PCR$) для мінімізації витрат чавуну.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Слайд 3: ПР №1 -->
+    <section class="slide" data-slide="3">
+        <div class="slide-content">
+            <h2>ПР №1. Матеріальний баланс</h2>
+            <div class="grid-2">
+                <div class="card animate-in">
+                    <h3>Зміст роботи</h3>
+                    <p>Розрахунок масового співвідношення компонентів шихти для отримання заданої маси сталі.</p>
+                    <ul style="margin: 15px; color: var(--text-secondary); font-size: 0.9rem;">
+                        <li>Окиснення домішок ($Si, Mn, P$)</li>
+                        <li>Потреба у вапні за основністю $B = CaO/SiO_2$</li>
+                        <li>Оцінка виходу придатної сталі</li>
+                    </ul>
+                </div>
+                <div class="animate-in" style="animation-delay: 0.2s;">
+                    <div class="data-flow-card">
+                        <span class="data-label">Передає в ПР №2</span>
+                        <div class="data-content">Маси окиснених елементів ($\Delta m_{Si}, \Delta m_{Mn}, \Delta m_P, \Delta m_C, \Delta m_{Fe}$)</div>
+                        <div class="why-content">Необхідно для розрахунку стехіометричного об'єму кисню.</div>
+                    </div>
+                    <div class="data-flow-card">
+                        <span class="data-label">Передає в ПР №3 та ПР №4</span>
+                        <div class="data-content">Маси шихти ($m_{hm}, m_{scr}, m_{lime}$) та продуктів ($m_{st}, m_{sl}, m_{g}$)</div>
+                        <div class="why-content">База для розрахунку фізичного та хімічного тепла.</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Слайд 4: ПР №2 -->
+    <section class="slide" data-slide="4">
+        <div class="slide-content">
+            <h2>ПР №2. Киснева продувка</h2>
+            <div class="grid-2">
+                <div class="card animate-in">
+                    <h3>Зміст роботи</h3>
+                    <p>Визначення об'єму технічного кисню та часових параметрів продувки.</p>
+                    <ul style="margin: 15px; color: var(--text-secondary); font-size: 0.9rem;">
+                        <li>Врахування чистоти кисню та засвоєння</li>
+                        <li>Розрахунок тривалості за інтенсивністю $I$</li>
+                        <li>Параметри сопла Лаваля (швидкість $w$)</li>
+                    </ul>
+                </div>
+                <div class="animate-in" style="animation-delay: 0.2s;">
+                    <div class="data-flow-card">
+                        <span class="data-label">Вхідні дані</span>
+                        <div class="data-content">Маси окиснених елементів з ПР №1.</div>
+                    </div>
+                    <div class="data-flow-card">
+                        <span class="data-label">Передає в ПР №3</span>
+                        <div class="data-content">Ступінь допалювання вуглецю ($PCR$)</div>
+                        <div class="why-content">Визначає пропорцію між реакціями утворення $CO$ та $CO_2$.</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Слайд 5: ПР №3 -->
+    <section class="slide" data-slide="5">
+        <div class="slide-content">
+            <h2>ПР №3. Прихідна частина балансу</h2>
+            <div class="grid-2">
+                <div class="card animate-in">
+                    <h3>Зміст роботи</h3>
+                    <p>Розрахунок генерації енергії в результаті екзотермічних реакцій.</p>
+                    <ul style="margin: 15px; color: var(--text-secondary); font-size: 0.9rem;">
+                        <li>Фізичне тепло рідкого чавуну</li>
+                        <li>Ентальпії окиснення домішок при 1600°C</li>
+                        <li>Вплив $PCR$ на тепловий вихід</li>
+                    </ul>
+                </div>
+                <div class="animate-in" style="animation-delay: 0.2s;">
+                    <div class="data-flow-card">
+                        <span class="data-label">Вхідні дані</span>
+                        <div class="data-content">Маси з ПР №1 та $PCR$ з ПР №2.</div>
+                    </div>
+                    <div class="data-flow-card">
+                        <span class="data-label">Передає в ПР №5</span>
+                        <div class="data-content">Сумарний прихід тепла $Q_{in}$</div>
+                        <div class="why-content">Перша складова для визначення надлишку енергії.</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Слайд 6: ПР №4 -->
+    <section class="slide" data-slide="6">
+        <div class="slide-content">
+            <h2>ПР №4. Витрати тепла та втрати</h2>
+            <div class="grid-2">
+                <div class="card animate-in">
+                    <h3>Зміст роботи</h3>
+                    <p>Визначення фізичного тепла продуктів та втрат у довкілля.</p>
+                    <ul style="margin: 15px; color: var(--text-secondary); font-size: 0.9rem;">
+                        <li>Ентальпія сталі, шлаку та газів</li>
+                        <li>Втрати через футерівку та випромінювання</li>
+                        <li>Аналіз впливу зносу футерівки</li>
+                    </ul>
+                </div>
+                <div class="animate-in" style="animation-delay: 0.2s;">
+                    <div class="data-flow-card">
+                        <span class="data-label">Вхідні дані</span>
+                        <div class="data-content">Маси продуктів з ПР №1.</div>
+                    </div>
+                    <div class="data-flow-card">
+                        <span class="data-label">Передає в ПР №5</span>
+                        <div class="data-content">Сумарні витрати тепла $Q_{out}$</div>
+                        <div class="why-content">Друга складова для зведення балансу.</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Слайд 7: ПР №5 -->
+    <section class="slide" data-slide="7">
+        <div class="slide-content">
+            <h2>ПР №5. Розрахунок охолоджувачів</h2>
+            <div class="grid-2">
+                <div class="card animate-in">
+                    <h3>Зміст роботи</h3>
+                    <p>Зведення теплового балансу та термостатування плавки.</p>
+                    <ul style="margin: 15px; color: var(--text-secondary); font-size: 0.9rem;">
+                        <li>Виявлення надлишку тепла $\Delta Q$</li>
+                        <li>Розрахунок маси брухту (охолоджуюча здатність)</li>
+                        <li>Порівняння з залізною рудою</li>
+                    </ul>
+                </div>
+                <div class="animate-in" style="animation-delay: 0.2s;">
+                    <div class="data-flow-card">
+                        <span class="data-label">Вхідні дані</span>
+                        <div class="data-content">$Q_{in}$ (ПР №3) та $Q_{out}$ (ПР №4).</div>
+                    </div>
+                    <div class="data-flow-card">
+                        <span class="data-label">Передає в ПР №6</span>
+                        <div class="data-content">Фінальна маса шлаку та температура</div>
+                        <div class="why-content">Для перевірки умов стійкості футерівки.</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Слайд 8: ПР №6 -->
+    <section class="slide" data-slide="8">
+        <div class="slide-content">
+            <h2>ПР №6. Шлаковий режим та $MgO$</h2>
+            <div class="grid-2">
+                <div class="card animate-in">
+                    <h3>Зміст роботи</h3>
+                    <p>Захист футерівки через насичення шлаку оксидом магнію.</p>
+                    <ul style="margin: 15px; color: var(--text-secondary); font-size: 0.9rem;">
+                        <li>Визначення межі насичення $MgO_{sat}$</li>
+                        <li>Розрахунок витрати доломіту</li>
+                        <li>Вплив $MgO$ на в'язкість та тепловий стан</li>
+                    </ul>
+                </div>
+                <div class="animate-in" style="animation-delay: 0.2s;">
+                    <div class="data-flow-card">
+                        <span class="data-label">Вхідні дані</span>
+                        <div class="data-content">Результати розрахунку шлаку з ПР №1 та ПР №5.</div>
+                    </div>
+                    <div class="data-flow-card">
+                        <span class="data-label">Передає в ПР №7</span>
+                        <div class="data-content">Повна модель шихти та балансу</div>
+                        <div class="why-content">База для фінальної оптимізації.</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Слайд 9: ПР №7 -->
+    <section class="slide" data-slide="9">
+        <div class="slide-content">
+            <h2>ПР №7. Аналіз енергоефективності</h2>
+            <div class="grid-2">
+                <div class="card animate-in">
+                    <h3>Зміст роботи</h3>
+                    <p>Сценарне моделювання та оптимізація $PCR$.</p>
+                    <ul style="margin: 15px; color: var(--text-secondary); font-size: 0.9rem;">
+                        <li>Вплив допалювання $CO$ на баланс</li>
+                        <li>Економічна оцінка (економія чавуну)</li>
+                        <li>Межі термодинамічної доцільності</li>
+                    </ul>
+                </div>
+                <div class="animate-in" style="animation-delay: 0.2s;">
+                    <div class="data-flow-card">
+                        <span class="data-label">Вхідні дані</span>
+                        <div class="data-content">Наскрізна модель з ПР №1–6.</div>
+                    </div>
+                    <div class="data-flow-card">
+                        <span class="data-label">Кінцевий результат</span>
+                        <div class="data-content">Оптимізована технологія плавки</div>
+                        <div class="why-content">Дозволяє студенту побачити вплив інженерних рішень на економіку.</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Слайд 10: Наскрізна модель -->
+    <section class="slide" data-slide="10">
+        <div class="slide-content">
+            <h2>Логіка передачі даних</h2>
+            <div class="flow-container" style="gap: 10px;">
+                <div class="flow-item animate-in" style="width: 90%; font-size: 0.9rem;">
+                    <b>ПР1 &rarr; ПР2:</b> Стехіометричні потреби в кисні ($\Delta m_i$)
+                </div>
+                <div class="flow-item animate-in" style="width: 90%; font-size: 0.9rem; animation-delay: 0.1s;">
+                    <b>ПР1, ПР2 &rarr; ПР3:</b> Маси та $PCR$ для розрахунку генерації тепла
+                </div>
+                <div class="flow-item animate-in" style="width: 90%; font-size: 0.9rem; animation-delay: 0.2s;">
+                    <b>ПР1 &rarr; ПР4:</b> Маси продуктів для розрахунку тепловідводу
+                </div>
+                <div class="flow-item animate-in" style="width: 90%; font-size: 0.9rem; animation-delay: 0.3s;">
+                    <b>ПР3, ПР4 &rarr; ПР5:</b> Зведення балансу $\Delta Q$ та вибір охолоджувачів
+                </div>
+                <div class="flow-item animate-in" style="width: 90%; font-size: 0.9rem; animation-delay: 0.4s;">
+                    <b>ПР5 &rarr; ПР6:</b> Умови стійкості футерівки ($MgO$)
+                </div>
+                <div class="flow-item animate-in" style="width: 90%; font-size: 0.9rem; animation-delay: 0.5s;">
+                    <b>ПР1-6 &rarr; ПР7:</b> Чутливість моделі до змін технології
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Слайд 11: Висновки -->
+    <section class="slide" data-slide="11">
+        <div class="slide-content" style="text-align: center;">
+            <h1 class="animate-in">Наскрізна модель готова</h1>
+            <p class="subtitle animate-in" style="animation-delay: 0.2s;">Від мас елементів до економічної ефективності</p>
+            <div class="card animate-in" style="display: block; max-width: 600px; margin: 30px auto; animation-delay: 0.4s;">
+                <p>Курс забезпечує розуміння <b>фізики</b> та <b>економіки</b> теплових процесів.</p>
+            </div>
+
+            <div style="text-align: center; margin-top: 60px;">
+                <div class="restart-container animate-in" style="animation-delay: 0.6s;">
+                    <div class="fire-wrapper" id="fireEffect">
+                        <div class="flame" style="left: 5%; animation-delay: 0.1s; width: 50px;"></div>
+                        <div class="flame" style="left: 15%; animation-delay: 0.4s;"></div>
+                        <div class="flame" style="left: 25%; animation-delay: 0.2s; width: 60px;"></div>
+                        <div class="flame" style="left: 35%; animation-delay: 0.6s;"></div>
+                        <div class="flame" style="left: 45%; animation-delay: 0.1s; width: 45px;"></div>
+                        <div class="flame" style="left: 55%; animation-delay: 0.3s;"></div>
+                        <div class="flame" style="left: 65%; animation-delay: 0.5s; width: 55px;"></div>
+                        <div class="flame" style="left: 75%; animation-delay: 0.2s;"></div>
+                        <div class="flame" style="left: 85%; animation-delay: 0.7s; width: 40px;"></div>
+                        <div class="flame" style="left: 95%; animation-delay: 0.4s;"></div>
+                        <!-- Другий шар для густини -->
+                        <div class="flame" style="left: 10%; animation-delay: 0.9s; animation-duration: 1.5s;"></div>
+                        <div class="flame" style="left: 30%; animation-delay: 1.2s; animation-duration: 2s;"></div>
+                        <div class="flame" style="left: 50%; animation-delay: 0.8s; animation-duration: 1.7s;"></div>
+                        <div class="flame" style="left: 70%; animation-delay: 1.1s; animation-duration: 1.4s;"></div>
+                        <div class="flame" style="left: 90%; animation-delay: 1.3s; animation-duration: 1.9s;"></div>
+                    </div>
+                    <button class="restart-btn" id="restartBtn">Початок</button>
+                </div>
+            </div>
+        </div>
+    </section>
+
+</div>
+
+<div class="keyboard-hints">
+    <span><kbd>←</kbd> <kbd>→</kbd> навігація</span>
+    <span><kbd>Space</kbd> вперед</span>
+</div>
+
+<script src="script.js"></script>
+</body>
+</html>
