@@ -1,0 +1,359 @@
+:root {
+    --bg-primary: #121212;
+    --bg-secondary: #1e1e1e;
+    --bg-tertiary: #2d2d2d;
+    --text-primary: #ffffff;
+    --text-secondary: #b0b0b0;
+    --text-muted: #707070;
+
+    /* Акцентні кольори "вогню та сталі" */
+    --accent-orange: #ff6f00;
+    --accent-red: #d32f2f;
+    --accent-blue: #1976d2; /* Кисень */
+    --accent-grey: #9e9e9e; /* Сталь */
+
+    --gradient-fire: linear-gradient(135deg, #ff6f00 0%, #d32f2f 100%);
+    --gradient-dark: linear-gradient(180deg, #121212 0%, #1e1e1e 100%);
+
+    --shadow-soft: 0 4px 20px rgba(0, 0, 0, 0.5);
+    --shadow-glow: 0 0 20px rgba(255, 111, 0, 0.3);
+
+    --transition-medium: 0.4s ease;
+    --transition-slow: 0.6s ease;
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Montserrat', sans-serif;
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    min-height: 100vh;
+    overflow: hidden;
+}
+
+/* Навігація */
+.navigation {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 1000;
+    padding: 15px 30px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: rgba(18, 18, 18, 0.9);
+    backdrop-filter: blur(10px);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.nav-progress {
+    flex: 1;
+    height: 4px;
+    background: var(--bg-tertiary);
+    border-radius: 2px;
+    margin-right: 30px;
+    overflow: hidden;
+}
+
+.progress-bar {
+    height: 100%;
+    background: var(--gradient-fire);
+    width: 0%;
+    transition: width var(--transition-medium);
+}
+
+.nav-controls {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.nav-btn {
+    width: 40px;
+    height: 40px;
+    border: none;
+    border-radius: 8px;
+    background: var(--bg-tertiary);
+    color: var(--text-primary);
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.nav-btn:hover:not(:disabled) {
+    background: var(--accent-orange);
+    transform: scale(1.05);
+}
+
+.slide-counter {
+    font-weight: 600;
+    color: var(--text-secondary);
+}
+
+/* Слайди */
+.slides-container {
+    position: relative;
+    width: 100%;
+    height: 100vh;
+}
+
+.slide {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 100px 60px 60px;
+    opacity: 0;
+    visibility: hidden;
+    transform: translateX(50px);
+    transition: all var(--transition-slow);
+}
+
+.slide.active {
+    opacity: 1;
+    visibility: visible;
+    transform: translateX(0);
+}
+
+.slide.exit {
+    opacity: 0;
+    transform: translateX(-50px);
+}
+
+.slide-content {
+    max-width: 1100px;
+    width: 100%;
+}
+
+h1 {
+    font-size: 3.5rem;
+    font-weight: 900;
+    text-transform: uppercase;
+    background: var(--gradient-fire);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    margin-bottom: 20px;
+    text-align: center;
+}
+
+h2 {
+    font-size: 2.2rem;
+    margin-bottom: 30px;
+    border-left: 5px solid var(--accent-orange);
+    padding-left: 20px;
+}
+
+.subtitle {
+    font-size: 1.5rem;
+    color: var(--text-secondary);
+    text-align: center;
+    margin-bottom: 20px;
+}
+
+.author-name {
+    font-size: 1.1rem;
+    color: var(--accent-orange);
+    text-align: center;
+    margin-bottom: 40px;
+    font-weight: 600;
+    letter-spacing: 1px;
+}
+
+/* Стилі для кнопки перезапуску та вогню */
+.restart-container {
+    position: relative;
+    display: inline-block;
+    margin-top: 50px;
+}
+
+.restart-btn {
+    position: relative;
+    padding: 15px 40px;
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: white;
+    background: var(--bg-tertiary);
+    border: 2px solid var(--accent-orange);
+    border-radius: 50px;
+    cursor: pointer;
+    z-index: 10;
+    transition: all 0.3s;
+    text-transform: uppercase;
+}
+
+.restart-btn:hover {
+    background: var(--accent-orange);
+    box-shadow: 0 0 30px rgba(255, 111, 0, 0.5);
+}
+
+/* Ефект полум'я - посилений */
+.fire-wrapper {
+    position: absolute;
+    bottom: -10px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 140%;
+    height: 300px; /* Значно вище */
+    pointer-events: none;
+    display: none;
+    z-index: 1;
+}
+
+.fire-wrapper.active {
+    display: block;
+}
+
+/* Додаткове сяйво під кнопкою */
+.fire-wrapper.active::before {
+    content: '';
+    position: absolute;
+    bottom: 40px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 80%;
+    height: 40px;
+    background: var(--accent-orange);
+    filter: blur(30px);
+    opacity: 0.6;
+    animation: glow 1s infinite alternate;
+}
+
+@keyframes glow {
+    from { opacity: 0.4; }
+    to { opacity: 0.8; }
+}
+
+.flame {
+    position: absolute;
+    bottom: 40px;
+    width: 40px; /* Збільшено розмір */
+    height: 40px;
+    background: var(--accent-orange);
+    border-radius: 50% 50% 20% 80%;
+    filter: blur(8px); /* Більше розмиття для м'якості */
+    animation: burn 1.8s infinite;
+    opacity: 0;
+}
+
+@keyframes burn {
+    0% { 
+        transform: translateY(0) scale(1) rotate(45deg); 
+        opacity: 0; 
+        background: #ffcf33; 
+    }
+    20% {
+        opacity: 1;
+    }
+    50% { 
+        transform: translateY(-120px) scale(2.5) rotate(45deg); /* Сильніше підняття та збільшення */
+        opacity: 0.7; 
+        background: #ff6f00; 
+    }
+    80% {
+        opacity: 0.3;
+    }
+    100% { 
+        transform: translateY(-250px) scale(0.5) rotate(45deg); 
+        opacity: 0; 
+        background: #d32f2f; 
+    }
+}
+
+/* Картки */
+.content-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 25px;
+}
+
+.card {
+    background: var(--bg-secondary);
+    padding: 25px;
+    border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    transition: transform 0.3s;
+}
+
+.card:hover {
+    transform: translateY(-5px);
+    border-color: var(--accent-orange);
+    box-shadow: var(--shadow-glow);
+}
+
+.card h3 {
+    color: var(--accent-orange);
+    margin-bottom: 15px;
+    font-size: 1.2rem;
+}
+
+.card p {
+    color: var(--text-secondary);
+    line-height: 1.6;
+}
+
+.card-num {
+    font-size: 2rem;
+    font-weight: 900;
+    color: rgba(255, 255, 255, 0.1);
+    float: right;
+}
+
+/* Схема зв'язків */
+.flow-container {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    align-items: center;
+}
+
+.flow-item {
+    background: var(--bg-tertiary);
+    padding: 15px 25px;
+    border-radius: 30px;
+    border: 2px solid var(--accent-orange);
+    position: relative;
+    width: 80%;
+    text-align: center;
+}
+
+.flow-arrow {
+    font-size: 1.5rem;
+    color: var(--accent-orange);
+}
+
+/* Анімації */
+.animate-in {
+    animation: fadeInUp 0.6s ease forwards;
+}
+
+@keyframes fadeInUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.keyboard-hints {
+    position: fixed;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    color: var(--text-muted);
+    font-size: 0.8rem;
+    display: flex;
+    gap: 20px;
+}
+
+kbd {
+    background: var(--bg-tertiary);
+    padding: 2px 6px;
+    border-radius: 4px;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
