@@ -74,7 +74,7 @@ Results
 Upon applying the aforementioned methodology to the analyzed dataset, we derived feature importance metrics for each selected method (see Table 1). Subsequently, we constructed a heatmap depicting the relative significance of features across these methods (see Fig. 8), where <u>the numbers in the cells correspond to the ranks assigned by the individual methods, “Average Rank” denotes the mean of these method-specific ranks, and “Overall Rank” represents the final aggregated ordering</u> (ties in “Average Rank” share the same overall rank).
 
 Table 1. Feature Importance Scores by Evaluation Method
-Feature	AUC	MI	dCor	LogReg	DecTree
+Technical Feature Name	AUC	MI	dCor	LogReg	DecTree
 order_messages	0.7708	0.1323	0.4512	2.7226	0.41
 order_amount	0.5537	0.1077	0.2287	2.8973	0.1506
 partner_success_rate	0.6952	0.0604	0.3834	0.906	0.1474
