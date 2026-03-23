@@ -78,7 +78,7 @@ if (restartBtn && fireEffect) {
         fireEffect.classList.add('active');
         
         // Змінюємо текст кнопки для фінального акценту
-        restartBtn.textContent = "Курс розпочато!";
+        restartBtn.textContent = "Розпочато";
         restartBtn.style.borderColor = "#ffcf33";
     });
 }
