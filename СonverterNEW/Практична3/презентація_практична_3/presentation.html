@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="uk">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ПР №3. Прихідна частина теплового балансу | Презентація</title>
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700;900&display=swap" rel="stylesheet">
+    <script>
+        window.MathJax = {
+            tex: {
+                inlineMath: [['$', '$'], ['\\(', '\\)']],
+                displayMath: [['$$', '$$'], ['\\[', '\\]']],
+                processEscapes: true
+            },
+            options: {
+                enableMenu: false
+            }
+        };
+    </script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+</head>
+
+<body>
+
+    <nav class="navigation">
+        <div class="nav-progress">
+            <div class="progress-bar" id="progressBar"></div>
+        </div>
+        <div class="nav-controls">
+            <button class="nav-btn" id="prevBtn">←</button>
+            <span class="slide-counter"><span id="currentSlide">1</span> / <span id="totalSlides">11</span></span>
+            <button class="nav-btn" id="nextBtn">→</button>
+        </div>
+    </nav>
+
+    <div class="slides-container" id="slidesContainer">
+
+        <!-- Слайд 1: Титульний -->
+        <section class="slide active" data-slide="1">
+            <div class="slide-content">
+                <h1 class="animate-in">Практична робота №3</h1>
+                <p class="subtitle animate-in" style="animation-delay: 0.2s; font-size: 1.8rem; color: var(--accent-orange);">Прихідна частина теплового балансу конвертера</p>
+                <p class="author-name animate-in" style="animation-delay: 0.3s;">Мірошниченко Сергій Олександрович</p>
+                <div style="text-align: center; margin-top: 40px;" class="animate-in" style="animation-delay: 0.4s;">
+                    <p style="font-size: 1.2rem; max-width: 800px; margin: 0 auto; line-height: 1.6;">
+                        Оцінка енергетичного потенціалу киснево-конвертерної плавки шляхом структурування та аналізу джерел надходження тепла.
+                    </p>
+                    <p style="margin-top: 40px; color: var(--text-muted);">Натисніть <kbd>→</kbd></p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Слайд 2: Мета та сутність автогенного процесу -->
+        <section class="slide" data-slide="2">
+            <div class="slide-content">
+                <h2>Специфіка енергозабезпечення</h2>
+                <div class="grid-2">
+                    <div class="card animate-in">
+                        <h3 style="border-bottom: 2px solid var(--accent-orange); padding-bottom: 10px; margin-bottom: 15px;">Автогенний режим плавки</h3>
+                        <p style="font-size: 1.1rem; line-height: 1.7;">Киснево-конвертерний процес відбувається без застосування зовнішніх джерел теплової енергії (органічного палива чи електроенергії). Розплавлення шихти та нагрів сталі до робочих температур забезпечується виключно внутрішнім енергетичним потенціалом компонентів.</p>
+                    </div>
+                    <div class="card animate-in" style="animation-delay: 0.2s;">
+                        <h3 style="border-bottom: 2px solid var(--accent-blue); padding-bottom: 10px; margin-bottom: 15px;">Завдання дослідження</h3>
+                        <p style="font-size: 1.1rem; line-height: 1.7;">Визначити загальну кількість тепла, яка надходить в агрегат під час плавки ($Q_{in}$), та проаналізувати частковий внесок кожного технологічного фактора у формування цього теплового балансу.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Слайд 3: Базові джерела тепла -->
+        <section class="slide" data-slide="3">
+            <div class="slide-content">
+                <h2>Фундаментальні складові приходу тепла</h2>
+                <div class="grid-2" style="margin-top: 40px;">
+                    <div class="card animate-in" style="text-align: left; border-left: 4px solid var(--accent-orange);">
+                        <h3 style="color: var(--accent-orange); font-size: 1.4rem;">$Q_{phys}$ — Фізичне тепло</h3>
+                        <p style="margin-top: 15px; font-size: 1.1rem;">Ентальпія попередньо нагрітого компонентного складу. Ключовий носій — рідкий чавун, що зберігає тепло доменного процесу. Залежить переважно від початкової температури розплаву.</p>
+                    </div>
+                    <div class="card animate-in" style="animation-delay: 0.2s; text-align: left; border-left: 4px solid var(--accent-red);">
+                        <h3 style="color: var(--accent-red); font-size: 1.4rem;">$Q_{chem}$ — Хімічне тепло</h3>
+                        <p style="margin-top: 15px; font-size: 1.1rem;">Теплова енергія, що генерується внаслідок протікання інтенсивних екзотермічних реакцій окиснення домішок ($Si$, $Mn$, $P$, $C$, $Fe$) у зоні взаємодії металу з кисневим струменем.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Слайд 4: Деталізація Фізичного тепла -->
+        <section class="slide" data-slide="4">
+            <div class="slide-content">
+                <h2>Аналіз фізичної складової ($Q_{phys}$)</h2>
+                
+                <div class="card animate-in">
+                    <p style="font-size: 1.1rem; line-height: 1.6; margin-bottom: 20px;">
+                        Фізичне тепло рідкого чавуну формує базис енергетичного балансу, становлячи <b>50–60%</b> від загального приходу енергії під час плавки. Його обсяг прямо пропорційний масі чавуну та його питомій теплоємності при робочій температурі заливки (зазвичай у межах $1300–1400$ °C).
+                    </p>
+                    
+                    <div style="background: rgba(255,111,0,0.05); padding: 20px; border-radius: 8px; border-left: 4px solid var(--accent-orange); margin-top: 20px;">
+                        <h3 style="color: var(--accent-orange); margin-bottom: 10px; font-size: 1.2rem;">Технологічне значення:</h3>
+                        <p style="font-size: 1.05rem;">Мінімізація теплових втрат на етапі транспортування чавуну (від випуску з домни до заливки в конвертер) є критично важливою вимогою для збереження високого показника $Q_{phys}$.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Слайд 5: Деталізація Хімічного тепла -->
+        <section class="slide" data-slide="5">
+            <div class="slide-content">
+                <h2>Аналіз хімічної складової ($Q_{chem}$)</h2>
+                
+                <div class="card animate-in">
+                    <p style="font-size: 1.1rem; line-height: 1.6;">
+                        Вдування технічно чистого кисню ініціює каскад окисних процесів. Хімічне тепло розраховується як сума теплових ефектів кожної реакції:
+                    </p>
+                    <div style="text-align: center; margin: 30px 0; font-size: 1.5rem; color: var(--text-primary); background: var(--bg-tertiary); padding: 15px; border-radius: 8px;">
+                        $Q_{chem} = Q_{Si} + Q_{Mn} + Q_{P} + Q_{C} + Q_{Fe}$
+                    </div>
+                    <p style="font-size: 1.1rem; line-height: 1.6;">
+                        Кількість виділеного тепла для кожного елемента визначається його <b>масою, що окиснилася</b> (дані з ПР №1), помноженою на відповідний <b>питомий тепловий ефект реакції</b> (стала величина).
+                    </p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Слайд 6: Кремній - головний теплоносій -->
+        <section class="slide" data-slide="6">
+            <div class="slide-content">
+                <h2>Роль Кремнію ($Si$) у формуванні тепла</h2>
+                <div class="grid-2">
+                    <div class="card animate-in">
+                        <h3 style="color: var(--accent-orange); margin-bottom: 15px;">Основний хімічний теплоносій</h3>
+                        <p style="font-size: 1.1rem; line-height: 1.6;">Незважаючи на відносно низьку концентрацію в чавуні (менше $1\%$), кремній має аномально високий питомий тепловий ефект окиснення — близько <b>$32.1$ МДж/кг</b>.</p>
+                    </div>
+                    
+                    <div class="card animate-in" style="animation-delay: 0.2s; background: rgba(255, 111, 0, 0.05); border-color: var(--accent-orange);">
+                        <h3 style="margin-bottom: 15px; color: var(--text-primary);">Енергетична щільність</h3>
+                        <p style="font-size: 1.1rem; line-height: 1.6; margin-bottom: 15px;">Окиснення одного кілограма кремнію продукує майже <b>в 3.5 рази більше енергії</b>, ніж окиснення кілограма вуглецю до $CO$. Саме тому висококременисті чавуни здатні розплавити більшу кількість металобрухту.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Слайд 7: Вуглець та контроль процесу -->
+        <section class="slide" data-slide="7">
+            <div class="slide-content">
+                <h2>Вуглець ($C$) та вторинне допалювання</h2>
+                <div class="card animate-in">
+                    <p style="font-size: 1.1rem; line-height: 1.6; margin-bottom: 20px;">
+                        Вуглець є наймасовішою домішкою (близько $4.5\%$). Його первинне окиснення генерує $CO$ з відносно помірним виділенням тепла ($9.2$ МДж/кг).
+                    </p>
+                    
+                    <div style="background: rgba(25,118,210,0.1); padding: 20px; border-radius: 8px; border: 1px dashed var(--accent-blue);">
+                        <h3 style="color: var(--accent-blue); margin-bottom: 10px; font-size: 1.2rem;">Показник вторинного допалювання ($PCR$)</h3>
+                        <p style="font-size: 1.1rem; line-height: 1.6;">
+                            Якщо технологічні умови дозволяють допалити $CO$ до $CO_2$ безпосередньо над ванною, виділяється додаткова теплова енергія ($32.7$ МДж/кг). Керування параметром $PCR$ (дані з ПР №2) дозволяє технологічно регулювати сумарний прихід тепла без зміни складу чавуну.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Слайд 8: Алгоритм та структура розрахунку -->
+        <section class="slide" data-slide="8">
+            <div class="slide-content">
+                <h2>Структура аналітичного розрахунку</h2>
+                <h3 style="text-align: center; margin-bottom: 30px; color: var(--text-secondary); font-size: 1.1rem;">Послідовність виконання обчислень:</h3>
+                
+                <div class="flow-container animate-in">
+                    <div class="flow-item" style="border-color: var(--text-muted); padding: 15px;">
+                        <b>I. Оцінка фізичного тепла ($Q_{phys}$)</b><br>
+                        <span style="font-size: 0.9rem; color: var(--text-secondary);">Визначення ентальпії за заданою температурою $t_{hm}$</span>
+                    </div>
+                    <div class="flow-arrow">&darr;</div>
+                    <div class="flow-item" style="border-color: var(--accent-orange); padding: 15px;">
+                        <b>II. Оцінка екзотерміки домішок ($Q_{Si}, Q_{Mn}, Q_P, Q_{Fe}$)</b><br>
+                        <span style="font-size: 0.9rem; color: var(--text-secondary);">Обчислення на базі мас окиснених елементів з ПР №1</span>
+                    </div>
+                    <div class="flow-arrow">&darr;</div>
+                    <div class="flow-item" style="border-color: var(--accent-blue); padding: 15px;">
+                        <b>III. Оцінка тепла окиснення вуглецю ($Q_C$)</b><br>
+                        <span style="font-size: 0.9rem; color: var(--text-secondary);">Обчислення з урахуванням ступеня допалювання $PCR$ з ПР №2</span>
+                    </div>
+                    <div class="flow-arrow">&darr;</div>
+                    <div class="flow-item" style="background: var(--bg-secondary); border: 2px solid var(--accent-red); font-size: 1.1rem; padding: 15px;">
+                        <b>IV. Сумарний прихід ($Q_{in} = Q_{phys} + Q_{chem}$)</b>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Слайд 9: Аналіз пропорцій приходу -->
+        <section class="slide" data-slide="9">
+            <div class="slide-content">
+                <h2>Аналіз енергетичних пропорцій (Варіант 20)</h2>
+                <div class="card animate-in" style="text-align: center;">
+                    <h3 style="margin-bottom: 25px; color: var(--text-primary);">Типова структура приходу тепла</h3>
+                    
+                    <div style="display: flex; height: 50px; border-radius: 6px; overflow: hidden; margin-bottom: 20px;">
+                        <div style="width: 50%; background: #2e7d32; display: flex; align-items: center; justify-content: center; color: white; font-size:1rem;">
+                            $Q_{phys}$ (Чавун) ~50%
+                        </div>
+                        <div style="width: 20%; background: var(--accent-orange); display: flex; align-items: center; justify-content: center; color: white; font-size:1rem;">
+                            $Q_{Si}$ (Кремній) ~20%
+                        </div>
+                        <div style="width: 25%; background: #c62828; display: flex; align-items: center; justify-content: center; color: white; font-size:1rem;">
+                            $Q_{C}$ (Вуглець) ~24%
+                        </div>
+                        <div style="width: 5%; background: var(--accent-blue); display: flex; align-items: center; justify-content: center; color: white; font-size:0.8rem;">
+                            Інш.
+                        </div>
+                    </div>
+                    <p style="text-align: left; color: var(--text-secondary); font-size: 1.05rem; line-height: 1.6; padding-top: 15px; border-top: 1px solid var(--bg-tertiary);">
+                        Загальний обсяг теплової енергії на $1000$ кг шихти перевищує <b>$1700$ МДж</b>. Наочно демонструється ключова роль кремнію у хімічній складовій, де його внесок майже дорівнює внеску значно масивнішого вуглецю.
+                    </p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Слайд 10: Технологічне значення балансу -->
+        <section class="slide" data-slide="10">
+            <div class="slide-content">
+                <h2>Технологічне значення розрахунку $Q_{in}$</h2>
+                <div class="grid-2">
+                    <div class="card animate-in" style="border-left: 4px solid var(--text-muted);">
+                        <h3 style="margin-bottom: 15px;">Охолодження ванни</h3>
+                        <p style="font-size: 1.05rem; line-height: 1.6;">Амплітуда виділеної енергії значно перевищує потреби для розплавлення чавуну. Надлишкове тепло повинно компенсуватися додаванням охолоджувачів для підтримки цільової температури $1600-1650$ °C.</p>
+                    </div>
+                    <div class="card animate-in" style="animation-delay: 0.2s; background: rgba(255, 111, 0, 0.05); border-left: 4px solid var(--accent-orange);">
+                        <h3 style="margin-bottom: 15px;">Економічна ефективність</h3>
+                        <p style="font-size: 1.05rem; line-height: 1.6;">Основним охолоджувачем виступає сталевий брухт. Високе значення $Q_{in}$ дозволяє збільшити масову частку брухту в шихті, що суттєво знижує загальну собівартість сталі (брухт дешевший за рідкий чавун).</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Слайд 11: Висновки / Фінал -->
+        <section class="slide" data-slide="11">
+            <div class="slide-content" style="text-align: center;">
+                <h1 class="animate-in" style="font-size: 2.8rem;">Початок виконання розрахунків</h1>
+                <p class="subtitle animate-in" style="animation-delay: 0.2s; font-size: 1.2rem;">Інтеграція даних та автоматизація обчислень</p>
+
+                <div class="card animate-in" style="display: block; max-width: 800px; margin: 30px auto; animation-delay: 0.4s; font-size: 1.1rem; line-height: 1.6;">
+                    Для обчислень вашого варіанта використайте вхідний масив даних з ПР №1 та показник $PCR$ з ПР №2. Точно виконаний розрахунок дозволить вам оцінити енергетичний потенціал плавки та звести загальний прихід тепла.
+                </div>
+
+                <div style="text-align: center; margin-top: 60px;">
+                    <div class="restart-container animate-in" style="animation-delay: 0.6s;">
+                        <div class="fire-wrapper" id="fireEffect">
+                            <div class="flame" style="left: 5%; animation-delay: 0.1s; width: 50px;"></div>
+                            <div class="flame" style="left: 15%; animation-delay: 0.4s;"></div>
+                            <div class="flame" style="left: 25%; animation-delay: 0.2s; width: 60px;"></div>
+                            <div class="flame" style="left: 35%; animation-delay: 0.6s;"></div>
+                            <div class="flame" style="left: 45%; animation-delay: 0.1s; width: 45px;"></div>
+                            <div class="flame" style="left: 55%; animation-delay: 0.3s;"></div>
+                            <div class="flame" style="left: 65%; animation-delay: 0.5s; width: 55px;"></div>
+                            <div class="flame" style="left: 75%; animation-delay: 0.2s;"></div>
+                            <div class="flame" style="left: 85%; animation-delay: 0.7s; width: 40px;"></div>
+                            <div class="flame" style="left: 95%; animation-delay: 0.4s;"></div>
+                            <div class="flame" style="left: 10%; animation-delay: 0.9s; animation-duration: 1.5s;"></div>
+                            <div class="flame" style="left: 30%; animation-delay: 1.2s; animation-duration: 2s;"></div>
+                            <div class="flame" style="left: 50%; animation-delay: 0.8s; animation-duration: 1.7s;"></div>
+                            <div class="flame" style="left: 70%; animation-delay: 1.1s; animation-duration: 1.4s;"></div>
+                            <div class="flame" style="left: 90%; animation-delay: 1.3s; animation-duration: 1.9s;"></div>
+                        </div>
+                        <button class="restart-btn" id="restartBtn">Перейти до практичного завдання</button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </div>
+
+    <div class="keyboard-hints">
+        <span><kbd>←</kbd> <kbd>→</kbd> навігація</span>
+        <span><kbd>Space</kbd> вперед</span>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+
+</html>

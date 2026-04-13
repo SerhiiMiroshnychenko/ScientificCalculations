@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="uk">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ПР №2. Кисневий баланс | Презентація</title>
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700;900&display=swap" rel="stylesheet">
+    <script>
+        window.MathJax = {
+            tex: {
+                inlineMath: [['$', '$'], ['\\(', '\\)']],
+                displayMath: [['$$', '$$'], ['\\[', '\\]']],
+                processEscapes: true
+            },
+            options: {
+                enableMenu: false
+            }
+        };
+    </script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+</head>
+
+<body>
+
+    <nav class="navigation">
+        <div class="nav-progress">
+            <div class="progress-bar" id="progressBar"></div>
+        </div>
+        <div class="nav-controls">
+            <button class="nav-btn" id="prevBtn">←</button>
+            <span class="slide-counter"><span id="currentSlide">1</span> / <span id="totalSlides">11</span></span>
+            <button class="nav-btn" id="nextBtn">→</button>
+        </div>
+    </nav>
+
+    <div class="slides-container" id="slidesContainer">
+
+        <!-- Слайд 1: Титульний -->
+        <section class="slide active" data-slide="1">
+            <div class="slide-content">
+                <h1 class="animate-in">Практична робота №2</h1>
+                <p class="subtitle animate-in" style="animation-delay: 0.2s; font-size: 1.8rem; color: var(--accent-orange);">Кисневий баланс плавки та розрахунок режиму продувки</p>
+                <p class="author-name animate-in" style="animation-delay: 0.3s;">Мірошниченко Сергій Олександрович</p>
+                <div style="text-align: center; margin-top: 40px;" class="animate-in" style="animation-delay: 0.4s;">
+                    <p style="font-size: 1.2rem; max-width: 800px; margin: 0 auto; line-height: 1.6;">
+                        Побудова статичної моделі визначення витрати технічного кисню на основі параметрів матеріального балансу.
+                    </p>
+                    <p style="margin-top: 40px; color: var(--text-muted);">Натисніть <kbd>→</kbd></p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Слайд 2: Мета розрахунку -->
+        <section class="slide" data-slide="2">
+            <div class="slide-content">
+                <h2>Метричні цілі дослідження</h2>
+                <div class="grid-2">
+                    <div class="card animate-in">
+                        <h3 style="border-bottom: 2px solid var(--accent-blue); padding-bottom: 10px; margin-bottom: 15px;">Кількісні параметри</h3>
+                        <p style="font-size: 1.1rem; line-height: 1.7;">Визначення теоретичного (відповідно до стехіометрії реакцій) та фактичного (з урахуванням засвоєння та чистоти) обсягів кисню, необхідних для рафінування металу.</p>
+                    </div>
+                    <div class="card animate-in" style="animation-delay: 0.2s;">
+                        <h3 style="border-bottom: 2px solid var(--accent-orange); padding-bottom: 10px; margin-bottom: 15px;">Часові показники</h3>
+                        <p style="font-size: 1.1rem; line-height: 1.7;">Оцінка тривалості операції продування плавки на основі заданої інтенсивності подачі дуття. Встановлення базових питомих техніко-економічних витрат реагенту.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Слайд 3: Вхідні дані -->
+        <section class="slide" data-slide="3">
+            <div class="slide-content">
+                <h2>Фундамент моделювання (Вхідні масиви)</h2>
+                <div class="grid-3" style="margin-top: 40px;">
+                    <div class="card animate-in">
+                        <h3 style="color: var(--text-primary); margin-bottom: 15px;">Матеріальний баланс</h3>
+                        <p style="font-size: 1rem; line-height: 1.5;">Маси окиснених домішок ($\Delta m_i$) та втрати заліза, обчислені в ПР №1. Це основа для стехіометричних розрахунків.</p>
+                    </div>
+                    <div class="card animate-in" style="animation-delay: 0.1s;">
+                        <h3 style="color: var(--text-primary); margin-bottom: 15px;">Режимні індикатори</h3>
+                        <p style="font-size: 1rem; line-height: 1.5;">Ступінь допалювання монооксиду вуглецю ($PCR$) та питома інтенсивність дуття ($i_{sp}$).</p>
+                    </div>
+                    <div class="card animate-in" style="animation-delay: 0.2s;">
+                        <h3 style="color: var(--text-primary); margin-bottom: 15px;">Якість дуття</h3>
+                        <p style="font-size: 1rem; line-height: 1.5;">Концентрація $O_2$ у технічному газі (чистота) та експлуатаційний коефіцієнт засвоєння газу металургійною ванною.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Слайд 4: Блок 1. Кисень на домішки -->
+        <section class="slide" data-slide="4">
+            <div class="slide-content">
+                <h2>Аналіз потреб (Стехіометрія окиснення)</h2>
+                
+                <div class="card animate-in" style="border-left: 4px solid var(--accent-blue);">
+                    <p style="font-size: 1.1rem; line-height: 1.6;">
+                        Кисень, що інжектується в ванну, витрачається на окиснення домішок ($Si$, $Mn$, $P$) для формування рафінувального шлаку та окиснення частини заліза ($Fe$).
+                    </p>
+                    <div style="background: rgba(25,118,210,0.1); padding: 15px; border-radius: 8px; margin-top: 20px;">
+                        <p style="font-size: 1.05rem; margin-bottom: 10px;">Теоретичний об'єм пропорційний масі елемента згідно з хімічними рівняннями:</p>
+                        <ul style="list-style-type: none; font-size: 1.1rem; line-height: 1.8; margin-left: 20px; color: var(--text-primary);">
+                            <li>• <b>Кремній:</b> $Si + O_2 \to SiO_2$</li>
+                            <li>• <b>Марганець:</b> $Mn + 0.5O_2 \to MnO$</li>
+                            <li>• <b>Фосфор:</b> $2P + 2.5O_2 \to P_2O_5$</li>
+                            <li>• <b>Залізо:</b> $Fe + 0.5O_2 \to FeO$</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Слайд 5: Блок 2. Окиснення вуглецю -->
+        <section class="slide" data-slide="5">
+            <div class="slide-content">
+                <h2>Кисень на зневуглецювання</h2>
+                
+                <div class="card animate-in" style="border-left: 4px solid var(--accent-red);">
+                    <p style="font-size: 1.1rem; line-height: 1.6; margin-bottom: 20px;">
+                        Основна масова частка реагенту традиційно спрямовується на окиснення вуглецю. Процес ускладнюється тим, що кінцевим продуктом є суміш газів $CO$ та $CO_2$.
+                    </p>
+                    
+                    <div style="text-align: center; margin: 20px 0;">
+                        <span style="font-size: 1.2rem; background: var(--bg-tertiary); padding: 10px 20px; border-radius: 6px; border: 1px dashed var(--accent-red);">
+                            Ефективна витрата $f(PCR)$
+                        </span>
+                    </div>
+
+                    <p style="font-size: 1.1rem; line-height: 1.6;">
+                        Вища концентрація $CO_2$ у відхідних газах (вищий параметр $PCR$) вимагає <b>пропорційного збільшення</b> об'єму дуття, оскільки формування $CO_2$ потребує вдвічі більше кисню порівняно з $CO$.
+                    </p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Слайд 6: Блок 3. Теоретичний та Фактичний об'єм -->
+        <section class="slide" data-slide="6">
+            <div class="slide-content">
+                <h2>Комплексний обсяг дуття</h2>
+                <div class="grid-2">
+                    <div class="card animate-in">
+                        <h3 style="margin-bottom: 15px;">Стехіометричний мінімум</h3>
+                        <p style="font-size: 1.1rem; line-height: 1.6; margin-bottom: 15px;">Сумарна потреба, зумовлена виключно законами хімії (ідеальний процес):</p>
+                        <p class="formula-block" style="text-align: center; border:none; background:none;">$V_{O_2}^{theor} = \sum V_i$</p>
+                    </div>
+                    <div class="card animate-in" style="animation-delay: 0.2s; background: rgba(25,118,210,0.05); border-left: 4px solid var(--accent-blue);">
+                        <h3 style="margin-bottom: 15px;">Експлуатаційна (фактична) потреба</h3>
+                        <p style="font-size: 1.1rem; line-height: 1.6; margin-bottom: 15px;">Врахування інженерних недоліків установки (неповне засвоєння газу фазами розплаву) та забрудненості технічного $O_2$ інертними газами:</p>
+                        <p class="formula-block" style="text-align: center; border:none; background:none;">$V_{O_2}^{actual} = f(V_{theor}, \eta_{O_2}, \varphi)$</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Слайд 7: Блок 4. Режим продувки -->
+        <section class="slide" data-slide="7">
+            <div class="slide-content">
+                <h2>Динаміка та тривалість продувки</h2>
+                <div class="card animate-in">
+                    <p style="font-size: 1.1rem; line-height: 1.6; margin-bottom: 20px;">
+                        Технологічна інтенсивність ($i_{sp}$) визначає хвилинну об'ємну витрату газу. Це ключовий фактор керування продуктивністю конвертера. 
+                    </p>
+
+                    <div style="display: flex; justify-content: space-around; align-items: center; margin-top: 30px; background: var(--bg-tertiary); padding: 25px; border-radius: 8px;">
+                        <div style="text-align: center;">
+                            <span style="font-size: 1.2rem; display: block; margin-bottom: 10px; color: var(--text-secondary);">Фактичний об'єм (Нм³)</span>
+                            <b style="font-size: 1.5rem;">$V_{O_2}^{actual}$</b>
+                        </div>
+                        <div style="font-size: 2rem;">/</div>
+                        <div style="text-align: center;">
+                            <span style="font-size: 1.2rem; display: block; margin-bottom: 10px; color: var(--text-secondary);">Хвилинна витрата</span>
+                            <b style="font-size: 1.5rem;">$Q_{O_2}$</b>
+                        </div>
+                        <div style="font-size: 2rem;">=</div>
+                        <div style="text-align: center; color: var(--accent-orange);">
+                            <span style="font-size: 1.2rem; display: block; margin-bottom: 10px;">Час дуття (хв)</span>
+                            <b style="font-size: 1.8rem;">$\tau$</b>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Слайд 8: Алгоритмічна структура -->
+        <section class="slide" data-slide="8">
+            <div class="slide-content">
+                <h2>Алгоритмічна структура розрахунку</h2>
+                <h3 style="text-align: center; margin-bottom: 30px; color: var(--text-secondary); font-size: 1.1rem;">Послідовність виконання обчислень:</h3>
+                
+                <div class="flow-container animate-in">
+                    <div class="flow-item" style="border-color: var(--text-muted); padding: 15px;">
+                        <b>I. Теоретичні об'єми на елементи</b><br>
+                        <span style="font-size: 0.9rem; color: var(--text-secondary);">Стехіометричний аналіз (з урахуванням $PCR$)</span>
+                    </div>
+                    <div class="flow-arrow">&darr;</div>
+                    <div class="flow-item" style="border-color: var(--accent-blue); padding: 15px;">
+                        <b>II. Фактична потреба $V_{O_2}^{actual}$</b><br>
+                        <span style="font-size: 0.9rem; color: var(--text-secondary);">Корекція на засвоєння та чистоту</span>
+                    </div>
+                    <div class="flow-arrow">&darr;</div>
+                    <div class="flow-item" style="border-color: var(--accent-orange); padding: 15px;">
+                        <b>III. Час продувки $\tau$</b><br>
+                        <span style="font-size: 0.9rem; color: var(--text-secondary);">Визначення динаміки на базі інтенсивності $i_{sp}$</span>
+                    </div>
+                    <div class="flow-arrow">&darr;</div>
+                    <div class="flow-item" style="background: var(--bg-secondary); border: 2px solid var(--accent-red); font-size: 1.1rem; padding: 15px;">
+                        <b>IV. Питомі техніко-економічні показники</b>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Слайд 9: Аналіз пропорцій приходу -->
+        <section class="slide" data-slide="9">
+            <div class="slide-content">
+                <h2>Аналіз матеріальних пропорцій (Варіант 20)</h2>
+                <div class="card animate-in" style="text-align: center;">
+                    <h3 style="margin-bottom: 25px; color: var(--text-primary);">Структура споживання теоретичного кисню (Нм³)</h3>
+                    
+                    <div style="display: flex; height: 50px; border-radius: 6px; overflow: hidden; margin-bottom: 20px;">
+                        <div style="width: 72%; background: #c62828; display: flex; align-items: center; justify-content: center; color: white; font-size:1rem;">
+                            $V_{C}$ (Вуглець) ~72%
+                        </div>
+                        <div style="width: 18%; background: var(--accent-orange); display: flex; align-items: center; justify-content: center; color: white; font-size:1rem;">
+                            $V_{Si}$ ~18%
+                        </div>
+                        <div style="width: 10%; background: #2e7d32; display: flex; align-items: center; justify-content: center; color: white; font-size:0.8rem;">
+                            Інш.
+                        </div>
+                    </div>
+                    <p style="text-align: left; color: var(--text-secondary); font-size: 1.05rem; line-height: 1.6; padding-top: 15px; border-top: 1px solid var(--bg-tertiary);">
+                        Домінуючим споживачем кисню в процесі є вуглець. Ефективність зневуглецювання та ступінь допалювання монооксиду ($PCR$) визначають як загальну тривалість продувки, так і сумарні витрати газу.
+                    </p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Слайд 10: Технологічна інтеграція -->
+        <section class="slide" data-slide="10">
+            <div class="slide-content">
+                <h2>Синергія з тепловим балансом</h2>
+                <div class="grid-2">
+                    <div class="card animate-in" style="border-left: 4px solid var(--text-muted);">
+                        <h3 style="margin-bottom: 15px;">Матеріально-тепловий зв'язок</h3>
+                        <p style="font-size: 1.05rem; line-height: 1.6;">Кожен обчислений об'єм $O_2$ є передумовою для генерації відповідної порції теплової енергії. Хімічне тепло ($Q_{chem}$) безпосередньо обумовлено ефективністю інжекції розрахованого об'єму кисню.</p>
+                    </div>
+                    <div class="card animate-in" style="animation-delay: 0.2s; background: rgba(25,118,210,0.05); border-left: 4px solid var(--accent-blue);">
+                        <h3 style="margin-bottom: 15px;">Прогностичне моделювання</h3>
+                        <p style="font-size: 1.05rem; line-height: 1.6;">Коректне розв'язання задачі кисневого балансу гарантує адекватність подальшого проектування теплової роботи агрегату. Формується надійний базис для Практичної роботи №3.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Слайд 11: Висновки / Фінал -->
+        <section class="slide" data-slide="11">
+            <div class="slide-content" style="text-align: center;">
+                <h1 class="animate-in" style="font-size: 2.8rem;">Кисневий режим розраховано</h1>
+                <p class="subtitle animate-in" style="animation-delay: 0.2s; font-size: 1.2rem;">Основа для теплового балансу сформована</p>
+
+                <div class="card animate-in" style="display: block; max-width: 800px; margin: 30px auto; animation-delay: 0.4s; font-size: 1.1rem; line-height: 1.6;">
+                    <p style="margin-bottom: 15px;"><b>Вуглець і допалювання:</b> основна частка технічного кисню витрачається на окиснення вуглецю, тому контроль допалювання (через $PCR$) є ключовим важелем керування плавкою.</p>
+                    <p>Базуючись на вихідних даних мас окиснених елементів, необхідно інтегрувати режимні показники кисневого дуття ($PCR$, інтенсивність) для формування цілісної картини газодинамічної взаємодії в межах варіанта завдання.</p>
+                </div>
+
+                <div style="text-align: center; margin-top: 60px;">
+                    <div class="restart-container animate-in" style="animation-delay: 0.6s;">
+                        <div class="fire-wrapper" id="fireEffect">
+                            <div class="flame" style="left: 5%; animation-delay: 0.1s; width: 50px;"></div>
+                            <div class="flame" style="left: 15%; animation-delay: 0.4s;"></div>
+                            <div class="flame" style="left: 25%; animation-delay: 0.2s; width: 60px;"></div>
+                            <div class="flame" style="left: 35%; animation-delay: 0.6s;"></div>
+                            <div class="flame" style="left: 45%; animation-delay: 0.1s; width: 45px;"></div>
+                            <div class="flame" style="left: 55%; animation-delay: 0.3s;"></div>
+                            <div class="flame" style="left: 65%; animation-delay: 0.5s; width: 55px;"></div>
+                            <div class="flame" style="left: 75%; animation-delay: 0.2s;"></div>
+                            <div class="flame" style="left: 85%; animation-delay: 0.7s; width: 40px;"></div>
+                            <div class="flame" style="left: 95%; animation-delay: 0.4s;"></div>
+                            <div class="flame" style="left: 10%; animation-delay: 0.9s; animation-duration: 1.5s;"></div>
+                            <div class="flame" style="left: 30%; animation-delay: 1.2s; animation-duration: 2s;"></div>
+                            <div class="flame" style="left: 50%; animation-delay: 0.8s; animation-duration: 1.7s;"></div>
+                            <div class="flame" style="left: 70%; animation-delay: 1.1s; animation-duration: 1.4s;"></div>
+                            <div class="flame" style="left: 90%; animation-delay: 1.3s; animation-duration: 1.9s;"></div>
+                        </div>
+                        <button class="restart-btn" id="restartBtn">Перейти до обчислень</button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </div>
+
+    <div class="keyboard-hints">
+        <span><kbd>←</kbd> <kbd>→</kbd> навігація</span>
+        <span><kbd>Space</kbd> вперед</span>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+
+</html>
