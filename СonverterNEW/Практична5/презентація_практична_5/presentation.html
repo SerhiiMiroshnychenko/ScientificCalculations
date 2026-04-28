@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ПР №5. Розрахунок охолоджувачів | Презентація</title>
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700;900&display=swap" rel="stylesheet">
+    
+    <script>
+        window.MathJax = {
+            tex: {
+                inlineMath: [['$', '$'], ['\\(', '\\)']],
+                displayMath: [['$$', '$$'], ['\\[', '\\]']],
+                processEscapes: true
+            },
+            options: {
+                enableMenu: false
+            }
+        };
+    </script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+
+    <style>
+        .formula-block {
+            background: rgba(255, 111, 0, 0.05);
+            border-radius: 8px;
+            padding: 15px;
+            margin: 10px 0;
+            border: 1px solid rgba(255, 111, 0, 0.2);
+        }
+        .step-tag {
+            background: var(--accent-orange);
+            color: white;
+            padding: 2px 10px;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            font-weight: 700;
+            margin-right: 10px;
+        }
+        .comparison-box {
+            display: flex;
+            justify-content: space-around;
+            margin-top: 20px;
+        }
+        .comp-item {
+            text-align: center;
+            padding: 15px;
+            background: var(--bg-tertiary);
+            border-radius: 8px;
+            width: 45%;
+        }
+        .comp-val {
+            font-size: 1.8rem;
+            font-weight: 900;
+            color: var(--accent-orange);
+            display: block;
+        }
+    </style>
+</head>
+<body>
+
+<nav class="navigation">
+    <div class="nav-progress">
+        <div class="progress-bar" id="progressBar"></div>
+    </div>
+    <div class="nav-controls">
+        <button class="nav-btn" id="prevBtn">←</button>
+        <span class="slide-counter"><span id="currentSlide">1</span> / <span id="totalSlides">11</span></span>
+        <button class="nav-btn" id="nextBtn">→</button>
+    </div>
+</nav>
+
+<div class="slides-container" id="slidesContainer">
+
+    <!-- Слайд 1: Титульний -->
+    <section class="slide active" data-slide="1">
+        <div class="slide-content">
+            <h1 class="animate-in">Практична робота №5</h1>
+            <p class="subtitle animate-in" style="animation-delay: 0.2s;">Розрахунок охолоджувачів для термостатування плавки</p>
+            <p class="author-name animate-in" style="animation-delay: 0.3s;">Мірошниченко Сергій Олександрович</p>
+            <div style="text-align: center;" class="animate-in" style="animation-delay: 0.4s;">
+                <p>Брухт vs Руда: стратегія енергетичного балансування</p>
+                <p style="margin-top: 20px; color: var(--text-muted);">Натисніть <kbd>→</kbd></p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Слайд 2: Постановка задачі -->
+    <section class="slide" data-slide="2">
+        <div class="slide-content">
+            <h2>Чому потрібні охолоджувачі?</h2>
+            <div class="grid-2">
+                <div class="card animate-in">
+                    <h3>Тепловий надлишок $\Delta Q$</h3>
+                    <p>Автогенний процес часто генерує більше енергії, ніж потрібно для нагріву сталі до $t_{tap}$.</p>
+                    <div class="highlight-box" style="margin-top: 15px;">
+                        $\Delta Q = Q_{in} - Q_{out} > 0$
+                    </div>
+                </div>
+                <div class="card animate-in" style="animation-delay: 0.2s;">
+                    <h3>Наслідки перегріву</h3>
+                    <ul style="font-size: 0.9rem; color: var(--text-secondary); list-style: none;">
+                        <li>• Прискорена ерозія футерівки</li>
+                        <li>• Підвищений вміст азоту в сталі</li>
+                        <li>• Технологічна нестабільність</li>
+                    </ul>
+                    <p style="margin-top: 10px; font-weight: 700;">Рішення: додати охолоджувач!</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Слайд 3: Механізми охолодження -->
+    <section class="slide" data-slide="3">
+        <div class="slide-content">
+            <h2>Механізм дії охолоджувачів</h2>
+            <div class="grid-2">
+                <div class="card animate-in" style="border-top: 4px solid var(--accent-blue);">
+                    <h3>Сталевий брухт</h3>
+                    <p><b>Фізичне охолодження:</b></p>
+                    <ul style="font-size: 0.85rem; color: var(--text-secondary);">
+                        <li>1. Нагрів твердого металу</li>
+                        <li>2. Плавлення (фазовий перехід)</li>
+                        <li>3. Перегрів рідкої сталі</li>
+                    </ul>
+                </div>
+                <div class="card animate-in" style="animation-delay: 0.2s; border-top: 4px solid var(--accent-red);">
+                    <h3>Залізна руда</h3>
+                    <p><b>Фізичне + Хімічне охолодження:</b></p>
+                    <ul style="font-size: 0.85rem; color: var(--text-secondary);">
+                        <li>1. Нагрів та випаровування вологи</li>
+                        <li>2. <b>Ендотермічне відновлення</b> оксидів заліза вуглецем ванни</li>
+                    </ul>
+                    <p style="margin-top: 5px; font-weight: 700; color: var(--accent-red);">Ефективність у 2.1 рази вища!</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Слайд 4: Охолоджуюча здатність брухту -->
+    <section class="slide" data-slide="4">
+        <div class="slide-content">
+            <h2>Охолоджуюча здатність брухту ($\Delta h_{scrap}$)</h2>
+            <div class="formula-block animate-in">
+                $$\Delta h_{scrap} = C_{p,s}(T_m - t_0) + L_m + C_{p,l}(t_{tap} - T_m)$$
+            </div>
+            <div class="grid-3 animate-in" style="margin-top: 20px; animation-delay: 0.2s;">
+                <div class="card">
+                    <h4>Нагрів (~74%)</h4>
+                    <p>$0.65 \cdot (1535 - 20)$</p>
+                </div>
+                <div class="card">
+                    <h4>Плавлення (~21%)</h4>
+                    <p>$L_m = 272$ кДж/кг</p>
+                </div>
+                <div class="card">
+                    <h4>Перегрів (~5%)</h4>
+                    <p>$0.836 \cdot (t_{tap} - 1535)$</p>
+                </div>
+            </div>
+            <p style="text-align: center; margin-top: 15px; font-weight: 700; color: var(--accent-orange);">
+                Типове значення: 1300–1350 кДж/кг
+            </p>
+        </div>
+    </section>
+
+    <!-- Слайд 5: Охолоджуюча здатність руди -->
+    <section class="slide" data-slide="5">
+        <div class="slide-content">
+            <h2>Залізна руда ($\Delta h_{ore}$)</h2>
+            <div class="card animate-in" style="background: rgba(255, 50, 50, 0.05);">
+                <p>Чому руда настільки потужна?</p>
+                <div style="font-size: 1.2rem; margin: 15px 0; text-align: center;">
+                    $\text{Fe}_2\text{O}_3 + 3\text{C} \to 2\text{Fe} + 3\text{CO} \uparrow$
+                </div>
+                <p style="font-size: 0.9rem; color: var(--text-secondary);">
+                    Ця реакція відновлення є <b>сильно ендотермічною</b>. Вона "краде" енергію безпосередньо у розплаву для хімічного розриву зв'язків $Fe-O$.
+                </p>
+            </div>
+            <div class="comparison-box animate-in" style="animation-delay: 0.2s;">
+                <div class="comp-item">
+                    <span class="comp-val">2800</span>
+                    кДж/кг (Руда)
+                </div>
+                <div class="comp-item">
+                    <span class="comp-val">1324</span>
+                    кДж/кг (Брухт)
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Слайд 6: Розрахунок маси суміші -->
+    <section class="slide" data-slide="6">
+        <div class="slide-content">
+            <h2>Алгоритм розрахунку мас</h2>
+            <div class="formula-block animate-in">
+                <span class="step-tag">Крок 1</span>
+                Здатність суміші ($x_{ore}$ — частка руди):
+                $$\Delta h_{mix} = x_{ore} \cdot \Delta h_{ore} + (1 - x_{ore}) \cdot \Delta h_{scrap}$$
+            </div>
+            <div class="formula-block animate-in" style="animation-delay: 0.2s;">
+                <span class="step-tag">Крок 2</span>
+                Необхідна маса охолоджувача:
+                $$m_{mix} = \frac{\Delta Q \cdot 10^3}{\Delta h_{mix}} \quad [\text{кг}]$$
+            </div>
+            <p style="margin-top: 15px; color: var(--text-muted); font-size: 0.9rem;">
+                * $\Delta Q$ береться з ПР №4 у МДж, тому множимо на $10^3$ для переходу в кДж.
+            </p>
+        </div>
+    </section>
+
+    <!-- Слайд 7: Вихід металу та шихта -->
+    <section class="slide" data-slide="7">
+        <div class="slide-content">
+            <h2>Вплив на вихід придатної сталі</h2>
+            <div class="grid-2">
+                <div class="card animate-in">
+                    <h3>Коефіцієнти виходу ($\eta$)</h3>
+                    <p>• Брухт: <b>0.92</b> (8% втрат)</p>
+                    <p>• Руда: <b>0.56</b> (через вміст $Fe$ та ошлакування)</p>
+                </div>
+                <div class="card animate-in" style="animation-delay: 0.2s;">
+                    <h3>Нова маса сталі</h3>
+                    <p style="font-size: 0.9rem;">
+                        $m_{steel}^{new} = m_{steel} + m_{scr\_add} \cdot \eta_{scr} + m_{ore} \cdot \eta_{ore}$
+                    </p>
+                    <hr style="margin: 10px 0; border: 0; border-top: 1px solid var(--bg-tertiary);">
+                    <p style="font-size: 0.85rem; color: var(--text-secondary);">
+                        Хоча руда має менший вихід, її потрібно вдвічі менше. Сумарний вплив на $Yield$ становить лише <0.3%.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Слайд 8: Верифікація -->
+    <section class="slide" data-slide="8">
+        <div class="slide-content">
+            <h2>Верифікація теплового балансу</h2>
+            <div class="card animate-in" style="text-align: center; border: 2px solid var(--accent-orange);">
+                <h3>Контрольна перевірка</h3>
+                <p style="font-size: 1.1rem; margin: 15px 0;">
+                    Тепло, поглинуте охолоджувачем, має дорівнювати надлишку:
+                </p>
+                <div class="formula-block">
+                    $Q_{absorbed} = \sum (m_i \cdot \Delta h_i) \approx \Delta Q$
+                </div>
+                <p style="margin-top: 15px; color: var(--accent-orange); font-weight: 700;">
+                    Допустима похибка $\varepsilon < 0.1\%$
+                </p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Слайд 9: Приклад розрахунку (Вар. 20) -->
+    <section class="slide" data-slide="9">
+        <div class="slide-content">
+            <h2>Результати (Варіант 20)</h2>
+            <div class="card animate-in">
+                <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 1rem;">
+                    <tr style="border-bottom: 2px solid var(--accent-orange);">
+                        <th style="padding: 10px;">Параметр</th>
+                        <th>Значення</th>
+                    </tr>
+                    <tr><td style="padding: 10px;">Тепловий надлишок $\Delta Q$</td><td><b>22.63 МДж</b></td></tr>
+                    <tr><td style="padding: 10px;">Температура випуску $t_{tap}$</td><td><b>1616 °C</b></td></tr>
+                    <tr><td style="padding: 10px;">$\Delta h_{scrap}$ (брухт)</td><td>1324.47 кДж/кг</td></tr>
+                    <tr style="background: rgba(255,111,0,0.1);"><td style="padding: 10px;"><b>Маса суміші ($x_{ore}=0.5$)</b></td><td><b>10.97 кг</b></td></tr>
+                    <tr><td style="padding: 10px;">Маса тільки брухту</td><td>17.09 кг</td></tr>
+                    <tr><td style="padding: 10px;">Маса тільки руди</td><td>8.08 кг</td></tr>
+                </table>
+            </div>
+        </div>
+    </section>
+
+    <!-- Слайд 10: Порівняльний аналіз -->
+    <section class="slide" data-slide="10">
+        <div class="slide-content">
+            <h2>Чутливість до вибору охолоджувача</h2>
+            <div class="card animate-in" style="padding: 0; overflow: hidden;">
+                <div style="background: var(--bg-tertiary); padding: 15px 25px;">
+                    <span>Залежність маси та виходу металу від $x_{ore}$</span>
+                </div>
+                <table style="width: 100%; border-collapse: collapse; text-align: center; font-size: 0.95rem;">
+                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.1);">
+                        <th style="padding: 12px;">Тип</th>
+                        <th>$x_{ore}$</th>
+                        <th>$m_{mix}$ (кг)</th>
+                        <th>$Yield$ (%)</th>
+                    </tr>
+                    <tr><td>Брухт</td><td>0.00</td><td>17.09</td><td>92.06</td></tr>
+                    <tr style="color: var(--accent-orange);"><td>Суміш</td><td>0.50</td><td>10.97</td><td>91.87</td></tr>
+                    <tr><td>Руда</td><td>1.00</td><td>8.08</td><td>91.77</td></tr>
+                </table>
+            </div>
+            <p style="margin-top: 20px; font-size: 0.9rem; color: var(--text-secondary);">
+                Висновок: Руда значно економить масу охолоджувача, майже не впливаючи на загальний вихід сталі.
+            </p>
+        </div>
+    </section>
+
+    <!-- Слайд 11: Висновки -->
+    <section class="slide" data-slide="11">
+        <div class="slide-content" style="text-align: center;">
+            <h1 class="animate-in">Термостатування завершено</h1>
+            <p class="subtitle animate-in" style="animation-delay: 0.2s;">Тепловий баланс ідеально зведено до нуля</p>
+            
+            <div class="card animate-in" style="display: block; max-width: 700px; margin: 30px auto; animation-delay: 0.4s;">
+                <p><b>Результат ПР №5:</b> ми визначили масу охолоджувачів, що гарантує цільову температуру $t_{tap}$. Це дозволяє перейти до ПР №6 — розрахунку шлакового режиму для захисту футерівки.</p>
+            </div>
+
+            <div style="text-align: center; margin-top: 60px;">
+                <div class="restart-container animate-in" style="animation-delay: 0.6s;">
+                    <div class="fire-wrapper" id="fireEffect">
+                        <!-- Flames -->
+                        <div class="flame" style="left: 5%; animation-delay: 0.1s; width: 50px;"></div>
+                        <div class="flame" style="left: 15%; animation-delay: 0.4s;"></div>
+                        <div class="flame" style="left: 25%; animation-delay: 0.2s; width: 60px;"></div>
+                        <div class="flame" style="left: 35%; animation-delay: 0.6s;"></div>
+                        <div class="flame" style="left: 45%; animation-delay: 0.1s; width: 45px;"></div>
+                        <div class="flame" style="left: 55%; animation-delay: 0.3s;"></div>
+                        <div class="flame" style="left: 65%; animation-delay: 0.5s; width: 55px;"></div>
+                        <div class="flame" style="left: 75%; animation-delay: 0.2s;"></div>
+                        <div class="flame" style="left: 85%; animation-delay: 0.7s; width: 40px;"></div>
+                        <div class="flame" style="left: 95%; animation-delay: 0.4s;"></div>
+                    </div>
+                    <button class="restart-btn" id="restartBtn">Початок</button>
+                </div>
+            </div>
+        </div>
+    </section>
+
+</div>
+
+<div class="keyboard-hints">
+    <span><kbd>←</kbd> <kbd>→</kbd> навігація</span>
+    <span><kbd>Space</kbd> вперед</span>
+</div>
+
+<script src="script.js"></script>
+</body>
+</html>
