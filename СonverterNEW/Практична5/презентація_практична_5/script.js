@@ -78,7 +78,7 @@ if (restartBtn && fireEffect) {
         fireEffect.classList.add('active');
         
         // Змінюємо текст кнопки для фінального акценту
-        restartBtn.textContent = "Баланс зведено!";
+        restartBtn.textContent = "До розрахунків!";
         restartBtn.style.borderColor = "#ffcf33";
     });
 }
