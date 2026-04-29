@@ -1,0 +1,1302 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ПР №5 — Охолоджувачі для конвертерної плавки</title>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,300;0,400;0,600;0,700;0,900;1,400&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg-primary:#121212;--bg-secondary:#1e1e1e;--bg-tertiary:#2d2d2d;
+  --text-primary:#ffffff;--text-secondary:#b0b0b0;--text-muted:#707070;
+  --accent-orange:#ff6f00;--accent-red:#d32f2f;--accent-blue:#1976d2;
+  --gradient-fire:linear-gradient(135deg,#ff6f00 0%,#d32f2f 100%);
+  --shadow-glow:0 0 20px rgba(255,111,0,.3);
+}
+body{font-family:'Montserrat',sans-serif;background:var(--bg-primary);color:var(--text-primary);height:100vh;width:100vw;overflow:hidden;user-select:none}
+
+/* NAV */
+.navigation{position:fixed;top:0;left:0;right:0;z-index:1000;padding:13px 28px;display:flex;justify-content:space-between;align-items:center;background:rgba(18,18,18,.93);backdrop-filter:blur(10px);border-bottom:1px solid rgba(255,255,255,.08)}
+.nav-label{font-size:.72rem;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--text-muted)}
+.nav-progress{flex:1;height:4px;background:var(--bg-tertiary);border-radius:2px;margin:0 26px;overflow:hidden}
+.progress-bar{height:100%;background:var(--gradient-fire);width:9.09%;transition:width .4s ease}
+.nav-controls{display:flex;align-items:center;gap:14px}
+.slide-counter{font-weight:700;font-size:.88rem;color:var(--text-secondary);min-width:48px;text-align:center}
+.nav-btn{width:38px;height:38px;border:none;border-radius:8px;background:var(--bg-tertiary);color:var(--text-primary);cursor:pointer;font-size:1.1rem;transition:all .2s;display:flex;align-items:center;justify-content:center;font-family:inherit}
+.nav-btn:hover:not(:disabled){background:var(--accent-orange);transform:scale(1.08);box-shadow:var(--shadow-glow)}
+.nav-btn:disabled{opacity:.28;cursor:default}
+
+/* SLIDES */
+.slides-container{position:relative;width:100%;height:100vh}
+.slide{position:absolute;top:0;left:0;width:100%;height:100%;display:flex;align-items:center;justify-content:center;padding:88px 52px 48px;opacity:0;visibility:hidden;pointer-events:none;transform:translateX(50px);transition:opacity .55s ease,transform .55s ease,visibility .55s ease}
+.slide.active{opacity:1;visibility:visible;pointer-events:auto;transform:translateX(0)}
+.slide.exit{opacity:0;transform:translateX(-50px);visibility:hidden}
+.slide-content{max-width:1080px;width:100%}
+
+/* TYPOGRAPHY */
+h1{font-size:clamp(2rem,4.2vw,3.4rem);font-weight:900;text-transform:uppercase;background:var(--gradient-fire);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;text-align:center;margin-bottom:18px;line-height:1.1}
+h2{font-size:clamp(1.3rem,2.5vw,2rem);font-weight:700;margin-bottom:26px;border-left:5px solid var(--accent-orange);padding-left:16px}
+h3{font-size:1rem;font-weight:700;color:var(--accent-orange);margin-bottom:8px}
+p{font-size:.93rem;line-height:1.65;color:var(--text-secondary)}
+
+/* CARDS */
+.card{background:var(--bg-secondary);padding:20px 22px;border-radius:12px;border:1px solid rgba(255,255,255,.06);transition:transform .3s,border-color .3s,box-shadow .3s}
+.card:hover{transform:translateY(-4px);border-color:rgba(255,111,0,.45);box-shadow:var(--shadow-glow)}
+.card h3{color:var(--accent-orange)}
+.card-blue{border-top:3px solid var(--accent-blue)}
+.card-orange{border-top:3px solid var(--accent-orange)}
+.card-red{border-top:3px solid var(--accent-red)}
+.card-green{border-top:3px solid #2e7d32}
+
+/* GRIDS */
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+.grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px}
+.grid-wide{display:grid;grid-template-columns:1.35fr 1fr;gap:22px}
+
+/* BADGES */
+.badge{display:inline-block;padding:3px 11px;border-radius:20px;font-size:.75rem;font-weight:700;letter-spacing:.5px}
+.badge-orange{background:rgba(255,111,0,.14);color:var(--accent-orange);border:1px solid rgba(255,111,0,.32)}
+.badge-blue{background:rgba(25,118,210,.14);color:#5ab0ff;border:1px solid rgba(25,118,210,.32)}
+.badge-red{background:rgba(211,47,47,.14);color:#ef5350;border:1px solid rgba(211,47,47,.32)}
+.badge-green{background:rgba(46,125,50,.14);color:#66bb6a;border:1px solid rgba(46,125,50,.32)}
+
+/* STEP TAG */
+.step-tag{background:var(--accent-orange);color:#fff;padding:2px 10px;border-radius:4px;font-size:.74rem;font-weight:700;margin-right:8px;text-transform:uppercase;letter-spacing:.8px}
+
+/* DATA TAG */
+.data-tag{display:inline-block;background:rgba(25,118,210,.12);color:#5ab0ff;padding:3px 11px;border-radius:20px;font-size:.8rem;border:1px solid rgba(25,118,210,.3);margin:3px}
+
+/* HIGHLIGHT BOX */
+.hl-box{border:1px dashed var(--accent-orange);padding:12px 16px;text-align:center;border-radius:8px;color:var(--accent-orange);font-weight:700;background:rgba(255,111,0,.04)}
+.hl-blue{border-color:var(--accent-blue);color:#5ab0ff;background:rgba(25,118,210,.05)}
+.hl-red{border-color:var(--accent-red);color:#ef5350;background:rgba(211,47,47,.05)}
+.hl-green{border-color:#2e7d32;color:#66bb6a;background:rgba(46,125,50,.05)}
+
+/* BIG VALUE */
+.big-val{font-size:2.4rem;font-weight:900;color:var(--accent-orange);line-height:1}
+
+/* PROCESS FLOW */
+.pflow{display:flex;align-items:stretch;gap:0;margin-top:16px}
+.pflow-step{flex:1;background:var(--bg-secondary);border:1px solid rgba(255,255,255,.07);padding:14px 12px;text-align:center;position:relative;transition:background .3s}
+.pflow-step:first-child{border-radius:10px 0 0 10px}
+.pflow-step:last-child{border-radius:0 10px 10px 0}
+.pflow-step:hover{background:var(--bg-tertiary)}
+.pflow-arr{display:flex;align-items:center;color:var(--accent-orange);font-size:1.3rem;padding:0 3px;animation:farrow 1.5s ease-in-out infinite}
+.pflow-icon{font-size:1.8rem;margin-bottom:6px;display:block}
+.pflow-label{font-size:.75rem;color:var(--text-muted);margin-top:5px;line-height:1.4}
+.pflow-heat{font-size:.72rem;font-weight:700;margin-top:7px;padding:2px 7px;border-radius:10px;display:inline-block}
+.ph-orange{background:rgba(255,111,0,.18);color:var(--accent-orange)}
+.ph-red{background:rgba(211,47,47,.18);color:#ef5350}
+.ph-blue{background:rgba(25,118,210,.18);color:#5ab0ff}
+.ph-green{background:rgba(46,125,50,.18);color:#66bb6a}
+
+/* SLIDER */
+.slider-section{background:var(--bg-secondary);border-radius:14px;padding:22px 28px;border:1px solid rgba(255,255,255,.07)}
+input[type=range]{-webkit-appearance:none;width:100%;height:6px;background:linear-gradient(90deg,var(--accent-orange),var(--accent-red));border-radius:3px;outline:none;cursor:pointer;margin:14px 0}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:24px;height:24px;border-radius:50%;background:#fff;border:3px solid var(--accent-orange);cursor:pointer;box-shadow:0 0 8px rgba(255,111,0,.5);transition:transform .15s}
+input[type=range]::-webkit-slider-thumb:hover{transform:scale(1.2)}
+.slider-labels{display:flex;justify-content:space-between;font-size:.72rem;color:var(--text-muted);margin-top:-6px}
+.calc-results{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-top:18px}
+.calc-card{background:var(--bg-primary);border-radius:10px;padding:14px;text-align:center;border:1px solid rgba(255,255,255,.06);transition:all .3s}
+.calc-card .val{font-size:1.75rem;font-weight:900;color:var(--accent-orange);line-height:1;transition:all .3s}
+.calc-card .lbl{font-size:.68rem;color:var(--text-muted);margin-top:5px;text-transform:uppercase;letter-spacing:.5px}
+.mix-bar{display:flex;height:40px;border-radius:8px;overflow:hidden;margin-top:16px}
+.mix-scrap{background:linear-gradient(135deg,#0d47a1,#1976d2);display:flex;align-items:center;justify-content:center;font-size:.75rem;font-weight:700;transition:flex .5s ease}
+.mix-ore{background:linear-gradient(135deg,#b71c1c,#d32f2f);display:flex;align-items:center;justify-content:center;font-size:.75rem;font-weight:700;transition:flex .5s ease}
+
+/* TABLE */
+.res-table{width:100%;border-collapse:collapse;font-size:.88rem}
+.res-table th{padding:10px 14px;background:var(--bg-tertiary);font-weight:700;text-align:left;border-bottom:2px solid var(--accent-orange);font-size:.76rem;text-transform:uppercase;letter-spacing:.5px;color:var(--text-secondary)}
+.res-table td{padding:10px 14px;border-bottom:1px solid rgba(255,255,255,.05)}
+.res-table tr.hl-row{background:rgba(255,111,0,.07)}
+.res-table tr.hl-row td{color:var(--accent-orange);font-weight:700}
+.res-table tr:last-child td{border-bottom:none}
+
+/* YIELD BAR */
+.yb-wrap{display:flex;align-items:flex-end;gap:24px;justify-content:center;height:180px;margin-top:22px}
+.yb-col{display:flex;flex-direction:column;align-items:center;gap:7px}
+.yb-bar{width:76px;border-radius:8px 8px 0 0;position:relative;overflow:hidden;height:0;transition:height 1.1s cubic-bezier(.22,1,.36,1)}
+.yb-bar::after{content:'';position:absolute;inset:0;background:linear-gradient(to top,rgba(255,255,255,.07),transparent)}
+.yb-scrap{background:linear-gradient(to top,#0d47a1,#1976d2)}
+.yb-mix{background:linear-gradient(to top,#e65100,#ff6f00)}
+.yb-ore{background:linear-gradient(to top,#b71c1c,#d32f2f)}
+.yb-val{font-size:.82rem;font-weight:700}
+.yb-lbl{font-size:.73rem;color:var(--text-muted);text-align:center}
+
+/* FIRE */
+.restart-container{position:relative;display:inline-block;margin-top:32px}
+.restart-btn{position:relative;padding:13px 40px;font-size:1.05rem;font-weight:700;color:white;background:var(--bg-tertiary);border:2px solid var(--accent-orange);border-radius:50px;cursor:pointer;z-index:10;transition:all .3s;text-transform:uppercase;font-family:inherit;letter-spacing:1px}
+.restart-btn:hover{background:var(--accent-orange);box-shadow:0 0 30px rgba(255,111,0,.5)}
+.fire-wrapper{position:absolute;bottom:-10px;left:50%;transform:translateX(-50%);width:140%;height:300px;pointer-events:none;display:none;z-index:1}
+.fire-wrapper.active{display:block}
+.fire-wrapper.active::before{content:'';position:absolute;bottom:40px;left:50%;transform:translateX(-50%);width:80%;height:40px;background:var(--accent-orange);filter:blur(30px);opacity:.6;animation:glow 1s infinite alternate}
+.flame{position:absolute;bottom:40px;width:40px;height:40px;background:var(--accent-orange);border-radius:50% 50% 20% 80%;filter:blur(8px);animation:burn 1.8s infinite;opacity:0}
+
+/* HINTS */
+.keyboard-hints{position:fixed;bottom:16px;left:50%;transform:translateX(-50%);color:var(--text-muted);font-size:.73rem;display:flex;gap:18px;z-index:999}
+kbd{background:var(--bg-tertiary);padding:2px 7px;border-radius:4px;border:1px solid rgba(255,255,255,.17);font-family:inherit}
+
+/* ANIMATIONS */
+@keyframes fadeInUp{from{opacity:0;transform:translateY(22px)}to{opacity:1;transform:translateY(0)}}
+@keyframes fadeInLeft{from{opacity:0;transform:translateX(-22px)}to{opacity:1;transform:translateX(0)}}
+@keyframes fadeInRight{from{opacity:0;transform:translateX(22px)}to{opacity:1;transform:translateX(0)}}
+@keyframes scaleIn{from{opacity:0;transform:scale(.88)}to{opacity:1;transform:scale(1)}}
+@keyframes farrow{0%,100%{transform:translateX(0);opacity:.6}50%{transform:translateX(5px);opacity:1}}
+@keyframes pulse-border{0%,100%{box-shadow:0 0 8px rgba(255,111,0,.2)}50%{box-shadow:0 0 24px rgba(255,111,0,.55)}}
+@keyframes glow{from{opacity:.4}to{opacity:.8}}
+@keyframes burn{0%{transform:translateY(0) scale(1) rotate(45deg);opacity:0;background:#ffcf33}20%{opacity:1}50%{transform:translateY(-120px) scale(2.5) rotate(45deg);opacity:.7;background:#ff6f00}80%{opacity:.3}100%{transform:translateY(-250px) scale(.5) rotate(45deg);opacity:0;background:#d32f2f}}
+@keyframes count-flash{0%,100%{color:var(--accent-orange)}50%{color:#fff}}
+@keyframes orbit{from{transform:rotate(0deg) translateX(44px)}to{transform:rotate(360deg) translateX(44px)}}
+@keyframes orbit2{from{transform:rotate(120deg) translateX(44px)}to{transform:rotate(480deg) translateX(44px)}}
+@keyframes orbit3{from{transform:rotate(240deg) translateX(44px)}to{transform:rotate(600deg) translateX(44px)}}
+@keyframes float-up{0%{transform:translateY(0);opacity:.9}100%{transform:translateY(-60px);opacity:0}}
+@keyframes bar-grow{from{width:0}to{width:var(--w)}}
+@keyframes hrise{from{height:0}to{height:var(--h)}}
+@keyframes dotPulse{0%,100%{transform:scale(1);opacity:.5}50%{transform:scale(1.4);opacity:1}}
+@keyframes preloaderSpin{to{transform:rotate(360deg)}}
+@keyframes preloaderOut{to{opacity:0;visibility:hidden}}
+@keyframes particleDrift{0%{transform:translateY(0) translateX(0) scale(1);opacity:.6}100%{transform:translateY(-120px) translateX(var(--dx)) scale(0);opacity:0}}
+@keyframes flipIn{0%{transform:rotateY(-90deg);opacity:0}100%{transform:rotateY(0deg);opacity:1}}
+@keyframes countUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+@keyframes bounceIn{0%{transform:scale(0.5);opacity:0}60%{transform:scale(1.1)}100%{transform:scale(1);opacity:1}}
+@keyframes checkDraw{to{stroke-dashoffset:0}}
+@keyframes slideDown{from{transform:translateY(-10px);opacity:0}to{transform:translateY(0);opacity:1}}
+
+.ani{animation:fadeInUp .55s ease forwards}
+.ani-l{animation:fadeInLeft .55s ease forwards}
+.ani-r{animation:fadeInRight .55s ease forwards}
+.ani-s{animation:scaleIn .5s ease forwards}
+.d1{animation-delay:.12s}.d2{animation-delay:.24s}.d3{animation-delay:.36s}.d4{animation-delay:.48s}.d5{animation-delay:.62s}
+
+/* PRELOADER */
+#preloader{position:fixed;inset:0;background:var(--bg-primary);z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:20px;animation:preloaderOut .4s ease .9s forwards}
+.preloader-ring{width:52px;height:52px;border:3px solid rgba(255,111,0,.15);border-top-color:var(--accent-orange);border-radius:50%;animation:preloaderSpin .7s linear infinite}
+.preloader-text{font-size:.78rem;font-weight:700;letter-spacing:3px;text-transform:uppercase;color:var(--text-muted)}
+
+/* DOT NAVIGATION */
+.dot-nav{position:fixed;bottom:42px;left:50%;transform:translateX(-50%);display:flex;gap:8px;z-index:998}
+.dot{width:7px;height:7px;border-radius:50%;background:rgba(255,255,255,.18);cursor:pointer;transition:all .3s;border:none;padding:0}
+.dot.active{background:var(--accent-orange);transform:scale(1.4);animation:dotPulse 2s infinite}
+.dot:hover:not(.active){background:rgba(255,111,0,.55);transform:scale(1.2)}
+
+/* FLIP CARD */
+.flip-card{perspective:900px;cursor:pointer}
+.flip-card-inner{position:relative;width:100%;height:100%;transform-style:preserve-3d;transition:transform .55s cubic-bezier(.4,0,.2,1)}
+.flip-card.flipped .flip-card-inner{transform:rotateY(180deg)}
+.flip-front,.flip-back{position:absolute;width:100%;height:100%;backface-visibility:hidden;border-radius:12px;padding:20px 22px;background:var(--bg-secondary);border:1px solid rgba(255,255,255,.07)}
+.flip-back{transform:rotateY(180deg);background:var(--bg-tertiary);border-color:rgba(255,111,0,.3)}
+.flip-hint{font-size:.7rem;color:var(--text-muted);text-align:right;margin-top:8px;opacity:.7}
+
+/* PARTICLES */
+.particles{position:absolute;inset:0;pointer-events:none;overflow:hidden;z-index:0}
+.particle{position:absolute;width:4px;height:4px;border-radius:50%;background:var(--accent-orange);opacity:0;animation:particleDrift var(--dur) ease-out var(--del) infinite}
+
+/* ANIMATED COUNTER */
+.counter{display:inline-block;transition:all .3s}
+
+/* BALANCE ANIM (slide 8) */
+.balance-beam{position:relative;width:100%;height:80px}
+.beam-line{position:absolute;left:50%;top:20px;width:2px;height:50px;background:rgba(255,111,0,.4);transform:translateX(-50%)}
+.beam-pivot{position:absolute;left:50%;top:18px;width:12px;height:12px;border-radius:50%;background:var(--accent-orange);transform:translateX(-50%);box-shadow:0 0 10px var(--accent-orange)}
+.beam-h{position:absolute;top:24px;height:3px;background:linear-gradient(90deg,var(--accent-blue),var(--accent-orange),var(--accent-red));border-radius:2px;transition:transform .8s cubic-bezier(.34,1.56,.64,1)}
+.pan-left,.pan-right{position:absolute;top:32px;width:50px;height:26px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:.68rem;font-weight:700;transition:top .8s cubic-bezier(.34,1.56,.64,1)}
+.pan-left{left:5%;background:rgba(25,118,210,.2);border:1px solid rgba(25,118,210,.45);color:#5ab0ff}
+.pan-right{right:5%;background:rgba(46,125,50,.2);border:1px solid rgba(46,125,50,.45);color:#66bb6a}
+
+/* PROGRESS RING */
+.prog-ring{transform:rotate(-90deg)}
+.prog-ring-circle{transition:stroke-dashoffset 1.2s ease;stroke-linecap:round}
+
+/* TOOLTIP */
+.tooltip-wrap{position:relative}
+.tooltip{position:absolute;bottom:calc(100% + 8px);left:50%;transform:translateX(-50%);background:var(--bg-tertiary);border:1px solid rgba(255,111,0,.3);padding:6px 12px;border-radius:8px;font-size:.75rem;white-space:nowrap;opacity:0;pointer-events:none;transition:opacity .2s;z-index:10;color:var(--text-primary)}
+.tooltip::after{content:'';position:absolute;top:100%;left:50%;transform:translateX(-50%);border:5px solid transparent;border-top-color:rgba(255,111,0,.3)}
+.tooltip-wrap:hover .tooltip{opacity:1}
+
+/* CHECK MARK SVG anim */
+.checkmark-circle{stroke-dasharray:166;stroke-dashoffset:166;animation:checkDraw 1s ease .3s forwards}
+.checkmark-path{stroke-dasharray:48;stroke-dashoffset:48;animation:checkDraw .5s ease .9s forwards}
+</style>
+</head>
+<body>
+
+<!-- PRELOADER -->
+<div id="preloader">
+  <div class="preloader-ring"></div>
+  <span class="preloader-text">Завантаження</span>
+</div>
+
+<!-- DOT NAVIGATION -->
+<div class="dot-nav" id="dotNav"></div>
+
+<nav class="navigation">
+  <span class="nav-label">ПР №5 · Охолоджувачі</span>
+  <div class="nav-progress"><div class="progress-bar" id="progressBar"></div></div>
+  <div class="nav-controls">
+    <button class="nav-btn" id="prevBtn">&#8592;</button>
+    <span class="slide-counter"><span id="currentSlide">1</span> / <span id="totalSlides">11</span></span>
+    <button class="nav-btn" id="nextBtn">&#8594;</button>
+  </div>
+</nav>
+
+<div class="slides-container">
+
+<!-- ══════════════════════════════════════════════════
+     СЛАЙД 1: ТИТУЛЬНИЙ
+══════════════════════════════════════════════════ -->
+<section class="slide active" data-slide="1">
+<!-- Ambient particles -->
+<div class="particles" id="slide1-particles"></div>
+<div class="slide-content" style="text-align:center;position:relative;z-index:1">
+  <h1 class="ani">Практична робота №5</h1>
+  <p class="ani d1" style="font-size:1.25rem;color:var(--text-secondary);margin-bottom:12px">Розрахунок охолоджувачів для термостатування плавки</p>
+  <p class="ani d2" style="font-size:.95rem;color:var(--accent-orange);font-weight:600;letter-spacing:1px;margin-bottom:28px">Мірошниченко Сергій Олександрович</p>
+
+  <div class="ani d2" style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-bottom:30px">
+    <span class="badge badge-orange">Брухт vs Руда</span>
+    <span class="badge badge-blue">Тепловий баланс</span>
+    <span class="badge badge-red">Конвертерна плавка</span>
+    <span class="badge badge-green">Варіант 20</span>
+  </div>
+
+  <!-- Animated converter SVG -->
+  <div class="ani d3" style="display:flex;justify-content:center">
+    <svg viewBox="0 0 520 210" width="520" height="210" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <linearGradient id="steelGrad" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="#ff6f00" stop-opacity=".9"/>
+          <stop offset="100%" stop-color="#b71c1c" stop-opacity=".6"/>
+        </linearGradient>
+        <marker id="mOr" markerWidth="7" markerHeight="5" refX="7" refY="2.5" orient="auto"><path d="M0,0 L0,5 L7,2.5 Z" fill="#ff6f00"/></marker>
+        <marker id="mBl" markerWidth="7" markerHeight="5" refX="7" refY="2.5" orient="auto"><path d="M0,0 L0,5 L7,2.5 Z" fill="#5ab0ff"/></marker>
+        <filter id="glow-f"><feGaussianBlur stdDeviation="3" result="blur"/><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+      </defs>
+      <!-- Converter body -->
+      <path d="M175,28 Q175,10 195,10 L295,10 Q315,10 315,28 L332,148 Q332,166 302,174 L178,174 Q148,166 148,148 Z" fill="#1e1e1e" stroke="#ff6f00" stroke-width="2.2"/>
+      <!-- Steel pool -->
+      <ellipse cx="240" cy="156" rx="66" ry="11" fill="url(#steelGrad)" filter="url(#glow-f)"><animate attributeName="ry" values="10;12;10" dur="2s" repeatCount="indefinite"/></ellipse>
+      <!-- Molten fill -->
+      <path d="M175,132 Q210,143 240,146 Q270,143 305,132 L305,165 Q270,172 240,174 Q210,172 175,165 Z" fill="rgba(255,80,0,.18)"/>
+      <!-- O2 lance -->
+      <rect x="228" y="-2" width="24" height="72" rx="5" fill="#1565c0" opacity=".88"/>
+      <text x="240" y="-8" text-anchor="middle" font-family="Montserrat,sans-serif" font-size="10" fill="#5ab0ff" font-weight="700">O₂</text>
+      <!-- Oxygen bubbles -->
+      <circle cx="240" cy="76" r="5" fill="#5ab0ff" opacity=".7"><animate attributeName="cy" from="76" to="125" dur="1.3s" repeatCount="indefinite"/><animate attributeName="opacity" from=".7" to="0" dur="1.3s" repeatCount="indefinite"/></circle>
+      <circle cx="233" cy="82" r="3.5" fill="#5ab0ff" opacity=".5"><animate attributeName="cy" from="82" to="128" dur="1.1s" begin=".45s" repeatCount="indefinite"/><animate attributeName="opacity" from=".5" to="0" dur="1.1s" begin=".45s" repeatCount="indefinite"/></circle>
+      <circle cx="248" cy="79" r="4" fill="#5ab0ff" opacity=".6"><animate attributeName="cy" from="79" to="120" dur="1.5s" begin=".9s" repeatCount="indefinite"/><animate attributeName="opacity" from=".6" to="0" dur="1.5s" begin=".9s" repeatCount="indefinite"/></circle>
+      <!-- Coolant arrows left -->
+      <line x1="95" y1="75" x2="148" y2="75" stroke="#5ab0ff" stroke-width="2" stroke-dasharray="5,3" marker-end="url(#mBl)"/>
+      <line x1="95" y1="95" x2="148" y2="95" stroke="#ef5350" stroke-width="2" stroke-dasharray="5,3" marker-end="url(#mOr)"/>
+      <text x="60" y="72" text-anchor="middle" font-family="Montserrat,sans-serif" font-size="11" fill="#5ab0ff" font-weight="700">Брухт</text>
+      <text x="60" y="99" text-anchor="middle" font-family="Montserrat,sans-serif" font-size="11" fill="#ef5350" font-weight="700">Руда</text>
+      <rect x="28" y="104" width="40" height="24" rx="4" fill="#2d2d2d" stroke="#5ab0ff" stroke-width="1.4"/>
+      <line x1="33" y1="108" x2="63" y2="124" stroke="#5ab0ff" stroke-width="1.1"/><line x1="33" y1="118" x2="59" y2="108" stroke="#5ab0ff" stroke-width="1.1"/>
+      <!-- Steel out arrow -->
+      <line x1="332" y1="152" x2="398" y2="152" stroke="#ff6f00" stroke-width="2.2" marker-end="url(#mOr)"/>
+      <text x="413" y="148" font-family="Montserrat,sans-serif" font-size="11" fill="#ff6f00" font-weight="700">Сталь</text>
+      <text x="413" y="163" font-family="Montserrat,sans-serif" font-size="10" fill="#b0b0b0">t_tap °C</text>
+      <!-- Heat waves -->
+      <path d="M195,14 Q205,5 215,14 Q225,5 235,14" stroke="#ff6f00" stroke-width="1.4" fill="none"><animate attributeName="opacity" values=".3;.9;.3" dur="1.8s" repeatCount="indefinite"/></path>
+      <path d="M248,14 Q258,5 268,14 Q278,5 288,14" stroke="#ff6f00" stroke-width="1.4" fill="none"><animate attributeName="opacity" values=".9;.3;.9" dur="1.8s" repeatCount="indefinite"/></path>
+      <!-- Labels -->
+      <text x="240" y="198" text-anchor="middle" font-family="Montserrat,sans-serif" font-size="9.5" fill="#707070">Кисневий конвертер · 1000 кг шихти</text>
+    </svg>
+  </div>
+  <p class="ani d4" style="color:var(--text-muted);font-size:.78rem;margin-top:10px">Натисніть <kbd>→</kbd> щоб розпочати</p>
+</div>
+</section>
+
+<!-- ══════════════════════════════════════════════════
+     СЛАЙД 2: КОНТЕКСТ — ЩО ВІДБУВАЄТЬСЯ В КОНВЕРТЕРІ
+══════════════════════════════════════════════════ -->
+<section class="slide" data-slide="2">
+<div class="slide-content">
+  <h2>Що відбувається в конвертері?</h2>
+  <div class="grid-wide">
+    <div>
+      <div class="card card-orange ani" style="margin-bottom:15px">
+        <h3>🔥 Звідки береться тепло?</h3>
+        <p>У конвертер завантажують <strong style="color:#fff">рідкий чавун</strong> (~860 кг) і <strong style="color:#fff">металевий брухт</strong> (~140 кг). Через фурму задувають <strong style="color:#5ab0ff">кисень</strong>. Він окиснює вуглець, кремній і марганець чавуну — ці реакції <strong style="color:var(--accent-orange)">виділяють величезну кількість тепла</strong>.</p>
+      </div>
+      <div class="card ani d2" style="margin-bottom:15px">
+        <h3>🎯 Яка мета?</h3>
+        <p>Отримати сталь точно заданої температури <strong style="color:#fff">t_tap</strong>. Гарячіше — пошкоджується футерівка. Холодніше — сталь не розіллється нормально.</p>
+      </div>
+      <div class="card ani d3" style="border-left:3px solid var(--accent-blue)">
+        <h3 style="color:#5ab0ff">📐 Вхідні дані цієї роботи</h3>
+        <div style="margin-top:8px;display:flex;flex-wrap:wrap;gap:6px">
+          <span class="data-tag">ΔQ = 22.63 МДж</span>
+          <span class="data-tag">t_tap = 1616 °C</span>
+          <span class="data-tag">m_steel = 920.6 кг</span>
+          <span class="data-tag">x_ore = 0.50</span>
+        </div>
+      </div>
+    </div>
+    <div class="ani-r d2">
+      <div class="card" style="padding:18px 14px">
+        <h3 style="text-align:center;margin-bottom:12px">Тепловий баланс плавки</h3>
+        <svg viewBox="0 0 260 250" width="100%" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <marker id="a1" markerWidth="6" markerHeight="5" refX="6" refY="2.5" orient="auto"><path d="M0,0L0,5L6,2.5Z" fill="#5ab0ff"/></marker>
+            <marker id="a2" markerWidth="6" markerHeight="5" refX="6" refY="2.5" orient="auto"><path d="M0,0L0,5L6,2.5Z" fill="#ef5350"/></marker>
+          </defs>
+          <!-- Inputs -->
+          <rect x="0" y="16" width="82" height="30" rx="5" fill="#1565c0" opacity=".8"/>
+          <text x="41" y="36" text-anchor="middle" font-family="Montserrat,sans-serif" font-size="9" fill="#fff" font-weight="700">Хімічне тепло</text>
+          <rect x="0" y="56" width="82" height="30" rx="5" fill="#1565c0" opacity=".6"/>
+          <text x="41" y="76" text-anchor="middle" font-family="Montserrat,sans-serif" font-size="9" fill="#fff">Тепло чавуну</text>
+          <rect x="0" y="96" width="82" height="30" rx="5" fill="#1565c0" opacity=".4"/>
+          <text x="41" y="116" text-anchor="middle" font-family="Montserrat,sans-serif" font-size="9" fill="#fff">Шлакоутворення</text>
+          <text x="41" y="145" text-anchor="middle" font-family="Montserrat,sans-serif" font-size="9" fill="#5ab0ff">Q_in</text>
+          <!-- Center -->
+          <rect x="94" y="46" width="72" height="100" rx="10" fill="#2d2d2d" stroke="#ff6f00" stroke-width="1.8"/>
+          <text x="130" y="96" text-anchor="middle" font-family="Montserrat,sans-serif" font-size="9.5" fill="#ff6f00" font-weight="700">Баланс</text>
+          <text x="130" y="112" text-anchor="middle" font-family="Montserrat,sans-serif" font-size="9" fill="#707070">ΔQ = Q_in</text>
+          <text x="130" y="126" text-anchor="middle" font-family="Montserrat,sans-serif" font-size="9" fill="#707070">− Q_out</text>
+          <!-- Arrows in -->
+          <line x1="82" y1="31" x2="94" y2="70" stroke="#5ab0ff" stroke-width="1.4" marker-end="url(#a1)"/>
+          <line x1="82" y1="71" x2="94" y2="92" stroke="#5ab0ff" stroke-width="1.4" marker-end="url(#a1)"/>
+          <line x1="82" y1="111" x2="94" y2="116" stroke="#5ab0ff" stroke-width="1.4" marker-end="url(#a1)"/>
+          <!-- Outputs -->
+          <rect x="178" y="16" width="82" height="30" rx="5" fill="#b71c1c" opacity=".8"/>
+          <text x="219" y="36" text-anchor="middle" font-family="Montserrat,sans-serif" font-size="9" fill="#fff" font-weight="700">Тепло сталі</text>
+          <rect x="178" y="56" width="82" height="30" rx="5" fill="#b71c1c" opacity=".6"/>
+          <text x="219" y="76" text-anchor="middle" font-family="Montserrat,sans-serif" font-size="9" fill="#fff">Тепло шлаку</text>
+          <rect x="178" y="96" width="82" height="30" rx="5" fill="#b71c1c" opacity=".4"/>
+          <text x="219" y="116" text-anchor="middle" font-family="Montserrat,sans-serif" font-size="9" fill="#fff">Втрати</text>
+          <text x="219" y="145" text-anchor="middle" font-family="Montserrat,sans-serif" font-size="9" fill="#ef5350">Q_out</text>
+          <!-- Arrows out -->
+          <line x1="166" y1="70" x2="178" y2="31" stroke="#ef5350" stroke-width="1.4" marker-end="url(#a2)"/>
+          <line x1="166" y1="92" x2="178" y2="71" stroke="#ef5350" stroke-width="1.4" marker-end="url(#a2)"/>
+          <line x1="166" y1="116" x2="178" y2="111" stroke="#ef5350" stroke-width="1.4" marker-end="url(#a2)"/>
+          <!-- Delta Q -->
+          <rect x="80" y="170" width="100" height="30" rx="6" fill="rgba(255,111,0,.14)" stroke="rgba(255,111,0,.45)" stroke-width="1.4"/>
+          <text x="130" y="190" text-anchor="middle" font-family="Montserrat,sans-serif" font-size="10.5" fill="#ff6f00" font-weight="700">ΔQ &gt; 0 → перегрів!</text>
+          <line x1="130" y1="146" x2="130" y2="170" stroke="#ff6f00" stroke-width="1.4" stroke-dasharray="3,2"/>
+        </svg>
+      </div>
+    </div>
+  </div>
+</div>
+</section>
+
+<!-- ══════════════════════════════════════════════════
+     СЛАЙД 3: ПРОБЛЕМА І РІШЕННЯ
+══════════════════════════════════════════════════ -->
+<section class="slide" data-slide="3">
+<div class="slide-content">
+  <h2>Проблема: тепловий надлишок</h2>
+  <div class="grid-wide">
+    <div>
+      <div style="display:flex;flex-direction:column;gap:14px">
+        <div class="flip-card ani" style="height:140px" onclick="this.classList.toggle('flipped')">
+          <div class="flip-card-inner">
+            <div class="flip-front card card-red" style="display:flex;flex-direction:column;justify-content:center">
+              <h3 style="color:#ef5350">⚠️ Якщо ΔQ &gt; 0 — сталь перегріта на ~25-30°C</h3>
+              <p style="margin-top:8px;font-size:.87rem">Ерозія футерівки · Зростання N₂ і H₂ · Нестабільна якість</p>
+              <div class="flip-hint">↩ Натисніть для деталей</div>
+            </div>
+            <div class="flip-back" style="display:flex;flex-direction:column;justify-content:center">
+              <h3 style="color:#ef5350;margin-bottom:10px">Чому перегрів небезпечний?</h3>
+              <p style="font-size:.83rem;line-height:1.6;color:var(--text-primary)">При +25°C понад t_tap швидкість розчинення магнезиту у <strong style="color:var(--accent-orange)">2–3 рази</strong> вища. Азот і водень краще розчиняються — погіршується пластичність прокату.</p>
+            </div>
+          </div>
+        </div>
+        <div class="flip-card ani d2" style="height:140px" onclick="this.classList.toggle('flipped')">
+          <div class="flip-card-inner">
+            <div class="flip-front card card-orange" style="display:flex;flex-direction:column;justify-content:center">
+              <h3>💡 Рішення: охолоджувач</h3>
+              <p style="margin-top:8px;font-size:.87rem">Матеріал поглинає ΔQ → сталь виходить точно при <strong style="color:var(--accent-orange)">t_tap = 1616°C</strong></p>
+              <div class="flip-hint">↩ Натисніть для варіантів</div>
+            </div>
+            <div class="flip-back" style="display:flex;flex-direction:column;justify-content:center">
+              <h3 style="color:var(--accent-orange);margin-bottom:10px">Два типи охолоджувача:</h3>
+              <div style="display:flex;gap:12px">
+                <div style="flex:1;padding:8px;background:rgba(25,118,210,.15);border-radius:8px;text-align:center">
+                  <div style="color:#5ab0ff;font-weight:700">🧊 Брухт</div>
+                  <div style="font-size:.75rem;color:var(--text-muted);margin-top:4px">Фізика<br>~1324 кДж/кг</div>
+                </div>
+                <div style="flex:1;padding:8px;background:rgba(211,47,47,.15);border-radius:8px;text-align:center">
+                  <div style="color:#ef5350;font-weight:700">🪨 Руда</div>
+                  <div style="font-size:.75rem;color:var(--text-muted);margin-top:4px">Фізика+Хімія<br>~2800 кДж/кг</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="card ani d3" style="padding:12px 16px;background:rgba(255,111,0,.05)">
+          <p style="font-size:.82rem;color:var(--text-muted);text-align:center">🖱 Натисніть картки щоб побачити деталі</p>
+        </div>
+      </div>
+    </div>
+    <!-- Thermometer -->
+    <div class="ani-r d2" style="display:flex;justify-content:center;align-items:center">
+      <div class="card" style="padding:22px 18px;text-align:center;width:100%">
+        <p style="font-size:.78rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:16px">Температура сталі</p>
+        <svg viewBox="0 0 200 240" width="200" xmlns="http://www.w3.org/2000/svg" style="display:block;margin:0 auto">
+          <defs>
+            <linearGradient id="tg" x1="0" y1="1" x2="0" y2="0">
+              <stop offset="0%" stop-color="#ff6f00"/><stop offset="100%" stop-color="#d32f2f"/>
+            </linearGradient>
+            <clipPath id="tc"><rect x="81" y="18" width="22" height="144" rx="11"/></clipPath>
+          </defs>
+          <rect x="80" y="17" width="24" height="146" rx="12" fill="#2d2d2d" stroke="rgba(255,255,255,.1)" stroke-width="1.5"/>
+          <rect x="81" y="82" width="22" height="80" rx="0" fill="url(#tg)" clip-path="url(#tc)"><animate attributeName="y" from="162" to="82" dur="1.6s" fill="freeze"/><animate attributeName="height" from="0" to="80" dur="1.6s" fill="freeze"/></rect>
+          <circle cx="92" cy="172" r="22" fill="#d32f2f"/>
+          <circle cx="92" cy="172" r="15" fill="#ff5252"/>
+          <!-- Target line -->
+          <line x1="72" y1="105" x2="116" y2="105" stroke="#66bb6a" stroke-width="2" stroke-dasharray="3,2"/>
+          <text x="120" y="109" font-family="Montserrat,sans-serif" font-size="9" fill="#66bb6a" font-weight="700">t_tap</text>
+          <!-- Overheat zone -->
+          <rect x="72" y="79" width="44" height="25" rx="3" fill="rgba(211,47,47,.18)" stroke="rgba(211,47,47,.4)" stroke-width="1"/>
+          <text x="120" y="89" font-family="Montserrat,sans-serif" font-size="8" fill="#ef5350">+25-30°C</text>
+          <text x="120" y="101" font-family="Montserrat,sans-serif" font-size="8" fill="#ef5350">перегрів!</text>
+          <!-- Scale -->
+          <line x1="72" y1="152" x2="80" y2="152" stroke="#707070" stroke-width="1"/><text x="68" y="156" text-anchor="end" font-family="Montserrat,sans-serif" font-size="8" fill="#707070">1450</text>
+          <line x1="72" y1="128" x2="80" y2="128" stroke="#707070" stroke-width="1"/><text x="68" y="132" text-anchor="end" font-family="Montserrat,sans-serif" font-size="8" fill="#707070">1520</text>
+          <line x1="72" y1="105" x2="80" y2="105" stroke="#66bb6a" stroke-width="1.5"/>
+          <line x1="72" y1="80" x2="80" y2="80" stroke="#ef5350" stroke-width="1"/>
+          <text x="68" y="84" text-anchor="end" font-family="Montserrat,sans-serif" font-size="8" fill="#ef5350">1650</text>
+        </svg>
+        <div class="hl-box" style="margin-top:14px;font-size:.85rem">ΔQ = Q_in − Q_out &gt; 0</div>
+      </div>
+    </div>
+  </div>
+</div>
+</section>
+
+<!-- ══════════════════════════════════════════════════
+     СЛАЙД 4: БРУХТ — МЕХАНІЗМ ДІЇ
+══════════════════════════════════════════════════ -->
+<section class="slide" data-slide="4">
+<div class="slide-content">
+  <h2>Сталевий брухт: як він охолоджує?</h2>
+  <div class="card card-blue ani" style="margin-bottom:18px;padding:14px 18px">
+    <p style="font-size:.94rem"><strong style="color:#5ab0ff">Принцип:</strong> брухт поглинає тепло <em>виключно фізично</em> — йому потрібно нагрітися та розплавитись. Три послідовні стадії, кожна забирає свою частку тепла.</p>
+  </div>
+  <!-- Process flow -->
+  <div class="pflow ani d2">
+    <div class="pflow-step" style="border-top:3px solid #5ab0ff">
+      <span class="pflow-icon">🧊</span>
+      <div style="font-weight:700;color:#fff;font-size:.85rem">Кімнатна температура</div>
+      <div class="pflow-label">+20 °C<br>Тверда сталь<br>на складі</div>
+      <span class="pflow-heat ph-blue">Старт</span>
+    </div>
+    <div class="pflow-arr">→</div>
+    <div class="pflow-step" style="border-top:3px solid #ff9800">
+      <span class="pflow-icon">🔆</span>
+      <div style="font-weight:700;color:#fff;font-size:.85rem">Нагрів</div>
+      <div class="pflow-label">20 → 1535 °C<br>Тверда фаза<br>C·ΔT</div>
+      <span class="pflow-heat ph-orange">~74% тепла</span>
+    </div>
+    <div class="pflow-arr">→</div>
+    <div class="pflow-step" style="border-top:3px solid #ff6f00">
+      <span class="pflow-icon">💧</span>
+      <div style="font-weight:700;color:#fff;font-size:.85rem">Плавлення</div>
+      <div class="pflow-label">При 1535 °C<br>Фазовий перехід<br>тв. → рід.</div>
+      <span class="pflow-heat ph-orange">~21% тепла</span>
+    </div>
+    <div class="pflow-arr">→</div>
+    <div class="pflow-step" style="border-top:3px solid #d32f2f">
+      <span class="pflow-icon">🌡️</span>
+      <div style="font-weight:700;color:#fff;font-size:.85rem">Перегрів рідини</div>
+      <div class="pflow-label">1535 → t_tap<br>Рідка сталь<br>дотягує до t_tap</div>
+      <span class="pflow-heat ph-red">~5% тепла</span>
+    </div>
+  </div>
+  <div class="grid-3 ani d3" style="margin-top:18px">
+    <div class="card" style="text-align:center">
+      <div style="font-size:.75rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">При t_tap = 1460°C</div>
+      <div class="big-val">~1200</div>
+      <div style="font-size:.78rem;color:var(--text-muted);margin-top:4px">кДж/кг брухту</div>
+    </div>
+    <div class="card" style="text-align:center;border:1px solid rgba(255,111,0,.35);animation:pulse-border 2.5s infinite">
+      <div style="font-size:.75rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">Варіант 20 (1616°C)</div>
+      <div class="big-val">1324</div>
+      <div style="font-size:.78rem;color:var(--text-muted);margin-top:4px">кДж/кг брухту</div>
+    </div>
+    <div class="card" style="text-align:center">
+      <div style="font-size:.75rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">При t_tap = 1650°C</div>
+      <div class="big-val">~1490</div>
+      <div style="font-size:.78rem;color:var(--text-muted);margin-top:4px">кДж/кг брухту</div>
+    </div>
+  </div>
+  <div class="ani d4" style="margin-top:12px;padding:10px 16px;background:var(--bg-secondary);border-radius:8px;border:1px solid rgba(255,255,255,.06);font-size:.87rem;color:var(--text-secondary)">
+    💡 <strong style="color:#fff">Чим вища t_tap — тим більше тепла поглинає брухт</strong> (він більше перегрівається у рідкому стані). Залежність лінійна.
+  </div>
+</div>
+</section>
+
+<!-- ══════════════════════════════════════════════════
+     СЛАЙД 5: РУДА — МЕХАНІЗМ ДІЇ
+══════════════════════════════════════════════════ -->
+<section class="slide" data-slide="5">
+<div class="slide-content">
+  <h2>Залізна руда: подвійний ефект!</h2>
+  <div class="card card-red ani" style="margin-bottom:18px;padding:14px 18px">
+    <p style="font-size:.94rem"><strong style="color:#ef5350">Принцип:</strong> руда охолоджує і <em>фізично</em> (нагрів + волога), і <em>хімічно</em> — відновлення Fe₂O₃ вуглецем ванни є <strong style="color:#fff">сильно ендотермічною реакцією</strong>. Саме хімія дає подвійний ефект!</p>
+  </div>
+  <div class="pflow ani d2">
+    <div class="pflow-step" style="border-top:3px solid #795548">
+      <span class="pflow-icon">🪨</span>
+      <div style="font-weight:700;color:#fff;font-size:.82rem">Залізна руда</div>
+      <div class="pflow-label">+20 °C<br>~85% Fe₂O₃<br>~8% H₂O</div>
+      <span class="pflow-heat ph-orange">Старт</span>
+    </div>
+    <div class="pflow-arr">→</div>
+    <div class="pflow-step" style="border-top:3px solid #ff9800">
+      <span class="pflow-icon">♨️</span>
+      <div style="font-weight:700;color:#fff;font-size:.82rem">Нагрів + сушка</div>
+      <div class="pflow-label">Фізичний нагрів<br>+ випаровування<br>вологи</div>
+      <span class="pflow-heat ph-orange">~57% тепла</span>
+    </div>
+    <div class="pflow-arr">→</div>
+    <div class="pflow-step" style="border-top:3px solid #d32f2f;flex:1.5">
+      <span class="pflow-icon">⚗️</span>
+      <div style="font-weight:700;color:#ef5350;font-size:.82rem">★ Хімічне відновлення</div>
+      <div class="pflow-label" style="font-size:.72rem">Fe₂O₃ + 3C → 2Fe + 3CO↑<br>Ендотермічна реакція!<br>Розрив зв'язків Fe–O</div>
+      <span class="pflow-heat ph-red">~36% тепла</span>
+    </div>
+    <div class="pflow-arr">→</div>
+    <div class="pflow-step" style="border-top:3px solid #66bb6a">
+      <span class="pflow-icon">✅</span>
+      <div style="font-weight:700;color:#66bb6a;font-size:.82rem">Fe у ванну</div>
+      <div class="pflow-label">Відновлене залізо<br>розчиняється<br>у розплаві</div>
+      <span class="pflow-heat ph-green">~7% тепла</span>
+    </div>
+  </div>
+  <div class="ani d3" style="margin-top:18px;padding:16px 22px;background:rgba(255,111,0,.06);border-radius:10px;border:1px solid rgba(255,111,0,.2);display:flex;align-items:center;gap:20px">
+    <div style="text-align:center;flex-shrink:0">
+      <div class="big-val" style="font-size:3rem">2800</div>
+      <div style="font-size:.8rem;color:var(--text-muted)">кДж/кг руди</div>
+    </div>
+    <div style="flex:1;padding-left:18px;border-left:2px solid rgba(255,111,0,.2)">
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <div style="display:flex;justify-content:space-between;align-items:center;font-size:.85rem">
+          <span style="color:var(--text-secondary)">Нагрів твердої руди</span>
+          <span style="font-weight:700;color:#fff">~1390 кДж/кг</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center;font-size:.85rem">
+          <span style="color:var(--text-secondary)">Випаровування вологи (8%)</span>
+          <span style="font-weight:700;color:#fff">~230 кДж/кг</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center;font-size:.85rem">
+          <span style="color:#ef5350;font-weight:700">★ Хімічне відновлення Fe₂O₃</span>
+          <span style="font-weight:700;color:#ef5350">~1010 кДж/кг</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center;font-size:.85rem;border-top:1px solid rgba(255,255,255,.08);padding-top:6px">
+          <span style="color:var(--text-secondary)">Розчинення Fe (екзо, «–»)</span>
+          <span style="font-weight:700;color:#707070">~−90 кДж/кг</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</section>
+
+<!-- ══════════════════════════════════════════════════
+     СЛАЙД 6: ПОРІВНЯННЯ БРУХТ vs РУДА
+══════════════════════════════════════════════════ -->
+<section class="slide" data-slide="6">
+<div class="slide-content">
+  <h2>Порівняння: брухт vs руда</h2>
+  <div class="grid-wide">
+    <div>
+      <!-- BAR CHART -->
+      <div style="display:flex;flex-direction:column;gap:20px;margin-bottom:18px">
+        <div>
+          <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:7px">
+            <span style="font-size:.9rem;font-weight:700">Руда (Fe₂O₃)</span>
+            <span class="badge badge-red">Фізика + Хімія</span>
+          </div>
+          <div style="height:42px;background:var(--bg-tertiary);border-radius:6px;overflow:hidden">
+            <div id="bar-ore" style="height:100%;width:0%;background:linear-gradient(90deg,#b71c1c,#d32f2f);border-radius:6px;display:flex;align-items:center;padding-left:14px;font-weight:700;font-size:.9rem;color:#fff;transition:width 1.3s cubic-bezier(.22,1,.36,1)">2 800 кДж/кг</div>
+          </div>
+        </div>
+        <div>
+          <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:7px">
+            <span style="font-size:.9rem;font-weight:700">Брухт (сталь)</span>
+            <span class="badge badge-blue">Тільки фізика</span>
+          </div>
+          <div style="height:42px;background:var(--bg-tertiary);border-radius:6px;overflow:hidden">
+            <div id="bar-scrap" style="height:100%;width:0%;background:linear-gradient(90deg,#0d47a1,#1976d2);border-radius:6px;display:flex;align-items:center;padding-left:14px;font-weight:700;font-size:.9rem;color:#fff;transition:width 1.3s cubic-bezier(.22,1,.36,1) .3s">1 324 кДж/кг</div>
+          </div>
+        </div>
+      </div>
+      <div style="padding:14px 18px;background:rgba(255,111,0,.07);border-radius:8px;border:1px solid rgba(255,111,0,.2);text-align:center;margin-bottom:18px">
+        <p style="font-size:.95rem"><strong style="color:var(--accent-orange)">Руда у 2.1 рази ефективніша за масою</strong><br><span style="color:var(--text-secondary);font-size:.85rem">Менша маса → менше навантаження на конвертер</span></p>
+      </div>
+      <div class="card" style="border-left:3px solid #66bb6a">
+        <h3 style="color:#66bb6a">Але! Вихід металу відрізняється</h3>
+        <div style="margin-top:10px;display:flex;gap:14px">
+          <div style="flex:1;padding:10px;background:rgba(25,118,210,.08);border-radius:8px;text-align:center">
+            <div style="font-size:1.4rem;font-weight:900;color:#5ab0ff">92%</div>
+            <div style="font-size:.75rem;color:var(--text-muted);margin-top:3px">брухту → у сталь</div>
+          </div>
+          <div style="flex:1;padding:10px;background:rgba(211,47,47,.08);border-radius:8px;text-align:center">
+            <div style="font-size:1.4rem;font-weight:900;color:#ef5350">56%</div>
+            <div style="font-size:.75rem;color:var(--text-muted);margin-top:3px">руди → у сталь</div>
+          </div>
+          <div style="flex:1;padding:10px;background:rgba(255,111,0,.08);border-radius:8px;text-align:center">
+            <div style="font-size:1rem;font-weight:700;color:var(--accent-orange)">~0.3%</div>
+            <div style="font-size:.75rem;color:var(--text-muted);margin-top:3px">різниця у виході сталі</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <!-- Visual comparison -->
+    <div class="ani-r d3" style="display:flex;flex-direction:column;gap:14px">
+      <div class="card" style="text-align:center;padding:20px 16px">
+        <h3 style="text-align:center;margin-bottom:14px;color:var(--text-secondary);font-size:.85rem;font-weight:600;text-transform:uppercase;letter-spacing:.5px">Для поглинання ΔQ = 22.63 МДж потрібно:</h3>
+        <svg viewBox="0 0 220 180" width="100%" xmlns="http://www.w3.org/2000/svg">
+          <!-- Scrap pile -->
+          <rect x="20" y="60" width="60" height="70" rx="6" fill="#1565c0" opacity=".25"/>
+          <rect x="25" y="55" width="50" height="20" rx="4" fill="#1976d2" opacity=".6"/>
+          <rect x="30" y="45" width="40" height="18" rx="4" fill="#1976d2" opacity=".5"/>
+          <rect x="35" y="36" width="30" height="17" rx="4" fill="#1976d2" opacity=".4"/>
+          <text x="50" y="110" text-anchor="middle" font-family="Montserrat,sans-serif" font-size="11" fill="#fff" font-weight="700">Брухт</text>
+          <text x="50" y="126" text-anchor="middle" font-family="Montserrat,sans-serif" font-size="18" fill="#5ab0ff" font-weight="900">17.1</text>
+          <text x="50" y="142" text-anchor="middle" font-family="Montserrat,sans-serif" font-size="10" fill="#5ab0ff">кг</text>
+          <!-- VS -->
+          <text x="110" y="100" text-anchor="middle" font-family="Montserrat,sans-serif" font-size="22" fill="#ff6f00" font-weight="900" opacity=".6">VS</text>
+          <!-- Ore pile -->
+          <rect x="150" y="100" width="48" height="30" rx="5" fill="#b71c1c" opacity=".6"/>
+          <rect x="154" y="86" width="40" height="20" rx="4" fill="#d32f2f" opacity=".5"/>
+          <rect x="158" y="75" width="32" height="18" rx="4" fill="#d32f2f" opacity=".4"/>
+          <text x="174" y="147" text-anchor="middle" font-family="Montserrat,sans-serif" font-size="11" fill="#fff" font-weight="700">Руда</text>
+          <text x="174" y="163" text-anchor="middle" font-family="Montserrat,sans-serif" font-size="18" fill="#ef5350" font-weight="900">8.1</text>
+          <text x="174" y="178" text-anchor="middle" font-family="Montserrat,sans-serif" font-size="10" fill="#ef5350">кг</text>
+          <!-- Arrow showing 2.1x -->
+          <line x1="85" y1="60" x2="148" y2="60" stroke="rgba(255,111,0,.4)" stroke-width="1.5" stroke-dasharray="4,3"/>
+          <text x="116" y="55" text-anchor="middle" font-family="Montserrat,sans-serif" font-size="9" fill="#ff6f00">÷ 2.1×</text>
+        </svg>
+      </div>
+    </div>
+  </div>
+</div>
+</section>
+
+<!-- ══════════════════════════════════════════════════
+     СЛАЙД 7: ЛОГІКА РОЗРАХУНКУ
+══════════════════════════════════════════════════ -->
+<section class="slide" data-slide="7">
+<div class="slide-content">
+  <h2>Логіка розрахунку</h2>
+  <div class="grid-wide">
+    <div>
+      <!-- Decision flow -->
+      <div style="display:flex;flex-direction:column;align-items:center;gap:10px">
+        <div class="ani" style="width:100%;padding:13px 22px;border-radius:30px;background:var(--gradient-fire);color:#fff;font-weight:700;text-align:center;font-size:.92rem">ΔQ з попередньої роботи (ПР №4)</div>
+        <div style="color:var(--accent-orange);font-size:1.3rem;animation:farrow 1.5s infinite">↓</div>
+        <div class="ani d1" style="width:100%;padding:13px 22px;border-radius:30px;background:var(--bg-tertiary);border:2px dashed rgba(255,111,0,.45);text-align:center;font-weight:700;font-size:.92rem">ΔQ &gt; 0 ?</div>
+        <div class="ani d2" style="width:100%;display:flex;gap:28px;justify-content:center">
+          <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:7px">
+            <span style="font-size:.78rem;color:#66bb6a;font-weight:700">ТАК ✓</span>
+            <div style="color:var(--accent-orange);font-size:1.1rem">↓</div>
+            <div style="width:100%;padding:11px 14px;border-radius:12px;background:rgba(46,125,50,.14);border:1px solid rgba(46,125,50,.45);color:#66bb6a;font-weight:700;font-size:.85rem;text-align:center">Рахуємо масу охолоджувача</div>
+          </div>
+          <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:7px">
+            <span style="font-size:.78rem;color:#5ab0ff;font-weight:700">НІ ✗</span>
+            <div style="color:var(--accent-orange);font-size:1.1rem">↓</div>
+            <div style="width:100%;padding:11px 14px;border-radius:12px;background:rgba(25,118,210,.12);border:1px solid rgba(25,118,210,.4);color:#5ab0ff;font-weight:700;font-size:.85rem;text-align:center">Охолоджувач не потрібен</div>
+          </div>
+        </div>
+      </div>
+      <div class="card ani d3" style="margin-top:16px">
+        <h3 style="margin-bottom:10px">📐 Параметр x_ore — частка руди в суміші</h3>
+        <div style="display:flex;gap:10px">
+          <div style="flex:1;text-align:center;padding:10px;background:var(--bg-tertiary);border-radius:8px">
+            <div style="font-size:1.4rem;font-weight:900;color:#5ab0ff">0.0</div>
+            <div style="font-size:.74rem;color:var(--text-muted);margin-top:2px">Чистий брухт</div>
+          </div>
+          <div style="display:flex;align-items:center;color:var(--text-muted);font-size:.8rem">←→</div>
+          <div style="flex:1;text-align:center;padding:10px;background:rgba(255,111,0,.1);border-radius:8px;border:1px solid rgba(255,111,0,.3)">
+            <div style="font-size:1.4rem;font-weight:900;color:var(--accent-orange)">0.5</div>
+            <div style="font-size:.74rem;color:var(--text-muted);margin-top:2px">Суміш 50/50</div>
+          </div>
+          <div style="display:flex;align-items:center;color:var(--text-muted);font-size:.8rem">←→</div>
+          <div style="flex:1;text-align:center;padding:10px;background:var(--bg-tertiary);border-radius:8px">
+            <div style="font-size:1.4rem;font-weight:900;color:#ef5350">1.0</div>
+            <div style="font-size:.74rem;color:var(--text-muted);margin-top:2px">Чиста руда</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="ani-r d2">
+      <div class="card" style="height:100%">
+        <h3 style="margin-bottom:14px">🧮 Три кроки розрахунку</h3>
+        <div style="display:flex;flex-direction:column;gap:12px">
+          <div style="padding:12px 15px;background:var(--bg-tertiary);border-radius:8px">
+            <div style="margin-bottom:6px"><span class="step-tag">Крок 1</span><span style="font-size:.87rem;color:var(--text-secondary)">Ефективність суміші</span></div>
+            <div style="padding:8px 12px;background:rgba(255,111,0,.06);border-radius:6px;text-align:center;font-size:.85rem;color:#fff">
+              Ефект = x_ore × 2800 + (1 – x_ore) × 1324
+            </div>
+          </div>
+          <div style="padding:12px 15px;background:var(--bg-tertiary);border-radius:8px">
+            <div style="margin-bottom:6px"><span class="step-tag" style="background:#1976d2">Крок 2</span><span style="font-size:.87rem;color:var(--text-secondary)">Маса охолоджувача</span></div>
+            <div style="padding:8px 12px;background:rgba(25,118,210,.08);border-radius:6px;text-align:center;font-size:.85rem;color:#fff">
+              m = ΔQ (кДж) ÷ Ефект (кДж/кг)
+            </div>
+          </div>
+          <div style="padding:12px 15px;background:var(--bg-tertiary);border-radius:8px">
+            <div style="margin-bottom:6px"><span class="step-tag" style="background:#2e7d32">Крок 3</span><span style="font-size:.87rem;color:var(--text-secondary)">Верифікація</span></div>
+            <div style="padding:8px 12px;background:rgba(46,125,50,.08);border-radius:6px;text-align:center;font-size:.85rem;color:#66bb6a;font-weight:700">
+              Q_поглинуте ≈ ΔQ → похибка &lt; 0.1% ✓
+            </div>
+          </div>
+          <div style="padding:12px 15px;background:rgba(255,111,0,.05);border-radius:8px;border:1px solid rgba(255,111,0,.15)">
+            <div style="font-size:.83rem;color:var(--text-secondary);line-height:1.5">Новий вихід сталі = (стара сталь + Fe з охолоджувача) / нова шихта × 100%</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</section>
+
+<!-- ══════════════════════════════════════════════════
+     СЛАЙД 8: ІНТЕРАКТИВНИЙ КАЛЬКУЛЯТОР
+══════════════════════════════════════════════════ -->
+<section class="slide" data-slide="8">
+<div class="slide-content">
+  <h2>Інтерактивний калькулятор</h2>
+  <div class="slider-section ani">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+      <div>
+        <div style="font-size:.78rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:6px">Частка руди x_ore</div>
+        <span class="data-tag">ΔQ = 22.63 МДж</span>
+        <span class="data-tag">t_tap = 1616 °C</span>
+      </div>
+      <div style="text-align:right">
+        <div id="xoreDisplay" style="font-size:2.2rem;font-weight:900;color:var(--accent-orange);line-height:1;transition:all .2s">0.50</div>
+        <div style="font-size:.72rem;color:var(--text-muted)">x_ore</div>
+      </div>
+    </div>
+    <input type="range" id="xoreSlider" min="0" max="100" value="50" step="1">
+    <div class="slider-labels">
+      <span>0.00 Чистий брухт</span><span>0.25</span><span>0.50 Суміш</span><span>0.75</span><span>1.00 Чиста руда</span>
+    </div>
+    <!-- Mix visual bar -->
+    <div class="mix-bar">
+      <div class="mix-scrap" id="mixScrapBar" style="flex:0.5">Брухт</div>
+      <div class="mix-ore" id="mixOreBar" style="flex:0.5">Руда</div>
+    </div>
+    <!-- Results -->
+    <div class="calc-results">
+      <div class="calc-card">
+        <div class="val" id="calcMix">10.97</div>
+        <div class="lbl">Маса суміші, кг</div>
+      </div>
+      <div class="calc-card">
+        <div class="val" id="calcScrap" style="color:#5ab0ff">5.49</div>
+        <div class="lbl">Брухту, кг</div>
+      </div>
+      <div class="calc-card">
+        <div class="val" id="calcOre" style="color:#ef5350">5.49</div>
+        <div class="lbl">Руди, кг</div>
+      </div>
+      <div class="calc-card">
+        <div class="val" id="calcYield" style="color:#66bb6a">91.87</div>
+        <div class="lbl">Вихід сталі, %</div>
+      </div>
+    </div>
+  </div>
+  <div class="ani d2" style="margin-top:14px;padding:12px 16px;background:var(--bg-secondary);border-radius:10px;border:1px solid rgba(255,255,255,.06);display:flex;align-items:center;gap:14px">
+    <span style="font-size:1.5rem">💡</span>
+    <p id="sliderInsight" style="font-size:.88rem;color:var(--text-secondary)">Суміш 50/50 — компроміс між мінімальною масою та максимальним виходом сталі.</p>
+  </div>
+</div>
+</section>
+
+<!-- ══════════════════════════════════════════════════
+     СЛАЙД 9: РЕЗУЛЬТАТИ ВАРІАНТ 20
+══════════════════════════════════════════════════ -->
+<section class="slide" data-slide="9">
+<div class="slide-content">
+  <h2>Результати розрахунку — Варіант 20</h2>
+  <div class="grid-wide">
+    <div class="ani">
+      <div class="card" style="padding:0;overflow:hidden;margin-bottom:16px">
+        <div style="padding:12px 16px;background:var(--bg-tertiary);border-bottom:1px solid rgba(255,255,255,.06)">
+          <span style="font-size:.76rem;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--text-muted)">Вхідні дані</span>
+        </div>
+        <table class="res-table">
+          <tr><td>Тепловий надлишок ΔQ</td><td><strong style="color:#fff">22.63 МДж</strong></td></tr>
+          <tr><td>Температура випуску t_tap</td><td><strong style="color:#fff">1616 °C</strong></td></tr>
+          <tr><td>Частка руди x_ore</td><td><strong style="color:var(--accent-orange)">0.50</strong></td></tr>
+          <tr><td>Ефект. брухту Δh_scrap</td><td>1 324 кДж/кг</td></tr>
+          <tr><td>Ефект. суміші Δh_mix</td><td>2 062 кДж/кг</td></tr>
+        </table>
+      </div>
+      <!-- Comparison bars -->
+      <div class="card" style="padding:14px 16px">
+        <h3 style="font-size:.82rem;margin-bottom:12px;color:var(--text-secondary);text-transform:uppercase;letter-spacing:.5px">Маса охолоджувача при різних x_ore</h3>
+        <div style="display:flex;flex-direction:column;gap:8px">
+          <div style="display:flex;align-items:center;gap:10px">
+            <div style="width:86px;font-size:.8rem;color:#5ab0ff;font-weight:700;text-align:right">Брухт (x=0)</div>
+            <div style="flex:1;height:24px;background:var(--bg-tertiary);border-radius:4px;overflow:hidden"><div style="width:100%;height:100%;background:linear-gradient(90deg,#0d47a1,#1976d2);border-radius:4px;display:flex;align-items:center;padding-left:10px;font-size:.8rem;font-weight:700">17.09 кг</div></div>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px">
+            <div style="width:86px;font-size:.8rem;color:var(--accent-orange);font-weight:700;text-align:right">Суміш (x=0.5)</div>
+            <div style="flex:1;height:24px;background:var(--bg-tertiary);border-radius:4px;overflow:hidden"><div style="width:64%;height:100%;background:linear-gradient(90deg,#e65100,#ff6f00);border-radius:4px;display:flex;align-items:center;padding-left:10px;font-size:.8rem;font-weight:700">10.97 кг</div></div>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px">
+            <div style="width:86px;font-size:.8rem;color:#ef5350;font-weight:700;text-align:right">Руда (x=1)</div>
+            <div style="flex:1;height:24px;background:var(--bg-tertiary);border-radius:4px;overflow:hidden"><div style="width:47%;height:100%;background:linear-gradient(90deg,#b71c1c,#d32f2f);border-radius:4px;display:flex;align-items:center;padding-left:10px;font-size:.8rem;font-weight:700">8.08 кг</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="ani-r d2">
+      <div class="card" style="padding:0;overflow:hidden;margin-bottom:14px">
+        <div style="padding:12px 16px;background:var(--bg-tertiary);border-bottom:1px solid rgba(255,255,255,.06)">
+          <span style="font-size:.76rem;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--text-muted)">Результати (x_ore = 0.5)</span>
+        </div>
+        <table class="res-table">
+          <tr class="hl-row"><td><strong>Маса суміші m_mix</strong></td><td><strong><span id="cnt-mix">10.97</span> кг</strong></td></tr>
+          <tr><td>з них брухту</td><td><strong style="color:#5ab0ff"><span id="cnt-scrap">5.49</span> кг</strong></td></tr>
+          <tr><td>з них руди</td><td><strong style="color:#ef5350"><span id="cnt-ore">5.49</span> кг</strong></td></tr>
+          <tr><td>Нова маса сталі</td><td>931.66 кг</td></tr>
+          <tr><td>Нова маса шихти</td><td>1 010.97 кг</td></tr>
+          <tr><td>Вихід сталі Yield</td><td><strong style="color:#66bb6a"><span id="cnt-yield">91.87</span> %</strong></td></tr>
+        </table>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px">
+        <div style="text-align:center;padding:13px;background:rgba(25,118,210,.1);border-radius:10px;border:1px solid rgba(25,118,210,.3)">
+          <div style="font-size:1.35rem;font-weight:900;color:#5ab0ff">17.09 кг</div>
+          <div style="font-size:.73rem;color:var(--text-muted);margin-top:3px">якби тільки брухт</div>
+        </div>
+        <div style="text-align:center;padding:13px;background:rgba(211,47,47,.1);border-radius:10px;border:1px solid rgba(211,47,47,.3)">
+          <div style="font-size:1.35rem;font-weight:900;color:#ef5350">8.08 кг</div>
+          <div style="font-size:.73rem;color:var(--text-muted);margin-top:3px">якби тільки руда</div>
+        </div>
+      </div>
+      <div style="padding:12px 16px;background:rgba(255,111,0,.07);border-radius:8px;border:1px solid rgba(255,111,0,.2);text-align:center">
+        <span style="font-size:.9rem;color:var(--accent-orange);font-weight:700">Суміш: оптимальний баланс маси і виходу ✓</span>
+      </div>
+    </div>
+  </div>
+</div>
+</section>
+
+<!-- ══════════════════════════════════════════════════
+     СЛАЙД 10: АНАЛІЗ ЧУТЛИВОСТІ
+══════════════════════════════════════════════════ -->
+<section class="slide" data-slide="10">
+<div class="slide-content">
+  <h2>Аналіз чутливості до x_ore</h2>
+  <div class="grid-2">
+    <div class="ani">
+      <div class="card" style="padding:0;overflow:hidden;margin-bottom:14px">
+        <div style="padding:12px 16px;background:var(--bg-tertiary);border-bottom:1px solid rgba(255,255,255,.06)">
+          <span style="font-size:.76rem;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--text-muted)">Таблиця чутливості · Варіант 20</span>
+        </div>
+        <table class="res-table">
+          <thead><tr><th>x_ore</th><th>m_mix, кг</th><th>Yield, %</th></tr></thead>
+          <tbody>
+            <tr><td>0.00 (брухт)</td><td><strong style="color:#5ab0ff">17.09</strong></td><td>92.06</td></tr>
+            <tr><td>0.25</td><td>13.36</td><td>91.94</td></tr>
+            <tr class="hl-row"><td>0.50 ★</td><td><strong>10.97</strong></td><td><strong>91.87</strong></td></tr>
+            <tr><td>0.75</td><td>9.31</td><td>91.81</td></tr>
+            <tr><td>1.00 (руда)</td><td><strong style="color:#ef5350">8.08</strong></td><td>91.77</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="card hl-green" style="text-align:center;padding:14px">
+        <div style="font-size:1.1rem;font-weight:700">Різниця виходу: <span style="color:#66bb6a">всього 0.29%</span></div>
+        <div style="font-size:.83rem;color:var(--text-muted);margin-top:5px">При економії маси у 2.1 рази!</div>
+      </div>
+    </div>
+    <div class="ani-r d2">
+      <!-- Animated yield bars -->
+      <div class="card" style="text-align:center;padding:22px 16px">
+        <h3 style="text-align:center;margin-bottom:4px;color:var(--text-secondary);font-size:.82rem;text-transform:uppercase;letter-spacing:.5px">Вихід придатної сталі (%)</h3>
+        <div class="yb-wrap" id="yieldBars">
+          <div class="yb-col">
+            <div class="yb-val" style="color:#5ab0ff">92.06</div>
+            <div class="yb-bar yb-scrap" id="yb-scrap"></div>
+            <div class="yb-lbl">Тільки<br>брухт</div>
+          </div>
+          <div class="yb-col">
+            <div class="yb-val" style="color:var(--accent-orange)">91.94</div>
+            <div class="yb-bar yb-scrap" id="yb-25" style="background:linear-gradient(to top,#0d47a1,#1565c0)"></div>
+            <div class="yb-lbl">x=0.25</div>
+          </div>
+          <div class="yb-col">
+            <div class="yb-val" style="color:var(--accent-orange)">91.87</div>
+            <div class="yb-bar yb-mix" id="yb-mix"></div>
+            <div class="yb-lbl">Суміш<br>50/50 ★</div>
+          </div>
+          <div class="yb-col">
+            <div class="yb-val" style="color:#ef5350">91.81</div>
+            <div class="yb-bar yb-ore" id="yb-75" style="background:linear-gradient(to top,#c62828,#e53935)"></div>
+            <div class="yb-lbl">x=0.75</div>
+          </div>
+          <div class="yb-col">
+            <div class="yb-val" style="color:#ef5350">91.77</div>
+            <div class="yb-bar yb-ore" id="yb-ore"></div>
+            <div class="yb-lbl">Тільки<br>руда</div>
+          </div>
+        </div>
+        <div style="margin-top:14px;padding:8px;background:rgba(46,125,50,.08);border-radius:8px;border:1px solid rgba(46,125,50,.2)">
+          <span style="color:#66bb6a;font-weight:700;font-size:.85rem">Усі варіанти дають &gt; 91.7% виходу</span>
+        </div>
+      </div>
+      <div class="card" style="margin-top:14px;border-left:3px solid var(--accent-orange)">
+        <h3>🎯 Висновок</h3>
+        <p style="margin-top:6px;font-size:.88rem">Перехід від брухту до руди зменшує масу охолоджувача у <strong style="color:var(--accent-orange)">2.1 рази</strong> при зниженні виходу сталі лише на <strong style="color:#fff">0.29 пп</strong>. Вибір визначається економікою та логістикою цеху.</p>
+      </div>
+    </div>
+  </div>
+</div>
+</section>
+
+<!-- ══════════════════════════════════════════════════
+     СЛАЙД 11: ВИСНОВКИ
+══════════════════════════════════════════════════ -->
+<section class="slide" data-slide="11">
+<div class="slide-content" style="text-align:center">
+  <h1 class="ani">Термостатування завершено</h1>
+  <p class="ani d1" style="font-size:1.15rem;color:var(--text-secondary);margin-bottom:6px">Тепловий баланс зведено до нуля з точністю &lt; 0.1%</p>
+  <p class="ani d2" style="font-size:.88rem;color:var(--accent-orange);margin-bottom:22px;font-weight:600">ΔQ = 22.63 МДж → поглинуто охолоджувачем повністю ✓</p>
+  <div class="grid-3 ani d2" style="margin-bottom:20px">
+    <div class="card card-blue" style="text-align:center;padding:16px">
+      <div style="font-size:1.8rem;margin-bottom:7px">🧊</div>
+      <h3>Брухт</h3>
+      <div class="big-val" style="font-size:1.7rem">~1324</div>
+      <div style="font-size:.75rem;color:var(--text-muted);margin-top:3px">кДж/кг · тільки фізика</div>
+      <div style="margin-top:10px;font-size:.82rem;color:var(--text-secondary)">Потрібно <strong style="color:#5ab0ff">17.09 кг</strong><br>Вихід сталі: <strong>92.06%</strong></div>
+    </div>
+    <div class="card ani d3" style="text-align:center;padding:16px;border:2px solid var(--accent-orange);animation:pulse-border 2.5s infinite">
+      <div style="font-size:1.8rem;margin-bottom:7px">⚖️</div>
+      <h3>Суміш 50/50</h3>
+      <div class="big-val" style="font-size:1.7rem">10.97</div>
+      <div style="font-size:.75rem;color:var(--text-muted);margin-top:3px">кг · оптимальне рішення</div>
+      <div style="margin-top:10px;font-size:.82rem;color:var(--text-secondary)">Ефект: <strong style="color:var(--accent-orange)">2062 кДж/кг</strong><br>Вихід сталі: <strong>91.87%</strong></div>
+    </div>
+    <div class="card card-red" style="text-align:center;padding:16px">
+      <div style="font-size:1.8rem;margin-bottom:7px">🪨</div>
+      <h3>Руда</h3>
+      <div class="big-val" style="font-size:1.7rem;color:#ef5350">~2800</div>
+      <div style="font-size:.75rem;color:var(--text-muted);margin-top:3px">кДж/кг · фізика + хімія</div>
+      <div style="margin-top:10px;font-size:.82rem;color:var(--text-secondary)">Потрібно <strong style="color:#ef5350">8.08 кг</strong><br>Вихід сталі: <strong>91.77%</strong></div>
+    </div>
+  </div>
+  <div class="card ani d4" style="max-width:660px;margin:0 auto 24px;text-align:left;padding:18px 22px">
+    <p style="font-size:.91rem;line-height:1.7"><strong style="color:var(--accent-orange)">Підсумок ПР №5:</strong> Розраховано масу охолоджувача для гарантування <strong style="color:#fff">t_tap = 1616°C</strong>. Руда у 2.1× ефективніша за масою. Обидва варіанти дають <strong style="color:#66bb6a">вихід сталі &gt;91.7%</strong>. Наступна робота — ПР №6: розрахунок шлакового режиму.</p>
+  </div>
+  <div style="display:flex;justify-content:center" class="ani d5">
+    <div class="restart-container">
+      <div class="fire-wrapper" id="fireEffect">
+        <div class="flame" style="left:5%;animation-delay:.1s;width:50px"></div>
+        <div class="flame" style="left:14%;animation-delay:.4s"></div>
+        <div class="flame" style="left:24%;animation-delay:.2s;width:58px"></div>
+        <div class="flame" style="left:34%;animation-delay:.6s"></div>
+        <div class="flame" style="left:45%;animation-delay:.1s;width:44px"></div>
+        <div class="flame" style="left:55%;animation-delay:.35s"></div>
+        <div class="flame" style="left:65%;animation-delay:.5s;width:52px"></div>
+        <div class="flame" style="left:75%;animation-delay:.25s"></div>
+        <div class="flame" style="left:85%;animation-delay:.7s;width:38px"></div>
+        <div class="flame" style="left:94%;animation-delay:.45s"></div>
+      </div>
+      <button class="restart-btn" id="restartBtn">До початку</button>
+    </div>
+  </div>
+</div>
+</section>
+
+</div><!-- /slides-container -->
+
+<div class="keyboard-hints">
+  <span><kbd>←</kbd> <kbd>→</kbd> навігація</span>
+  <span><kbd>Space</kbd> вперед</span>
+  <span><kbd>Home</kbd> / <kbd>End</kbd> перший/останній</span>
+</div>
+
+<script>
+// ════════════════════════════════════════
+//  STATE & NAVIGATION
+// ════════════════════════════════════════
+let cur = 1;
+const slides = document.querySelectorAll('.slide');
+const total  = slides.length;
+const progressBar    = document.getElementById('progressBar');
+const currentSlideEl = document.getElementById('currentSlide');
+const totalSlidesEl  = document.getElementById('totalSlides');
+const prevBtn        = document.getElementById('prevBtn');
+const nextBtn        = document.getElementById('nextBtn');
+
+totalSlidesEl.textContent = total;
+
+// ── DOT NAVIGATION ──────────────────────
+const dotNav = document.getElementById('dotNav');
+for (let i = 1; i <= total; i++) {
+  const dot = document.createElement('button');
+  dot.className = 'dot' + (i === 1 ? ' active' : '');
+  dot.title = `Слайд ${i}`;
+  dot.addEventListener('click', () => goTo(i));
+  dotNav.appendChild(dot);
+}
+
+function updateDots() {
+  dotNav.querySelectorAll('.dot').forEach((d, i) => {
+    d.classList.toggle('active', i + 1 === cur);
+  });
+}
+
+// ── SLIDE TRANSITION ────────────────────
+function goTo(n) {
+  if (n < 1 || n > total) return;
+  const prev = document.querySelector('.slide.active');
+  const next = document.querySelector(`.slide[data-slide="${n}"]`);
+  if (!next || prev === next) return;
+  if (prev) {
+    prev.classList.add('exit');
+    prev.classList.remove('active');
+    setTimeout(() => prev.classList.remove('exit'), 700);
+  }
+  setTimeout(() => {
+    next.classList.add('active');
+    restartAnims(next);
+    onEnter(n);
+  }, 130);
+  cur = n;
+  updateUI();
+  updateDots();
+}
+const nextSlide = () => goTo(cur + 1);
+const prevSlide = () => goTo(cur - 1);
+
+function updateUI() {
+  currentSlideEl.textContent = cur;
+  progressBar.style.width = `${(cur / total) * 100}%`;
+  prevBtn.disabled = cur === 1;
+  nextBtn.disabled = cur === total;
+}
+
+function restartAnims(slide) {
+  slide.querySelectorAll('.ani,.ani-l,.ani-r,.ani-s').forEach(el => {
+    el.style.animation = 'none';
+    void el.offsetWidth;
+    el.style.animation = null;
+  });
+}
+
+// ════════════════════════════════════════
+//  SLIDE ENTER HOOKS
+// ════════════════════════════════════════
+function onEnter(n) {
+  if (n === 1)  spawnParticles('slide1-particles', 18);
+  if (n === 6)  setTimeout(animateBars6, 200);
+  if (n === 9)  setTimeout(animateCounters9, 400);
+  if (n === 10) setTimeout(animateBars10, 250);
+  if (n === 11) setTimeout(spawnFireParticles, 600);
+}
+
+// ── PARTICLES (slide 1) ─────────────────
+function spawnParticles(containerId, count) {
+  const c = document.getElementById(containerId);
+  if (!c || c.childElementCount > 0) return;
+  for (let i = 0; i < count; i++) {
+    const p = document.createElement('div');
+    p.className = 'particle';
+    p.style.cssText = `
+      left:${Math.random()*100}%;
+      top:${60 + Math.random()*40}%;
+      --dx:${(Math.random()-0.5)*80}px;
+      --dur:${2.5 + Math.random()*3}s;
+      --del:${Math.random()*4}s;
+      width:${2+Math.random()*5}px;
+      height:${2+Math.random()*5}px;
+      opacity:${0.2+Math.random()*0.5};
+      background:${Math.random()>.5?'var(--accent-orange)':'#ff9800'};
+    `;
+    c.appendChild(p);
+  }
+}
+
+// ── BAR CHART (slide 6) ──────────────────
+function animateBars6() {
+  const o = document.getElementById('bar-ore');
+  const s = document.getElementById('bar-scrap');
+  if (o) o.style.width = '100%';
+  if (s) s.style.width = '47.3%';
+}
+
+// ── ANIMATED COUNTERS (slide 9) ──────────
+function animateCounters9() {
+  animateNum('cnt-mix',   0, 10.97, 1.0, 2);
+  animateNum('cnt-scrap', 0, 5.49,  0.8, 2);
+  animateNum('cnt-ore',   0, 5.49,  0.8, 2);
+  animateNum('cnt-yield', 91.5, 91.87, 1.2, 2);
+}
+
+function animateNum(id, from, to, dur, dec) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  const start = performance.now();
+  function step(ts) {
+    const t = Math.min((ts - start) / (dur * 1000), 1);
+    const ease = t < .5 ? 2*t*t : -1+(4-2*t)*t;
+    el.textContent = (from + (to - from) * ease).toFixed(dec);
+    if (t < 1) requestAnimationFrame(step);
+  }
+  requestAnimationFrame(step);
+}
+
+// ── YIELD BARS (slide 10) ────────────────
+function animateBars10() {
+  const map = {'yb-scrap':176,'yb-25':168,'yb-mix':162,'yb-75':157,'yb-ore':153};
+  const delays = [0, 200, 400, 600, 800];
+  Object.entries(map).forEach(([id, h], i) => {
+    setTimeout(() => {
+      const el = document.getElementById(id);
+      if (el) el.style.height = h + 'px';
+    }, delays[i]);
+  });
+}
+
+// ── FIRE PARTICLES (slide 11) ────────────
+function spawnFireParticles() {
+  const slide = document.querySelector('.slide[data-slide="11"]');
+  if (!slide) return;
+  let fp = slide.querySelector('.fire-particles');
+  if (!fp) {
+    fp = document.createElement('div');
+    fp.className = 'fire-particles particles';
+    slide.insertBefore(fp, slide.firstChild);
+  }
+  if (fp.childElementCount > 0) return;
+  for (let i = 0; i < 12; i++) {
+    const p = document.createElement('div');
+    p.className = 'particle';
+    p.style.cssText = `
+      left:${Math.random()*100}%;
+      top:${50+Math.random()*50}%;
+      --dx:${(Math.random()-0.5)*60}px;
+      --dur:${1.8+Math.random()*2}s;
+      --del:${Math.random()*3}s;
+      background:#ff6f00;
+    `;
+    fp.appendChild(p);
+  }
+}
+
+// ════════════════════════════════════════
+//  INTERACTIVE SLIDER (Slide 8)
+// ════════════════════════════════════════
+const DQ_KJ    = 22.63 * 1000;
+const MSTEEL   = 920.60;
+const MCHARGE  = 1000;
+const DH_ORE   = 2800;
+const DH_SCRAP = 1324.47;
+const ETA_S    = 0.92;
+const ETA_O    = 0.56;
+
+function calcXore(xore) {
+  const dhMix  = xore * DH_ORE + (1 - xore) * DH_SCRAP;
+  const mMix   = DQ_KJ / dhMix;
+  const mScrap = mMix * (1 - xore);
+  const mOre   = mMix * xore;
+  const mStNew = MSTEEL + mScrap * ETA_S + mOre * ETA_O;
+  const mChNew = MCHARGE + mMix;
+  return { mMix, mScrap, mOre, yield_: (mStNew / mChNew) * 100 };
+}
+
+function updateSlider() {
+  const slider = document.getElementById('xoreSlider');
+  if (!slider) return;
+  const xore = slider.value / 100;
+  const r = calcXore(xore);
+
+  document.getElementById('xoreDisplay').textContent = xore.toFixed(2);
+  document.getElementById('calcMix').textContent    = r.mMix.toFixed(2);
+  document.getElementById('calcScrap').textContent  = r.mScrap.toFixed(2);
+  document.getElementById('calcOre').textContent    = r.mOre.toFixed(2);
+  document.getElementById('calcYield').textContent  = r.yield_.toFixed(2);
+
+  // Color the mix display
+  const disp = document.getElementById('xoreDisplay');
+  if (xore < 0.2) disp.style.color = '#5ab0ff';
+  else if (xore > 0.8) disp.style.color = '#ef5350';
+  else disp.style.color = 'var(--accent-orange)';
+
+  const sf = Math.max(0.04, 1 - xore);
+  const of = Math.max(0.04, xore);
+  const sb = document.getElementById('mixScrapBar');
+  const ob = document.getElementById('mixOreBar');
+  if (sb) { sb.style.flex = sf; sb.textContent = xore < 0.96 ? 'Брухт' : ''; }
+  if (ob) { ob.style.flex = of; ob.textContent = xore > 0.04 ? 'Руда'  : ''; }
+
+  const insight = document.getElementById('sliderInsight');
+  if (!insight) return;
+  const msgs = [
+    [0,     0,    'Чистий брухт: максимальний вихід (92.06%), але найбільша маса — 17+ кг. Тільки фізичний ефект.'],
+    [0.01,  0.19, 'Переважно брухт. Невелика добавка руди знижує масу, вихід сталі майже не змінюється.'],
+    [0.2,   0.39, 'Помірна частка руди — маса суміші знижується, вихід сталі відмінний.'],
+    [0.4,   0.6,  'Суміш 50/50: оптимальний компроміс між мінімальною масою та максимальним виходом.'],
+    [0.61,  0.79, 'Переважно руда: маса значно знижується, вихід сталі лише трохи менший.'],
+    [0.8,   0.99, 'Майже чиста руда: значна економія маси, вихід впав лише на ~0.25 пп.'],
+    [1,     1,    'Чиста руда: найменша маса (8.08 кг) — економія у 2.1× проти брухту. Вихід 91.77%.'],
+  ];
+  for (const [lo, hi, msg] of msgs) {
+    if (xore >= lo && xore <= hi) { insight.textContent = msg; break; }
+  }
+}
+
+const slider = document.getElementById('xoreSlider');
+if (slider) slider.addEventListener('input', updateSlider);
+
+// ════════════════════════════════════════
+//  KEYBOARD & TOUCH
+// ════════════════════════════════════════
+document.addEventListener('keydown', e => {
+  if (e.key === 'ArrowRight' || e.key === ' ')  { e.preventDefault(); nextSlide(); }
+  if (e.key === 'ArrowLeft')  { e.preventDefault(); prevSlide(); }
+  if (e.key === 'Home')       { e.preventDefault(); goTo(1); }
+  if (e.key === 'End')        { e.preventDefault(); goTo(total); }
+  // Number keys 1-9
+  if (e.key >= '1' && e.key <= '9') goTo(parseInt(e.key));
+});
+prevBtn.addEventListener('click', prevSlide);
+nextBtn.addEventListener('click', nextSlide);
+
+let txStart = 0;
+document.addEventListener('touchstart', e => { txStart = e.changedTouches[0].clientX; }, { passive: true });
+document.addEventListener('touchend',   e => {
+  const dx = e.changedTouches[0].clientX - txStart;
+  if (Math.abs(dx) > 50) dx < 0 ? nextSlide() : prevSlide();
+}, { passive: true });
+
+// ════════════════════════════════════════
+//  RESTART BUTTON (Slide 11)
+// ════════════════════════════════════════
+const restartBtn = document.getElementById('restartBtn');
+const fireEffect = document.getElementById('fireEffect');
+if (restartBtn) {
+  restartBtn.addEventListener('click', () => {
+    if (fireEffect) fireEffect.classList.add('active');
+    restartBtn.textContent = '🔥 До розрахунків!';
+    restartBtn.style.borderColor = '#ffcf33';
+    setTimeout(() => goTo(1), 1500);
+  });
+}
+
+// ════════════════════════════════════════
+//  INIT
+// ════════════════════════════════════════
+updateUI();
+updateDots();
+// Trigger slide 1 particles on load
+setTimeout(() => spawnParticles('slide1-particles', 18), 950);
+// Update keyboard hint
+document.querySelector('.keyboard-hints').innerHTML = `
+  <span><kbd>←</kbd> <kbd>→</kbd> навігація</span>
+  <span><kbd>Space</kbd> вперед</span>
+  <span><kbd>1–9</kbd> перехід на слайд</span>
+  <span><kbd>Home</kbd> / <kbd>End</kbd></span>
+`;
+</script>
+</body>
+</html>
