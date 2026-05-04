@@ -1,0 +1,321 @@
+%%%%%%%%%%%%%%%%%%%%%%% file template.tex %%%%%%%%%%%%%%%%%%%%%%%%%
+%%
+%% This is a template file for Baltic Journal of Modern Computing.   
+%% version 1.3 of 15.08.2023.       
+%%
+%% Copy it to a new file with a new name and use it as the basis
+%% for your article. Delete % signs as needed.
+%%
+%% This template includes a few options for the layout. Please 
+%% consult "BJMC document class: User guide" for more details
+%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\documentclass{bjmc}   % include options [ ... ] if needed
+
+%% PACKAGES:
+%% Insert here calls for the packages your document requires,
+%% e.g., 
+%% \usepackage{latexsim}   
+%% \usepackage{amsfonts}                                     
+% \usepackage{natbib}       % for BibTeX users
+% \usepackage{url}	    % if you use the \url command for
+%			    % formatting web addresses
+%% etc.                   
+		   	
+
+%% DEFINITIONS:
+%% Place here your own definitions (don't use \def but  
+%% \newcommand{}{} ) and other macros. 
+%  % My macros
+%
+%
+%  % End of My macros
+
+\begin{document}
+
+%
+%% TITLE:
+%% Insert your title here using the \title command
+\title{Template File%\thanks{Notes about the article that 
+%%               should go on the front page may be placed
+%%               here. General acknowledgments should be 
+%%               placed  at the end of the article.}
+}
+\titlerunning{Template}  % abbreviated title (for running head)
+%
+%                        
+%% AUTHOR(s):
+%%
+%% The first name {other initials are optional and may be
+%% inserted if this is the usual way of writing your name)
+%% is followed by the surname, which should be typeset in 
+%% uppercase. 
+%%
+%% === if one author:
+%%
+\author{The AUTHOR%\thanks{Grants or other notes
+%%               about the author that should go on the
+%%               front page may be placed here. General 
+%%               acknowledgments should be placed 
+%%               at the end of the article.}
+}
+\authorrunning{Author}   % abbreviated name without initials 
+%			 % (for running head)
+%%               
+%% === if several authors from the same institute:
+%%
+%\author{First AUTHOR, Second BUTHOR %, ect.
+% }
+%%               \thanks{Grants or other notes
+%%               about the author that should go on the front
+%%               page may be associated with each author (as 
+%%               above). General acknowledgments should be 
+%%               placed at the end of the article.}
+%\authorrunning{Author and Buthor}
+%%               abbreviated author list (for running head) 
+%%               or, if more than two authors,
+%\authorrunning{Author et al.}
+%%
+%% === if several authors from various institutes:
+%%
+%%            indicate the number of the institute from the list  
+%%            of institutes below; each author may have more than 
+%%            one institute number: 
+%\author{First AUTHOR\inst{1},  Second BUTHOR\inst{2,3}, 
+%Third CUTHOR\inst{2}%\thanks{Grants or other notes concerning an  
+%%			 author that should go on the front page may be 
+%%            associated with each author. General acknowledgments 
+%%            should be placed at the end of the article.} 
+%            }            
+%\authorrunning{Author et al.}  
+%%            abbreviated author list (for running head)
+%%            or, if only two authors,
+%\authorrunning{Author and Buthor}
+%
+%
+% INSTITUTE(s) and ADRESS(es}:
+%%
+%% === if one institute:
+\institute{Princeton University, Princeton NJ 08544, USA%\thanks{
+%%               Notes concerning the institute that should go 
+%%               on the front page may placed here. General 
+%%               acknowledgments should be placed at the end 
+%%               of the article.}
+} 
+%%
+%% === if several institutes:
+%% numbered automatically; to be separated by \and command.
+%%
+%\institute{name and address of the institute 
+%\and
+%name and address of the next institute 
+%\and 
+%name and address of the next institute%\thanks{Grants or other 
+%%               notes about the institute that should go on the  
+%%               front page may be associated with each institute.  
+%%               General acknowledgments should be placed 
+%%               at the end of the article.}  
+%}
+%
+%% E_ADDRESSES:                
+%%
+\emails{t.auth@princeton.edu}
+%%               the list of authors' email addresses ordered in 
+%%               accordance with the order of authors in \author
+%%
+\orcids{ORCID 0000-0001-2345-6789}
+%
+%%               the list of authors'ORCIDs ordered in 
+%%               accordance with the order of authors in \author
+%% DEDICATION:
+%%
+%\dedication{text}   % optional
+%
+
+\maketitle      % typesets the title of the contribution
+
+%% BODY OF YOUR PAPER:
+%%
+\begin{abstract} 
+Insert your abstract here. Do not use abbreviations (unless they are generally known) or cite references in the abstract. 
+Give three to ten keywords representing the main content of the article
+\keywords{BJMC, BibTeX, references}
+\end{abstract}
+%
+%%Your text comes here. 
+%
+\section{The first section}
+
+See BJMC class User guide for predefined environments and for provided additional possibilities.
+
+If you want to include a program code in your contribution, please typeset it using typewriter fonts (commands \verb|\verb,\verb*| and environments \verb|verbatim,verbatim*|).
+
+A note for \textsc{Bib}\TeX\ users: do not forget to place the \verb|natbib.cfg| file in the working directory.
+
+\section{The second section} 
+URLs are to be printed in the typewriter font. If you want to use  \verb|\url| command for formatting web addresses:
+\begin{verbatim}
+\url{http://www.gnu.org/philosophy/no-word-attachments.html}
+\end{verbatim} 
+then load also the \verb|url| package, which avoids ugly line breaks and sticking out into a margin. 
+
+
+
+
+%% ACKNOWLEDGMENTS:		% (optional)
+%%
+%\section*{Acknowledgements}
+%%         If you'd like to thank anyone, place your comments here.
+
+
+%% REFERENCES: 
+%% Consult "Instructions for authors : About manuscript" 
+%% on the BJMC website) for references and citations.
+%%
+%% Since author-year system is used, only the year is recommended 
+%% as the optional argument with \bibitem command
+%% if the bibliography is written by hand.
+%%
+%%
+%\bibliographystyle{dcu1}		%For BibTeX users. 
+%					%This command may be placeed also somewhere in the preamble.
+%\bibliography{your bib. database(s)}   %For BibTeX users. 
+%\end{document}				%For BibTeX users.
+
+%% The list below corresponds to the sample list of references 
+%%given in ``References and citations in BJMC''.
+
+\begin{thebibliography}{}		% do not forget ``{}''
+
+\bibitem[1985]{agu}
+Agutter, A.~J.\ (1985). 
+\textit{Miracles and oracles}, 
+PhD thesis, University of Union, Auckland, New Zealand.
+
+\bibitem[2007]{ann:crabi}
+Anninis, K., Crabi, T.~J., Sunday, T.~J.\ (2007). 
+New methods for parallel computing, 
+\textit{in} Lyonvenson, S. (ed.), \textit{Proceedings of CSC}, Computer Science Conference (1--10 Jul.\ 2007, Haifa, Israel), University Press, Haifa, pp.~130--179.
+
+\bibitem[2017]{CIAA}
+Carayol, A., Nicaud, C.\ (eds) (2017).
+\textit{Implementation and Application of Automata}, Proceedings of
+  CIAA 2017, Theor.\ Copmput.\ Sci.\ \textbf{787},~1--138.
+
+\bibitem[1978]{clar:eke:1}
+Clarke, F., Ekeland, I.\  (1978).
+Periodical solutions, with given periods, of Hamiltonian equations (French),
+\textit{Note CRAS Paris} \textbf{287},~1013--1015.
+
+\bibitem[1982]{clar:eke:2}
+Clarke, F., Ekeland, I.\ (1982).
+Nonlinear oscillations and boundary-value problems for Hamiltonian systems, 
+\textit{Arch.\ Rat.\ Mech.\ Anal.} \textbf{78},~315--333. 
+
+\bibitem[1979]{dog}
+Dog, P.~R.\ (1979). 
+TRANS method for area traffic control, \textit{in}: Round, A.~F.\ (ed.), \textit{Advances in Traffic Engineering}, Vol. 2. Academic Press, New York, pp.~125--134.
+
+\bibitem[2019]{ICGGR}
+GGR  (2019).
+\textit{Papers from the International Conference Geodynamics and
+  Geospatial Research 2019}, Baltic J.\ Modern Computing \textbf{7}(4),~510-585.
+
+\bibitem[2006]{guo:shum}
+Guo, X., Shum, K.~P.\ (2006).
+On p.p.-rings which are reduced, \textit{Int.\ J.\ Math.\ Math.\ Sci.}
+\textbf{2006}(4),~ID~34694.
+
+\bibitem[2005]{kow}
+Kowalski,~K. (2005). 
+\textit{Measurability and continuity of open functions} (Polish), PhD thesis, University of Podhale, Zakopane, Poland.
+
+\bibitem[1994]{leo:wu:sto}
+Leon, V.~J., Wu, S.~D., Storer, R.~H.\ (1994). 
+Robustness measures and robust scheduling for job shops, 
+\textit{IIE Transactions} \textbf{26},~32--43.
+
+\bibitem[1986]{Lt}
+LNB  (1986).
+\textit{The logical notebook. Unsolved problems in mathematical logic} (Russian), 
+Siberian branch of Academy of Sciences of USSR, Novosibirsk.
+
+\bibitem[2007]{lyo}
+Lyonvenson, S.\ (Ed.) (2007). 
+\textit{Proceedings of CSC},
+Computer Science Conference (1-10 Jul. 2007, Haifa, Israel). University Press, Haifa.
+
+\bibitem[2009]{mat}
+Matish, A.\ (2009). 
+\textit{The inconsistency of ZFC}, preprint, available at \\
+\texttt{http://arxiv.org/abs/1234.1234v2} .
+
+\bibitem[1988a]{mich:tar:a}
+Michalek, R., Tarantello, G., Vugetta,A.\ (1988a).
+Improving software processing,
+\textit{Report P88/175}, Univ.\ Vaterloo, Canada.
+
+\bibitem[1988b]{mich:tar:b}
+Michalek, R., Tarantello, G., Vugetta, A.\ (1988b).
+\textit{Improving software processing},
+\textit{in}: (Zinovjev and Kechris, \cite{zin:kec}), 222--230.
+
+\bibitem[a]{nar}
+Narantello, G.\ (a),
+Subharmonic solutions for Hamiltonian systems via a $\mathbf{Z}_{p}$ pseudoindex theory (Italian),
+\textit{Annali di Matematica Pura} (to appear).
+
+\bibitem[a]{now}
+Nowak, P. (a). New axioms for planar geometry, 
+\textit{Eastern J.\ Math.} (in press). DOI: 33.1122/321.
+
+\bibitem[1996a]{pro:man:a}
+Proakis, J.~G., Manolakis, D.~G.\ (1996b).
+Random signals, \textit{in}: (Proakis and Manolakis, \cite{pro:man:a}), 93--109.
+
+\bibitem[1996b]{pro:man:b}
+Proakis, J.~G., Manolakis, D.~G.\ (1996a).
+\textit{Signal Processing: Principles, Algorithms and Applications}, 
+Prentice-Hall, London.
+
+\bibitem[1985]{rab}
+Rabinowitz, P.\ (1985).
+On subharmonic solutions of a Hamiltonian system,
+\textit{Comm.\ Pure Appl.\ Math.} \textbf{33},~609--633. 
+
+\bibitem[a]{sta}
+Stallman, R.~M.\ (a).
+\textit{We can put an end to Word attachments}, available at \\
+\texttt{http://www.gnu.org/philosophy/no-word-attachments.html} .
+
+\bibitem[2001]{sum:rus}
+Summer J., Russell E.~W.\ (eds.) (2001). 
+\textit{Mechatronics Foundations} (Russian), 3rd ed., Nauka, Moscow.
+
+\bibitem[a]{web:a}
+WEB (a). 
+\textit{Instructions for authors}, available at  \\
+{\ttfamily https://www.bjmc.lu.lv/for-authors/instructions-for-authors} .  
+
+\bibitem[b]{web:b}
+WEB (b). 
+\textit{Unified modelling language (UML), version 2.1.2}, available at \\
+{\ttfamily www.omg.org/technology/documents/formal/uml.html} .
+
+\bibitem[1988]{zin:kec}
+Zinovjev, K.~L., Kechris, E.\ (eds.) (1988).
+\textit{Software Engineering: Theory and Applications}, Proc.\ 13th SE Conf.\ (12--15 Jun.\ 1988, Bristol, UK), Springer, New York e.a.
+
+\end{thebibliography}
+
+%% Author's information:  %(optional)
+%%
+%\section*{Author's information}  % or {Authors' information}
+%%If you'd like to give some information, place your comments here
+%%                     and remove the percent signs.
+%
+
+\end{document} 
+
+ 

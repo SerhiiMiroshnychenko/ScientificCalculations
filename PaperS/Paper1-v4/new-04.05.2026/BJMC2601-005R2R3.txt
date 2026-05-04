@@ -1,0 +1,57 @@
+Review: Round 2
+
+The manuscript is improved after the revision. Nevertheless, the provided revision is mainly based on comments from other reviewers. My comments have no particular response from the authors. No explicit answers are provided in the form “comment - response”.
+
+The comments from my previous review are the following. They still need careful consideration.
+
+- The key findings of this study are unclear. Title: it is an approach. Abstract, Introduction, Conclusion: a methodology and/or approach. Particular contribution (to the body of scientific knowledge) must be explicitly described.
+
+- Do not use different terms for the same object. For instance, methodology and approach are different terms. Similarly, method and algorithm have different meanings. 
+
+- Introduction does not explicitly formulate particular R&D problems to solve as well as no proper explanation is provided about the contribution of this study to the body of scientific knowledge. 
+
+- Introduction includes content, which is closer to Related Work section, not for Introduction. 
+
+- Figure 6. The preprocessing scheme is too generic, so it is cannot be effectively implemented by other experts. What are particular algorithms for removing irrelevant variables, for processing missing values, etc.? Similar question is about Fig.7.
+
+- There are numbered Eqs.(1)-(3), which are not explicitly used (with referencing). Please, show where and how the equations are applied.
+
+- Many experimental facts are found (observations in Figs.8-12). Nevertheless, no proper interpretation is provided to derive novel knowledge and to improve predicting order success in business-to-business environments. 
+
+- From Section 4 it follows that this study yet another confirmation of the observations from previous research. Please, discuss the novelty, provide theoretical and practical implications. 
+
+
+
+
+Review: Round 1
+
+The manuscript considers a topical problem of identification and ranking factors influencing order success in ERP systems. Nevertheless, major revision is needed to properly describe the proposed results and their contribution to the body of scientific and practical knowledge.
+
+- The key findings of this study are unclear. Title: it is an approach. Abstract, Introduction, Conclusion: a methodology and/or approach. Particular contribution (to the body of scientific knowledge) must be explicitly described.
+
+- Do not use different terms for the same object. For instance, methodology and approach are different terms. Similarly, method and algorithm have different meanings. 
+
+- Introduction does not explicitly formulate particular R&D problems to solve as well as no proper explanation is provided about the contribution of this study to the body of scientific knowledge. 
+
+- Introduction includes content, which is closer to Related Work section, not for Introduction. 
+
+- Figures 1-5 are too qualitative. Quantitative analysis based on numerical parameters (metrics) is needed. Please, use proper mathematical notation (symbols and units).
+
+- Text in Figures 1-12 are of low quality (low readability).
+
+- Figure 6. The preprocessing scheme is too generic, so it is cannot be effectively implemented by other experts. What are particular algorithms for removing irrelevant variables, for processing missing values, etc.? Similar question is about Fig.7.
+
+- There are numbered Eqs.(1)-(3), which are not explicitly used (with referencing). Please, show where and how the equations are applied.
+
+- Many experimental facts are found (observations in Figs.8-12). Nevertheless, no proper interpretation is provided to derive novel knowledge and to improve predicting order success in business-to-business environments. 
+
+- From Section 4 it follows that this study yet another confirmation of the observations from previous research. Please, discuss the novelty, provide theoretical and practical implications. 
+
+
+
+
+
+
+
+
+
