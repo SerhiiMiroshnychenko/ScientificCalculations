@@ -1,0 +1,604 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ПР №6 — Шлаковий режим та MgO-насичення</title>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,300;0,400;0,600;0,700;0,900;1,400&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg-primary:#121212;--bg-secondary:#1e1e1e;--bg-tertiary:#2d2d2d;
+  --text-primary:#ffffff;--text-secondary:#b0b0b0;--text-muted:#707070;
+  --accent-orange:#ff6f00;--accent-red:#d32f2f;--accent-blue:#1976d2;
+  --accent-green:#2e7d32;
+  --gradient-fire:linear-gradient(135deg,#ff6f00 0%,#d32f2f 100%);
+  --shadow-glow:0 0 20px rgba(255,111,0,.3);
+}
+body{font-family:'Montserrat',sans-serif;background:var(--bg-primary);color:var(--text-primary);height:100vh;width:100vw;overflow:hidden;user-select:none}
+
+/* NAV */
+.navigation{position:fixed;top:0;left:0;right:0;z-index:1000;padding:13px 28px;display:flex;justify-content:space-between;align-items:center;background:rgba(18,18,18,.93);backdrop-filter:blur(10px);border-bottom:1px solid rgba(255,255,255,.08)}
+.nav-label{font-size:.72rem;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--text-muted)}
+.nav-progress{flex:1;height:4px;background:var(--bg-tertiary);border-radius:2px;margin:0 26px;overflow:hidden}
+.progress-bar{height:100%;background:var(--gradient-fire);width:9.09%;transition:width .4s ease}
+.nav-controls{display:flex;align-items:center;gap:14px}
+.slide-counter{font-weight:700;font-size:.88rem;color:var(--text-secondary);min-width:48px;text-align:center}
+.nav-btn{width:38px;height:38px;border:none;border-radius:8px;background:var(--bg-tertiary);color:var(--text-primary);cursor:pointer;font-size:1.1rem;transition:all .2s;display:flex;align-items:center;justify-content:center;font-family:inherit}
+.nav-btn:hover:not(:disabled){background:var(--accent-orange);transform:scale(1.08);box-shadow:var(--shadow-glow)}
+.nav-btn:disabled{opacity:.28;cursor:default}
+
+/* SLIDES */
+.slides-container{position:relative;width:100%;height:100vh}
+.slide{position:absolute;top:0;left:0;width:100%;height:100%;display:flex;align-items:center;justify-content:center;padding:88px 52px 48px;opacity:0;visibility:hidden;pointer-events:none;transform:translateX(50px);transition:opacity .55s ease,transform .55s ease,visibility .55s ease}
+.slide.active{opacity:1;visibility:visible;pointer-events:auto;transform:translateX(0)}
+.slide.exit{opacity:0;transform:translateX(-50px);visibility:hidden}
+.slide-content{max-width:1080px;width:100%}
+
+/* TYPOGRAPHY */
+h1{font-size:clamp(1.8rem,4vw,3.2rem);font-weight:900;text-transform:uppercase;background:var(--gradient-fire);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;text-align:center;margin-bottom:18px;line-height:1.1}
+h2{font-size:clamp(1.2rem,2.3vw,1.8rem);font-weight:700;margin-bottom:26px;border-left:5px solid var(--accent-orange);padding-left:16px}
+h3{font-size:1rem;font-weight:700;color:var(--accent-orange);margin-bottom:8px}
+p{font-size:.93rem;line-height:1.65;color:var(--text-secondary)}
+
+/* CARDS */
+.card{background:var(--bg-secondary);padding:20px 22px;border-radius:12px;border:1px solid rgba(255,255,255,.06);transition:transform .3s,border-color .3s,box-shadow .3s}
+.card:hover{transform:translateY(-4px);border-color:rgba(255,111,0,.45);box-shadow:var(--shadow-glow)}
+.card h3{color:var(--accent-orange)}
+.card-blue{border-top:3px solid var(--accent-blue)}
+.card-orange{border-top:3px solid var(--accent-orange)}
+.card-red{border-top:3px solid var(--accent-red)}
+.card-green{border-top:3px solid var(--accent-green)}
+
+/* GRIDS */
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+.grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px}
+.grid-wide{display:grid;grid-template-columns:1.35fr 1fr;gap:22px}
+
+/* BADGES */
+.badge{display:inline-block;padding:3px 11px;border-radius:20px;font-size:.75rem;font-weight:700;letter-spacing:.5px}
+.badge-orange{background:rgba(255,111,0,.14);color:var(--accent-orange);border:1px solid rgba(255,111,0,.32)}
+.badge-blue{background:rgba(25,118,210,.14);color:#5ab0ff;border:1px solid rgba(25,118,210,.32)}
+.badge-red{background:rgba(211,47,47,.14);color:#ef5350;border:1px solid rgba(211,47,47,.32)}
+.badge-green{background:rgba(46,125,50,.14);color:#66bb6a;border:1px solid rgba(46,125,50,.32)}
+
+/* STEP TAG */
+.step-tag{background:var(--accent-orange);color:#fff;padding:2px 10px;border-radius:4px;font-size:.74rem;font-weight:700;margin-right:8px;text-transform:uppercase;letter-spacing:.8px}
+
+/* DATA TAG */
+.data-tag{display:inline-block;background:rgba(25,118,210,.12);color:#5ab0ff;padding:3px 11px;border-radius:20px;font-size:.8rem;border:1px solid rgba(25,118,210,.3);margin:3px}
+
+/* BIG VALUE */
+.big-val{font-size:2.4rem;font-weight:900;color:var(--accent-orange);line-height:1}
+
+/* SLIDER */
+.slider-section{background:var(--bg-secondary);border-radius:14px;padding:22px 28px;border:1px solid rgba(255,255,255,.07)}
+input[type=range]{-webkit-appearance:none;width:100%;height:6px;background:linear-gradient(90deg,var(--accent-orange),var(--accent-blue));border-radius:3px;outline:none;cursor:pointer;margin:14px 0}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:24px;height:24px;border-radius:50%;background:#fff;border:3px solid var(--accent-orange);cursor:pointer;box-shadow:0 0 8px rgba(255,111,0,.5);transition:transform .15s}
+input[type=range]::-webkit-slider-thumb:hover{transform:scale(1.2)}
+.slider-labels{display:flex;justify-content:space-between;font-size:.72rem;color:var(--text-muted);margin-top:-6px}
+.calc-results{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-top:18px}
+.calc-card{background:var(--bg-primary);border-radius:10px;padding:14px;text-align:center;border:1px solid rgba(255,255,255,.06);transition:all .3s}
+.calc-card .val{font-size:1.75rem;font-weight:900;color:var(--accent-orange);line-height:1;transition:all .3s}
+.calc-card .lbl{font-size:.68rem;color:var(--text-muted);margin-top:5px;text-transform:uppercase;letter-spacing:.5px}
+
+/* TABLE */
+.res-table{width:100%;border-collapse:collapse;font-size:.88rem}
+.res-table th{padding:10px 14px;background:var(--bg-tertiary);font-weight:700;text-align:left;border-bottom:2px solid var(--accent-orange);font-size:.76rem;text-transform:uppercase;letter-spacing:.5px;color:var(--text-secondary)}
+.res-table td{padding:10px 14px;border-bottom:1px solid rgba(255,255,255,.05)}
+.res-table tr.hl-row{background:rgba(255,111,0,.07)}
+.res-table tr.hl-row td{color:var(--accent-orange);font-weight:700}
+
+/* DOT NAVIGATION */
+.dot-nav{position:fixed;bottom:42px;left:50%;transform:translateX(-50%);display:flex;gap:8px;z-index:998}
+.dot{width:7px;height:7px;border-radius:50%;background:rgba(255,255,255,.18);cursor:pointer;transition:all .3s;border:none;padding:0}
+.dot.active{background:var(--accent-orange);transform:scale(1.4)}
+
+/* ANIMATIONS */
+@keyframes fadeInUp{from{opacity:0;transform:translateY(22px)}to{opacity:1;transform:translateY(0)}}
+@keyframes fadeInLeft{from{opacity:0;transform:translateX(-22px)}to{opacity:1;transform:translateX(0)}}
+@keyframes fadeInRight{from{opacity:0;transform:translateX(22px)}to{opacity:1;transform:translateX(0)}}
+.ani{animation:fadeInUp .55s ease forwards}
+.ani-l{animation:fadeInLeft .55s ease forwards}
+.ani-r{animation:fadeInRight .55s ease forwards}
+.d1{animation-delay:.12s}.d2{animation-delay:.24s}.d3{animation-delay:.36s}.d4{animation-delay:.48s}.d5{animation-delay:.62s}
+
+/* PRELOADER */
+#preloader{position:fixed;inset:0;background:var(--bg-primary);z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:20px;animation:preloaderOut .4s ease .9s forwards}
+@keyframes preloaderOut{to{opacity:0;visibility:hidden}}
+.preloader-ring{width:52px;height:52px;border:3px solid rgba(255,111,0,.15);border-top-color:var(--accent-orange);border-radius:50%;animation:preloaderSpin .7s linear infinite}
+@keyframes preloaderSpin{to{transform:rotate(360deg)}}
+
+/* CUSTOM STYLES FOR PR6 */
+.lining-box{border:2px solid var(--accent-orange);border-radius:15px;padding:20px;position:relative;overflow:hidden}
+.lining-layer{position:absolute;bottom:0;left:0;width:100%;background:rgba(255,111,0,0.2);transition:height 0.5s ease}
+.slag-liquid{fill:rgba(255,80,0,0.4);animation:wave 3s infinite ease-in-out}
+@keyframes wave{0%,100%{transform:translateY(0)}50%{transform:translateY(-5px)}}
+</style>
+</head>
+<body>
+
+<div id="preloader">
+  <div class="preloader-ring"></div>
+  <span style="font-size:.78rem;font-weight:700;letter-spacing:3px;text-transform:uppercase;color:var(--text-muted)">Завантаження</span>
+</div>
+
+<div class="dot-nav" id="dotNav"></div>
+
+<nav class="navigation">
+  <span class="nav-label">ПР №6 · Шлаковий режим</span>
+  <div class="nav-progress"><div class="progress-bar" id="progressBar"></div></div>
+  <div class="nav-controls">
+    <button class="nav-btn" id="prevBtn">&#8592;</button>
+    <span class="slide-counter"><span id="currentSlide">1</span> / <span id="totalSlides">11</span></span>
+    <button class="nav-btn" id="nextBtn">&#8594;</button>
+  </div>
+</nav>
+
+<div class="slides-container">
+
+<!-- СЛАЙД 1: ТИТУЛЬНИЙ -->
+<section class="slide active" data-slide="1">
+<div class="slide-content" style="text-align:center">
+  <h1 class="ani">Практична робота №6</h1>
+  <p class="ani d1" style="font-size:1.25rem;color:var(--text-secondary);margin-bottom:12px">Розрахунок шлакового режиму та MgO-насичення шлаку</p>
+  <p class="ani d2" style="font-size:.95rem;color:var(--accent-orange);font-weight:600;letter-spacing:1px;margin-bottom:28px">Захист футерівки та енергоефективність</p>
+  <div class="ani d2" style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-bottom:30px">
+    <span class="badge badge-orange">MgO-насичення</span>
+    <span class="badge badge-blue">Доломітизоване вапно</span>
+    <span class="badge badge-red">Стійкість футерівки</span>
+    <span class="badge badge-green">Варіант 20</span>
+  </div>
+  <div class="ani d3" style="display:flex;justify-content:center">
+    <svg viewBox="0 0 400 200" width="400" height="200">
+      <defs>
+        <linearGradient id="liningGrad" x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0%" stop-color="#2d2d2d"/><stop offset="100%" stop-color="#1a1a1a"/>
+        </linearGradient>
+      </defs>
+      <!-- Lining -->
+      <path d="M50,20 L50,180 L350,180 L350,20 L330,20 L330,160 L70,160 L70,20 Z" fill="url(#liningGrad)" stroke="var(--accent-orange)" stroke-width="2"/>
+      <!-- Slag pool -->
+      <rect x="70" y="100" width="260" height="60" fill="rgba(255,111,0,0.3)" class="slag-liquid"/>
+      <text x="200" y="140" text-anchor="middle" fill="#fff" font-weight="700" font-size="14">ШЛАК (MgO-насичення)</text>
+      <!-- Ions -->
+      <circle cx="100" cy="110" r="4" fill="var(--accent-orange)"><animate attributeName="cx" values="100;120;100" dur="4s" repeatCount="indefinite"/></circle>
+      <circle cx="300" cy="130" r="4" fill="var(--accent-orange)"><animate attributeName="cy" values="130;110;130" dur="3s" repeatCount="indefinite"/></circle>
+    </svg>
+  </div>
+</div>
+</section>
+
+<!-- СЛАЙД 2: КОНТЕКСТ -->
+<section class="slide" data-slide="2">
+<div class="slide-content">
+  <h2>Навіщо захищати футерівку?</h2>
+  <div class="grid-wide">
+    <div>
+      <div class="card card-orange ani" style="margin-bottom:15px">
+        <h3>🏗️ Периклазовуглецева цегла (MgO-C)</h3>
+        <p>Сучасні конвертери працюють на вогнетривах з оксиду магнію. Це основа стійкості агрегату, що витримує температури понад <strong style="color:#fff">1600°C</strong>.</p>
+      </div>
+      <div class="card ani d2" style="margin-bottom:15px">
+        <h3>🍽️ "Голодний" шлак</h3>
+        <p>На початку плавки шлак містить мало MgO. Він агресивно "виїдає" магнезію з цегли, щоб досягти своєї термодинамічної межі розчинності.</p>
+      </div>
+      <div class="card ani d3" style="border-left:3px solid var(--accent-blue)">
+        <h3 style="color:#5ab0ff">🎯 Мета роботи</h3>
+        <p>Штучно наситити шлак магнезією за допомогою флюсів, щоб він перестав руйнувати футерівку. Ціна захисту — <strong style="color:var(--accent-orange)">теплова енергія</strong>.</p>
+      </div>
+    </div>
+    <div class="ani-r d2">
+      <div class="card" style="text-align:center">
+        <h3 style="margin-bottom:15px">Хімічний знос</h3>
+        <svg viewBox="0 0 200 200" width="100%">
+          <rect x="20" y="20" width="40" height="160" fill="#2d2d2d" stroke="var(--accent-red)" stroke-width="2"/>
+          <text x="40" y="100" text-anchor="middle" transform="rotate(-90 40,100)" fill="var(--accent-red)" font-size="10">MgO-C ФУТЕРІВКА</text>
+          <rect x="60" y="20" width="120" height="160" fill="rgba(255,80,0,0.1)"/>
+          <path d="M60,20 Q100,20 100,50 T60,80 Q100,80 100,110 T60,140 Q100,140 100,170 T60,180" fill="none" stroke="var(--accent-red)" stroke-width="2" stroke-dasharray="5,5"/>
+          <text x="120" y="100" text-anchor="middle" fill="var(--text-secondary)" font-size="12">Агресивний шлак</text>
+          <path d="M60,60 L90,60" stroke="var(--accent-orange)" stroke-width="2" marker-end="url(#arrow)"/>
+          <text x="80" y="55" fill="var(--accent-orange)" font-size="10">MgO →</text>
+        </svg>
+      </div>
+    </div>
+  </div>
+</div>
+</section>
+
+<!-- СЛАЙД 3: МЕХАНІЗМ ЗНОСУ -->
+<section class="slide" data-slide="3">
+<div class="slide-content">
+  <h2>Механізм насичення</h2>
+  <div class="grid-2">
+    <div class="card card-red ani">
+      <h3>🚫 Ненасичений шлак</h3>
+      <p style="margin-bottom:12px">Концентрація MgO < <strong>MgO_sat</strong></p>
+      <div style="background:rgba(211,47,47,0.1);padding:15px;border-radius:10px;text-align:center">
+        <div style="color:var(--accent-red);font-weight:900;font-size:1.2rem">ШВИДКИЙ ЗНОС</div>
+        <p style="font-size:0.8rem">Шлак екстрагує MgO з цегли</p>
+      </div>
+    </div>
+    <div class="card card-green ani d1">
+      <h3>✅ Насичений шлак</h3>
+      <p style="margin-bottom:12px">Концентрація MgO = <strong>MgO_sat</strong></p>
+      <div style="background:rgba(46,125,50,0.1);padding:15px;border-radius:10px;text-align:center">
+        <div style="color:#66bb6a;font-weight:900;font-size:1.2rem">СТАБІЛЬНІСТЬ</div>
+        <p style="font-size:0.8rem">Хімічна рівновага досягнута</p>
+      </div>
+    </div>
+  </div>
+  <div class="ani d2" style="margin-top:25px;padding:20px;background:var(--bg-secondary);border-radius:12px;border:1px dashed var(--accent-orange)">
+    <p style="text-align:center;font-style:italic">"Шлак не буде їсти футерівку, якщо його нагодувати доломітом заздалегідь"</p>
+  </div>
+</div>
+</section>
+
+<!-- СЛАЙД 4: ТЕРМОДИНАМІКА (MgO_sat) -->
+<section class="slide" data-slide="4">
+<div class="slide-content">
+  <h2>Термодинаміка розчинності</h2>
+  <div class="card card-orange ani">
+    <h3 style="text-align:center;font-size:1.2rem;margin-bottom:15px">Межа насичення (MgO_sat, %)</h3>
+    <div style="font-size:1.8rem;text-align:center;font-weight:900;background:var(--bg-tertiary);padding:20px;border-radius:15px;color:#fff;margin-bottom:15px">
+      6.0 + 0.015·(t_tap − 1550) − 0.5·(B − 3.0)
+    </div>
+    <div class="grid-2">
+      <div style="text-align:center">
+        <div style="color:var(--accent-red);font-weight:700">🌡️ Температура (t_tap)</div>
+        <p style="font-size:0.8rem">Зростання на 100°C → +1.5% MgO_sat</p>
+      </div>
+      <div style="text-align:center">
+        <div style="color:var(--accent-blue);font-weight:700">⚖️ Основність (B)</div>
+        <p style="font-size:0.8rem">Зростання на 1.0 → −0.5% MgO_sat</p>
+      </div>
+    </div>
+  </div>
+  <div class="ani d2" style="margin-top:20px;display:flex;justify-content:space-around">
+    <div class="card" style="width:45%;text-align:center">
+      <div style="font-size:0.75rem;color:var(--text-muted)">Варіант 20: 1616°C, B=3.4</div>
+      <div class="big-val">6.79%</div>
+      <div style="font-size:0.8rem;color:var(--text-muted)">MgO_sat</div>
+    </div>
+    <div class="card" style="width:45%;text-align:center">
+      <div style="font-size:0.75rem;color:var(--text-muted)">Варіант 1: 1460°C, B=3.2</div>
+      <div class="big-val" style="color:var(--accent-blue)">4.55%</div>
+      <div style="font-size:0.8rem;color:var(--text-muted)">MgO_sat</div>
+    </div>
+  </div>
+</div>
+</section>
+
+<!-- СЛАЙД 5: ДОЛОМІТИЗОВАНЕ ВАПНО -->
+<section class="slide" data-slide="5">
+<div class="slide-content">
+  <h2>Магнезіальний флюс</h2>
+  <div class="grid-wide">
+    <div class="card card-blue ani">
+      <h3>🏗️ Доломітизоване вапно</h3>
+      <p style="margin-bottom:12px">Це основний засіб захисту футерівки. Містить два ключових оксиди:</p>
+      <div style="display:flex;gap:10px;margin-bottom:15px">
+        <div style="flex:1;background:var(--bg-tertiary);padding:10px;border-radius:8px;text-align:center">
+          <div style="color:var(--accent-orange);font-weight:900">40% MgO</div>
+          <div style="font-size:0.7rem">Захист</div>
+        </div>
+        <div style="flex:1;background:var(--bg-tertiary);padding:10px;border-radius:8px;text-align:center">
+          <div style="color:var(--accent-blue);font-weight:900">~55% CaO</div>
+          <div style="font-size:0.7rem">Основність</div>
+        </div>
+      </div>
+      <div class="hl-box" style="border-color:var(--accent-blue);color:#5ab0ff">
+        Охолоджуюча здатність: <strong>800 кДж/кг</strong>
+      </div>
+    </div>
+    <div class="ani-r d2">
+      <div class="card" style="text-align:center">
+        <h3>Склад флюсу</h3>
+        <svg viewBox="0 0 150 150" width="150">
+          <circle cx="75" cy="75" r="60" fill="none" stroke="var(--bg-tertiary)" stroke-width="20"/>
+          <circle cx="75" cy="75" r="60" fill="none" stroke="var(--accent-orange)" stroke-width="20" stroke-dasharray="150, 377" transform="rotate(-90 75 75)"/>
+          <circle cx="75" cy="75" r="60" fill="none" stroke="var(--accent-blue)" stroke-width="20" stroke-dasharray="200, 377" transform="rotate(50 75 75)"/>
+          <text x="75" y="80" text-anchor="middle" fill="#fff" font-weight="900" font-size="16">DL</text>
+        </svg>
+        <div style="font-size:0.8rem;margin-top:10px">
+          <span style="color:var(--accent-orange)">●</span> MgO (40%)<br>
+          <span style="color:var(--accent-blue)">●</span> CaO (55%)
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</section>
+
+<!-- СЛАЙД 6: ТЕХНОЛОГІЧНИЙ КОМПРОМІС -->
+<section class="slide" data-slide="6">
+<div class="slide-content">
+  <h2>Технологічний компроміс</h2>
+  <div class="card card-red ani" style="margin-bottom:20px">
+    <p style="font-size:1rem;text-align:center">Кожен кілограм флюсу для <strong>захисту футерівки</strong> <br> зменшує масу <strong>металобрухту</strong>, який можна розплавити.</p>
+  </div>
+  <div class="grid-2 ani d2">
+    <div class="card" style="text-align:center;border-bottom:4px solid var(--accent-orange)">
+      <div style="font-size:2rem">🛡️</div>
+      <h3 style="margin-top:10px">Стійкість</h3>
+      <p style="font-size:0.85rem">Додаємо 20.2 кг доломіту<br>для MgO-насичення</p>
+      <div style="color:var(--accent-red);font-weight:700;margin-top:10px">−16.2 МДж тепла</div>
+    </div>
+    <div class="card" style="text-align:center;border-bottom:4px solid var(--accent-blue)">
+      <div style="font-size:2rem">🏗️</div>
+      <h3 style="margin-top:10px">Економіка</h3>
+      <p style="font-size:0.85rem">Втрачаємо можливість розплавити<br>~12.2 кг сталевого брухту</p>
+      <div style="color:var(--accent-blue);font-weight:700;margin-top:10px">Зменшення % брухту</div>
+    </div>
+  </div>
+  <div class="ani d3" style="margin-top:20px;text-align:center">
+    <div style="display:inline-block;padding:10px 20px;border-radius:30px;background:var(--gradient-fire);font-weight:700">
+      Плата за стійкість: 1 кг DL ≈ 0.6 кг Scrap
+    </div>
+  </div>
+</div>
+</section>
+
+<!-- СЛАЙД 7: ЛОГІКА РОЗРАХУНКУ -->
+<section class="slide" data-slide="7">
+<div class="slide-content">
+  <h2>Логіка розрахунку (Крок за кроком)</h2>
+  <div class="grid-2">
+    <div class="ani">
+      <div style="display:flex;flex-direction:column;gap:12px">
+        <div class="card" style="padding:12px">
+          <span class="step-tag">1</span> <strong>MgO_sat</strong> за формулою (t, B)
+        </div>
+        <div class="card" style="padding:12px">
+          <span class="step-tag">2</span> <strong>MgO_target</strong> = MgO_sat × β_sat
+        </div>
+        <div class="card" style="padding:12px">
+          <span class="step-tag">3</span> <strong>Дефіцит</strong> Δ%MgO = target − 1.5%
+        </div>
+      </div>
+    </div>
+    <div class="ani d2">
+      <div style="display:flex;flex-direction:column;gap:12px">
+        <div class="card" style="padding:12px">
+          <span class="step-tag">4</span> <strong>Маса флюсу</strong> m_dl (баланс MgO)
+        </div>
+        <div class="card" style="padding:12px">
+          <span class="step-tag">5</span> <strong>Витрати тепла</strong> Q_dl = m × 800
+        </div>
+        <div class="card" style="padding:12px;border:1px solid var(--accent-orange)">
+          <span class="step-tag">6</span> <strong>Новий брухт</strong> m_scrap = ΔQ_rem / dh
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</section>
+
+<!-- СЛАЙД 8: ІНТЕРАКТИВНИЙ КАЛЬКУЛЯТОР -->
+<section class="slide" data-slide="8">
+<div class="slide-content">
+  <h2>Інтерактивний калькулятор ПР №6</h2>
+  <div class="slider-section ani">
+    <div class="grid-2" style="margin-bottom:15px">
+      <div>
+        <div style="font-size:.72rem;color:var(--text-muted);text-transform:uppercase;margin-bottom:4px">Температура випуску (°C)</div>
+        <input type="range" id="tempSlider" min="1440" max="1650" value="1616" step="1">
+        <div class="slider-labels"><span>1440</span><span id="tempVal" style="color:#fff;font-weight:700">1616</span><span>1650</span></div>
+      </div>
+      <div>
+        <div style="font-size:.72rem;color:var(--text-muted);text-transform:uppercase;margin-bottom:4px">Основність шлаку (B)</div>
+        <input type="range" id="basicSlider" min="25" max="45" value="34" step="1">
+        <div class="slider-labels"><span>2.5</span><span id="basicVal" style="color:#fff;font-weight:700">3.4</span><span>4.5</span></div>
+      </div>
+    </div>
+    <div style="margin-bottom:15px">
+      <div style="font-size:.72rem;color:var(--text-muted);text-transform:uppercase;margin-bottom:4px">Коефіцієнт насичення (β_sat)</div>
+      <input type="range" id="betaSlider" min="80" max="120" value="100" step="5">
+      <div class="slider-labels"><span>0.8 (Часткове)</span><span id="betaVal" style="color:#fff;font-weight:700">1.0</span><span>1.2 (Пересичення)</span></div>
+    </div>
+    <div class="calc-results">
+      <div class="calc-card"><div class="val" id="resSat">6.79</div><div class="lbl">MgO_sat, %</div></div>
+      <div class="calc-card"><div class="val" id="resMass" style="color:var(--accent-orange)">20.24</div><div class="lbl">Маса флюсу, кг</div></div>
+      <div class="calc-card"><div class="val" id="resHeat" style="color:var(--accent-red)">16.19</div><div class="lbl">Тепло, МДж</div></div>
+      <div class="calc-card"><div class="val" id="resScrap" style="color:var(--accent-blue)">4.86</div><div class="lbl">Новий брухт, кг</div></div>
+    </div>
+  </div>
+</div>
+</section>
+
+<!-- СЛАЙД 9: РЕЗУЛЬТАТИ ВАРІАНТ 20 -->
+<section class="slide" data-slide="9">
+<div class="slide-content">
+  <h2>Результати: Варіант 20</h2>
+  <div class="grid-wide">
+    <div class="ani">
+      <div class="card" style="padding:0;overflow:hidden">
+        <table class="res-table">
+          <thead><tr><th colspan="2">Технологічні параметри</th></tr></thead>
+          <tbody>
+            <tr><td>Температура випуску</td><td><strong>1616 °C</strong></td></tr>
+            <tr><td>Основність шлаку</td><td><strong>3.4</strong></td></tr>
+            <tr><td>Базова маса шлаку</td><td>142.6 кг</td></tr>
+            <tr class="hl-row"><td>Межа насичення MgO</td><td><strong>6.79 %</strong></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <div class="ani-r d2">
+      <div class="card" style="padding:0;overflow:hidden">
+        <table class="res-table">
+          <thead><tr><th colspan="2">Результати розрахунку</th></tr></thead>
+          <tbody>
+            <tr><td>Маса доломіту</td><td><strong style="color:var(--accent-orange)">20.24 кг</strong></td></tr>
+            <tr><td>Витрати тепла</td><td><strong style="color:var(--accent-red)">16.19 МДж</strong></td></tr>
+            <tr><td>Початковий брухт</td><td>17.09 кг</td></tr>
+            <tr class="hl-row"><td>Скоригований брухт</td><td><strong>4.86 кг</strong></td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="ani d3" style="margin-top:15px;padding:12px;background:rgba(211,47,47,0.1);border-radius:8px;border:1px solid var(--accent-red);font-size:0.85rem;text-align:center">
+        ⚠️ Втрата <strong>71.5%</strong> брухтового ресурсу <br> заради стійкості футерівки.
+      </div>
+    </div>
+  </div>
+</div>
+</section>
+
+<!-- СЛАЙД 10: АНАЛІЗ ЧУТЛИВОСТІ -->
+<section class="slide" data-slide="10">
+<div class="slide-content">
+  <h2>Аналіз чутливості</h2>
+  <div class="grid-2">
+    <div class="ani">
+      <div class="card card-orange">
+        <h3>Вплив Температури</h3>
+        <p style="font-size:0.85rem;margin-bottom:10px">При B=3.4, β=1.0:</p>
+        <div style="display:flex;flex-direction:column;gap:8px">
+          <div style="display:flex;justify-content:space-between;padding:6px;background:var(--bg-tertiary);border-radius:4px">
+            <span>1500 °C</span><span style="font-weight:700">6.8 кг DL</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;padding:6px;background:var(--bg-tertiary);border-radius:4px;border:1px solid var(--accent-orange)">
+            <span>1616 °C</span><span style="font-weight:700">20.2 кг DL</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;padding:6px;background:var(--bg-tertiary);border-radius:4px">
+            <span>1650 °C</span><span style="font-weight:700">24.5 кг DL</span>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="ani-r d1">
+      <div class="card card-blue">
+        <h3>Вплив Основності</h3>
+        <p style="font-size:0.85rem;margin-bottom:10px">При t=1616°C, β=1.0:</p>
+        <div style="display:flex;flex-direction:column;gap:8px">
+          <div style="display:flex;justify-content:space-between;padding:6px;background:var(--bg-tertiary);border-radius:4px">
+            <span>B = 3.0</span><span style="font-weight:700">20.7 кг DL</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;padding:6px;background:var(--bg-tertiary);border-radius:4px;border:1px solid var(--accent-blue)">
+            <span>B = 3.4</span><span style="font-weight:700">20.2 кг DL</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;padding:6px;background:var(--bg-tertiary);border-radius:4px">
+            <span>B = 4.0</span><span style="font-weight:700">19.5 кг DL</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <p class="ani d2" style="margin-top:20px;font-size:0.9rem;color:var(--text-secondary);text-align:center">
+    💡 <strong>Висновок:</strong> Температура є критичним чинником. Кожні 10°C перегріву <br> вимагають додатково ~1.2 кг доломіту на тонну шихти.
+  </p>
+</div>
+</section>
+
+<!-- СЛАЙД 11: ВИСНОВКИ -->
+<section class="slide" data-slide="11">
+<div class="slide-content" style="text-align:center">
+  <h1 class="ani">Висновки ПР №6</h1>
+  <div class="grid-3 ani d2" style="margin-top:30px">
+    <div class="card card-orange">
+      <div style="font-size:2rem">🛡️</div>
+      <h3>Стійкість</h3>
+      <p style="font-size:0.85rem">Досягнуто MgO-насичення шлаку. Хімічний знос футерівки мінімізовано.</p>
+    </div>
+    <div class="card card-red">
+      <div style="font-size:2rem">🔥</div>
+      <h3>Енергія</h3>
+      <p style="font-size:0.85rem">Захист футерівки "з'їдає" 16.2 МДж тепла (для варіанта 20).</p>
+    </div>
+    <div class="card card-blue">
+      <div style="font-size:2rem">🏗️</div>
+      <h3>Ресурс</h3>
+      <p style="font-size:0.85rem">Маса брухту скоригована: 17.1 → 4.9 кг. Виявлено прямий компроміс.</p>
+    </div>
+  </div>
+  <div class="ani d3" style="margin-top:40px">
+    <button class="nav-btn" style="width:auto;padding:10px 30px;font-weight:700" onclick="location.reload()">ПОВТОР</button>
+  </div>
+</div>
+</section>
+
+</div>
+
+<script>
+// SLIDE NAVIGATION
+let cur = 1;
+const slides = document.querySelectorAll('.slide');
+const total  = slides.length;
+const progressBar = document.getElementById('progressBar');
+const currentSlideEl = document.getElementById('currentSlide');
+const dotNav = document.getElementById('dotNav');
+
+for (let i = 1; i <= total; i++) {
+  const dot = document.createElement('button');
+  dot.className = 'dot' + (i === 1 ? ' active' : '');
+  dot.addEventListener('click', () => goTo(i));
+  dotNav.appendChild(dot);
+}
+
+function goTo(n) {
+  if (n < 1 || n > total) return;
+  document.querySelector('.slide.active').classList.remove('active');
+  document.querySelector(`.slide[data-slide="${n}"]`).classList.add('active');
+  cur = n;
+  updateUI();
+}
+
+function updateUI() {
+  currentSlideEl.textContent = cur;
+  progressBar.style.width = `${(cur / total) * 100}%`;
+  document.querySelectorAll('.dot').forEach((d, i) => d.classList.toggle('active', i + 1 === cur));
+}
+
+document.getElementById('prevBtn').addEventListener('click', () => goTo(cur - 1));
+document.getElementById('nextBtn').addEventListener('click', () => goTo(cur + 1));
+document.addEventListener('keydown', e => {
+  if (e.key === 'ArrowRight') goTo(cur + 1);
+  if (e.key === 'ArrowLeft') goTo(cur - 1);
+});
+
+// CALCULATOR LOGIC
+const MgO_init = 1.50;
+const w_MgO_dl = 0.40;
+const dh_dl    = 800;
+const m_slag_base = 142.63;
+const delta_Q = 22.63;
+const dh_scrap = 1324.47;
+
+function updateCalc() {
+  const t = parseFloat(document.getElementById('tempSlider').value);
+  const b = parseFloat(document.getElementById('basicSlider').value) / 10.0;
+  const beta = parseFloat(document.getElementById('betaSlider').value) / 100.0;
+  
+  document.getElementById('tempVal').textContent = t;
+  document.getElementById('basicVal').textContent = b.toFixed(1);
+  document.getElementById('betaVal').textContent = beta.toFixed(2);
+
+  const sat = 6.0 + 0.015 * (t - 1550) - 0.5 * (b - 3.0);
+  const target = sat * beta;
+  const delta = target - MgO_init;
+  
+  let m_dl = 0, q_dl = 0, m_scr = 0;
+  
+  if (delta > 0) {
+    const req = m_slag_base * (delta / (100.0 - target));
+    m_dl = req / w_MgO_dl;
+    q_dl = m_dl * dh_dl / 1000.0;
+  }
+  
+  const dQ_rem = delta_Q - q_dl;
+  m_scr = dQ_rem > 0 ? (dQ_rem * 1000.0 / dh_scrap) : 0;
+
+  document.getElementById('resSat').textContent = sat.toFixed(2);
+  document.getElementById('resMass').textContent = m_dl.toFixed(2);
+  document.getElementById('resHeat').textContent = q_dl.toFixed(2);
+  document.getElementById('resScrap').textContent = m_scr.toFixed(2);
+}
+
+['tempSlider', 'basicSlider', 'betaSlider'].forEach(id => {
+  document.getElementById(id).addEventListener('input', updateCalc);
+});
+
+updateCalc();
+</script>
+</body>
+</html>
