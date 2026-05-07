@@ -65,9 +65,6 @@ p{font-size:.93rem;line-height:1.65;color:var(--text-secondary)}
 /* STEP TAG */
 .step-tag{background:var(--accent-orange);color:#fff;padding:2px 10px;border-radius:4px;font-size:.74rem;font-weight:700;margin-right:8px;text-transform:uppercase;letter-spacing:.8px}
 
-/* DATA TAG */
-.data-tag{display:inline-block;background:rgba(25,118,210,.12);color:#5ab0ff;padding:3px 11px;border-radius:20px;font-size:.8rem;border:1px solid rgba(25,118,210,.3);margin:3px}
-
 /* BIG VALUE */
 .big-val{font-size:2.4rem;font-weight:900;color:var(--accent-orange);line-height:1}
 
@@ -94,6 +91,15 @@ input[type=range]::-webkit-slider-thumb:hover{transform:scale(1.2)}
 .dot{width:7px;height:7px;border-radius:50%;background:rgba(255,255,255,.18);cursor:pointer;transition:all .3s;border:none;padding:0}
 .dot.active{background:var(--accent-orange);transform:scale(1.4)}
 
+/* FIRE EFFECT */
+.restart-container{position:relative;display:inline-block;margin-top:32px}
+.restart-btn{position:relative;padding:13px 40px;font-size:1.05rem;font-weight:700;color:white;background:var(--bg-tertiary);border:2px solid var(--accent-orange);border-radius:50px;cursor:pointer;z-index:10;transition:all .3s;text-transform:uppercase;font-family:inherit;letter-spacing:1px}
+.restart-btn:hover{background:var(--accent-orange);box-shadow:0 0 30px rgba(255,111,0,.5)}
+.fire-wrapper{position:absolute;bottom:-10px;left:50%;transform:translateX(-50%);width:140%;height:300px;pointer-events:none;display:none;z-index:1}
+.fire-wrapper.active{display:block}
+.flame{position:absolute;bottom:40px;width:40px;height:40px;background:var(--accent-orange);border-radius:50% 50% 20% 80%;filter:blur(8px);animation:burn 1.8s infinite;opacity:0}
+@keyframes burn{0%{transform:translateY(0) scale(1) rotate(45deg);opacity:0;background:#ffcf33}20%{opacity:1}50%{transform:translateY(-120px) scale(2.5) rotate(45deg);opacity:.7;background:#ff6f00}80%{opacity:.3}100%{transform:translateY(-250px) scale(.5) rotate(45deg);opacity:0;background:#d32f2f}}
+
 /* ANIMATIONS */
 @keyframes fadeInUp{from{opacity:0;transform:translateY(22px)}to{opacity:1;transform:translateY(0)}}
 @keyframes fadeInLeft{from{opacity:0;transform:translateX(-22px)}to{opacity:1;transform:translateX(0)}}
@@ -109,9 +115,6 @@ input[type=range]::-webkit-slider-thumb:hover{transform:scale(1.2)}
 .preloader-ring{width:52px;height:52px;border:3px solid rgba(255,111,0,.15);border-top-color:var(--accent-orange);border-radius:50%;animation:preloaderSpin .7s linear infinite}
 @keyframes preloaderSpin{to{transform:rotate(360deg)}}
 
-/* CUSTOM STYLES FOR PR6 */
-.lining-box{border:2px solid var(--accent-orange);border-radius:15px;padding:20px;position:relative;overflow:hidden}
-.lining-layer{position:absolute;bottom:0;left:0;width:100%;background:rgba(255,111,0,0.2);transition:height 0.5s ease}
 .slag-liquid{fill:rgba(255,80,0,0.4);animation:wave 3s infinite ease-in-out}
 @keyframes wave{0%,100%{transform:translateY(0)}50%{transform:translateY(-5px)}}
 </style>
@@ -141,8 +144,9 @@ input[type=range]::-webkit-slider-thumb:hover{transform:scale(1.2)}
 <section class="slide active" data-slide="1">
 <div class="slide-content" style="text-align:center">
   <h1 class="ani">Практична робота №6</h1>
-  <p class="ani d1" style="font-size:1.25rem;color:var(--text-secondary);margin-bottom:12px">Розрахунок шлакового режиму та MgO-насичення шлаку</p>
-  <p class="ani d2" style="font-size:.95rem;color:var(--accent-orange);font-weight:600;letter-spacing:1px;margin-bottom:28px">Захист футерівки та енергоефективність</p>
+  <p class="ani d1" style="font-size:1.25rem;color:var(--text-secondary);margin-bottom:6px">Розрахунок шлакового режиму та MgO-насичення шлаку</p>
+  <p class="ani d2" style="font-size:.95rem;color:var(--accent-orange);font-weight:600;letter-spacing:1px;margin-bottom:12px">Захист футерівки та енергоефективність</p>
+  <p class="ani d2" style="font-size:.95rem;color:var(--accent-orange);font-weight:600;letter-spacing:1px;margin-bottom:28px">Мірошниченко Сергій Олександрович</p>
   <div class="ani d2" style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-bottom:30px">
     <span class="badge badge-orange">MgO-насичення</span>
     <span class="badge badge-blue">Доломітизоване вапно</span>
@@ -156,49 +160,49 @@ input[type=range]::-webkit-slider-thumb:hover{transform:scale(1.2)}
           <stop offset="0%" stop-color="#2d2d2d"/><stop offset="100%" stop-color="#1a1a1a"/>
         </linearGradient>
       </defs>
-      <!-- Lining -->
       <path d="M50,20 L50,180 L350,180 L350,20 L330,20 L330,160 L70,160 L70,20 Z" fill="url(#liningGrad)" stroke="var(--accent-orange)" stroke-width="2"/>
-      <!-- Slag pool -->
       <rect x="70" y="100" width="260" height="60" fill="rgba(255,111,0,0.3)" class="slag-liquid"/>
       <text x="200" y="140" text-anchor="middle" fill="#fff" font-weight="700" font-size="14">ШЛАК (MgO-насичення)</text>
-      <!-- Ions -->
-      <circle cx="100" cy="110" r="4" fill="var(--accent-orange)"><animate attributeName="cx" values="100;120;100" dur="4s" repeatCount="indefinite"/></circle>
-      <circle cx="300" cy="130" r="4" fill="var(--accent-orange)"><animate attributeName="cy" values="130;110;130" dur="3s" repeatCount="indefinite"/></circle>
     </svg>
   </div>
 </div>
 </section>
 
-<!-- СЛАЙД 2: КОНТЕКСТ -->
+<!-- СЛАЙД 2: АКТУАЛЬНІСТЬ -->
 <section class="slide" data-slide="2">
 <div class="slide-content">
-  <h2>Навіщо захищати футерівку?</h2>
+  <h2>Актуальність захисту вогнетривкої футерівки</h2>
   <div class="grid-wide">
     <div>
       <div class="card card-orange ani" style="margin-bottom:15px">
-        <h3>🏗️ Периклазовуглецева цегла (MgO-C)</h3>
-        <p>Сучасні конвертери працюють на вогнетривах з оксиду магнію. Це основа стійкості агрегату, що витримує температури понад <strong style="color:#fff">1600°C</strong>.</p>
+        <h3>🏗️ Периклазовуглецева футерівка (MgO-C)</h3>
+        <p>Забезпечує експлуатаційну стійкість агрегату в умовах високотемпературного впливу (понад <strong style="color:#fff">1600°C</strong>) та інтенсивного перемішування ванни.</p>
       </div>
       <div class="card ani d2" style="margin-bottom:15px">
-        <h3>🍽️ "Голодний" шлак</h3>
-        <p>На початку плавки шлак містить мало MgO. Він агресивно "виїдає" магнезію з цегли, щоб досягти своєї термодинамічної межі розчинності.</p>
+        <h3>🍽️ Термодинамічна ненасиченість шлаку</h3>
+        <p>Первинні та проміжні шлаки характеризуються дефіцитом MgO, що зумовлює їх високу реакційну здатність щодо вогнетривкої кладки.</p>
       </div>
       <div class="card ani d3" style="border-left:3px solid var(--accent-blue)">
-        <h3 style="color:#5ab0ff">🎯 Мета роботи</h3>
-        <p>Штучно наситити шлак магнезією за допомогою флюсів, щоб він перестав руйнувати футерівку. Ціна захисту — <strong style="color:var(--accent-orange)">теплова енергія</strong>.</p>
+        <h3 style="color:#5ab0ff">🎯 Стратегія захисту</h3>
+        <p>Превентивне насичення шлаку оксидом магнію шляхом введення флюсів для нівелювання рушійної сили розчинення робочого шару футерівки.</p>
       </div>
     </div>
     <div class="ani-r d2">
       <div class="card" style="text-align:center">
-        <h3 style="margin-bottom:15px">Хімічний знос</h3>
+        <h3 style="margin-bottom:15px">Хімічна ерозія</h3>
         <svg viewBox="0 0 200 200" width="100%">
+          <defs>
+            <marker id="arrow" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto" markerUnits="strokeWidth">
+              <path d="M0,0 L0,6 L9,3 z" fill="var(--accent-orange)" />
+            </marker>
+          </defs>
           <rect x="20" y="20" width="40" height="160" fill="#2d2d2d" stroke="var(--accent-red)" stroke-width="2"/>
-          <text x="40" y="100" text-anchor="middle" transform="rotate(-90 40,100)" fill="var(--accent-red)" font-size="10">MgO-C ФУТЕРІВКА</text>
-          <rect x="60" y="20" width="120" height="160" fill="rgba(255,80,0,0.1)"/>
+          <text x="40" y="100" text-anchor="middle" transform="rotate(-90 40,100)" fill="var(--accent-red)" font-size="10" font-weight="700">MgO-C ВОГНЕТРИВ</text>
+          <rect x="60" y="20" width="120" height="160" fill="rgba(255,80,0,0.15)"/>
           <path d="M60,20 Q100,20 100,50 T60,80 Q100,80 100,110 T60,140 Q100,140 100,170 T60,180" fill="none" stroke="var(--accent-red)" stroke-width="2" stroke-dasharray="5,5"/>
-          <text x="120" y="100" text-anchor="middle" fill="var(--text-secondary)" font-size="12">Агресивний шлак</text>
+          <text x="120" y="100" text-anchor="middle" fill="#fff" font-size="12" font-weight="600" opacity="0.8">Агресивний розплав</text>
           <path d="M60,60 L90,60" stroke="var(--accent-orange)" stroke-width="2" marker-end="url(#arrow)"/>
-          <text x="80" y="55" fill="var(--accent-orange)" font-size="10">MgO →</text>
+          <text x="85" y="55" text-anchor="middle" fill="var(--accent-orange)" font-size="10" font-weight="700">MgO</text>
         </svg>
       </div>
     </div>
@@ -206,51 +210,51 @@ input[type=range]::-webkit-slider-thumb:hover{transform:scale(1.2)}
 </div>
 </section>
 
-<!-- СЛАЙД 3: МЕХАНІЗМ ЗНОСУ -->
+<!-- СЛАЙД 3: ТЕРМОДИНАМІЧНА РІВНОВАГА -->
 <section class="slide" data-slide="3">
 <div class="slide-content">
-  <h2>Механізм насичення</h2>
+  <h2>Досягнення термодинамічної рівноваги</h2>
   <div class="grid-2">
     <div class="card card-red ani">
-      <h3>🚫 Ненасичений шлак</h3>
+      <h3>🚫 Хімічна ненасиченість</h3>
       <p style="margin-bottom:12px">Концентрація MgO < <strong>MgO_sat</strong></p>
       <div style="background:rgba(211,47,47,0.1);padding:15px;border-radius:10px;text-align:center">
-        <div style="color:var(--accent-red);font-weight:900;font-size:1.2rem">ШВИДКИЙ ЗНОС</div>
-        <p style="font-size:0.8rem">Шлак екстрагує MgO з цегли</p>
+        <div style="color:var(--accent-red);font-weight:900;font-size:1.2rem">ІНТЕНСИВНА ЕРОЗІЯ</div>
+        <p style="font-size:0.8rem">Дифузійне розчинення фази MgO</p>
       </div>
     </div>
     <div class="card card-green ani d1">
-      <h3>✅ Насичений шлак</h3>
-      <p style="margin-bottom:12px">Концентрація MgO = <strong>MgO_sat</strong></p>
+      <h3>✅ Термодинамічна стабільність</h3>
+      <p style="margin-bottom:12px">Концентрація MgO ≥ <strong>MgO_sat</strong></p>
       <div style="background:rgba(46,125,50,0.1);padding:15px;border-radius:10px;text-align:center">
-        <div style="color:#66bb6a;font-weight:900;font-size:1.2rem">СТАБІЛЬНІСТЬ</div>
-        <p style="font-size:0.8rem">Хімічна рівновага досягнута</p>
+        <div style="color:#66bb6a;font-weight:900;font-size:1.2rem">РІВНОВАЖНИЙ СТАН</div>
+        <p style="font-size:0.8rem">Припинення масообміну з футерівкою</p>
       </div>
     </div>
   </div>
   <div class="ani d2" style="margin-top:25px;padding:20px;background:var(--bg-secondary);border-radius:12px;border:1px dashed var(--accent-orange)">
-    <p style="text-align:center;font-style:italic">"Шлак не буде їсти футерівку, якщо його нагодувати доломітом заздалегідь"</p>
+    <p style="text-align:center;font-weight:600">Досягнення термодинамічної рівноваги у системі «шлак-футерівка» шляхом превентивного MgO-насичення флюсами.</p>
   </div>
 </div>
 </section>
 
-<!-- СЛАЙД 4: ТЕРМОДИНАМІКА (MgO_sat) -->
+<!-- СЛАЙД 4: РОЗРАХУНОК MgO_sat -->
 <section class="slide" data-slide="4">
 <div class="slide-content">
-  <h2>Термодинаміка розчинності</h2>
+  <h2>Аналіз розчинності MgO</h2>
   <div class="card card-orange ani">
-    <h3 style="text-align:center;font-size:1.2rem;margin-bottom:15px">Межа насичення (MgO_sat, %)</h3>
+    <h3 style="text-align:center;font-size:1.2rem;margin-bottom:15px">Межа термодинамічного насичення (MgO_sat, %)</h3>
     <div style="font-size:1.8rem;text-align:center;font-weight:900;background:var(--bg-tertiary);padding:20px;border-radius:15px;color:#fff;margin-bottom:15px">
       6.0 + 0.015·(t_tap − 1550) − 0.5·(B − 3.0)
     </div>
     <div class="grid-2">
       <div style="text-align:center">
-        <div style="color:var(--accent-red);font-weight:700">🌡️ Температура (t_tap)</div>
-        <p style="font-size:0.8rem">Зростання на 100°C → +1.5% MgO_sat</p>
+        <div style="color:var(--accent-red);font-weight:700">🌡️ Термічний фактор (t_tap)</div>
+        <p style="font-size:0.8rem">Ендотермічний характер розчинення MgO</p>
       </div>
       <div style="text-align:center">
-        <div style="color:var(--accent-blue);font-weight:700">⚖️ Основність (B)</div>
-        <p style="font-size:0.8rem">Зростання на 1.0 → −0.5% MgO_sat</p>
+        <div style="color:var(--accent-blue);font-weight:700">⚖️ Хімічний фактор (B)</div>
+        <p style="font-size:0.8rem">Вплив активності CaO на розчинність MgO</p>
       </div>
     </div>
   </div>
@@ -261,26 +265,26 @@ input[type=range]::-webkit-slider-thumb:hover{transform:scale(1.2)}
       <div style="font-size:0.8rem;color:var(--text-muted)">MgO_sat</div>
     </div>
     <div class="card" style="width:45%;text-align:center">
-      <div style="font-size:0.75rem;color:var(--text-muted)">Варіант 1: 1460°C, B=3.2</div>
-      <div class="big-val" style="color:var(--accent-blue)">4.55%</div>
+      <div style="font-size:0.75rem;color:var(--text-muted)">Базовий рівень (1550°C, B=3.0)</div>
+      <div class="big-val" style="color:var(--accent-blue)">6.00%</div>
       <div style="font-size:0.8rem;color:var(--text-muted)">MgO_sat</div>
     </div>
   </div>
 </div>
 </section>
 
-<!-- СЛАЙД 5: ДОЛОМІТИЗОВАНЕ ВАПНО -->
+<!-- СЛАЙД 5: МАГНЕЗІАЛЬНИЙ ФЛЮС -->
 <section class="slide" data-slide="5">
 <div class="slide-content">
   <h2>Магнезіальний флюс</h2>
   <div class="grid-wide">
     <div class="card card-blue ani">
-      <h3>🏗️ Доломітизоване вапно</h3>
-      <p style="margin-bottom:12px">Це основний засіб захисту футерівки. Містить два ключових оксиди:</p>
+      <h3>🏗️ Доломітизоване вапно (DL)</h3>
+      <p style="margin-bottom:12px">Спеціалізований флюс для корекції складу шлаку. Має наступний компонентний склад:</p>
       <div style="display:flex;gap:10px;margin-bottom:15px">
         <div style="flex:1;background:var(--bg-tertiary);padding:10px;border-radius:8px;text-align:center">
           <div style="color:var(--accent-orange);font-weight:900">40% MgO</div>
-          <div style="font-size:0.7rem">Захист</div>
+          <div style="font-size:0.7rem">Насичення</div>
         </div>
         <div style="flex:1;background:var(--bg-tertiary);padding:10px;border-radius:8px;text-align:center">
           <div style="color:var(--accent-blue);font-weight:900">~55% CaO</div>
@@ -288,85 +292,81 @@ input[type=range]::-webkit-slider-thumb:hover{transform:scale(1.2)}
         </div>
       </div>
       <div class="hl-box" style="border-color:var(--accent-blue);color:#5ab0ff">
-        Охолоджуюча здатність: <strong>800 кДж/кг</strong>
+        Ефективна охолоджуюча здатність: <strong>800 кДж/кг</strong>
       </div>
     </div>
     <div class="ani-r d2">
       <div class="card" style="text-align:center">
-        <h3>Склад флюсу</h3>
+        <h3>Компонентний склад</h3>
         <svg viewBox="0 0 150 150" width="150">
           <circle cx="75" cy="75" r="60" fill="none" stroke="var(--bg-tertiary)" stroke-width="20"/>
           <circle cx="75" cy="75" r="60" fill="none" stroke="var(--accent-orange)" stroke-width="20" stroke-dasharray="150, 377" transform="rotate(-90 75 75)"/>
           <circle cx="75" cy="75" r="60" fill="none" stroke="var(--accent-blue)" stroke-width="20" stroke-dasharray="200, 377" transform="rotate(50 75 75)"/>
           <text x="75" y="80" text-anchor="middle" fill="#fff" font-weight="900" font-size="16">DL</text>
         </svg>
-        <div style="font-size:0.8rem;margin-top:10px">
-          <span style="color:var(--accent-orange)">●</span> MgO (40%)<br>
-          <span style="color:var(--accent-blue)">●</span> CaO (55%)
-        </div>
       </div>
     </div>
   </div>
 </div>
 </section>
 
-<!-- СЛАЙД 6: ТЕХНОЛОГІЧНИЙ КОМПРОМІС -->
+<!-- СЛАЙД 6: ЕНЕРГЕТИЧНИЙ ЕКВІВАЛЕНТ -->
 <section class="slide" data-slide="6">
 <div class="slide-content">
-  <h2>Технологічний компроміс</h2>
+  <h2>Енергетичний еквівалент стійкості</h2>
   <div class="card card-red ani" style="margin-bottom:20px">
-    <p style="font-size:1rem;text-align:center">Кожен кілограм флюсу для <strong>захисту футерівки</strong> <br> зменшує масу <strong>металобрухту</strong>, який можна розплавити.</p>
+    <p style="font-size:1rem;text-align:center">Витрати теплової енергії на розчинення флюсів безпосередньо лімітують потенціал переробки металевого брухту.</p>
   </div>
   <div class="grid-2 ani d2">
     <div class="card" style="text-align:center;border-bottom:4px solid var(--accent-orange)">
       <div style="font-size:2rem">🛡️</div>
       <h3 style="margin-top:10px">Стійкість</h3>
-      <p style="font-size:0.85rem">Додаємо 20.2 кг доломіту<br>для MgO-насичення</p>
-      <div style="color:var(--accent-red);font-weight:700;margin-top:10px">−16.2 МДж тепла</div>
+      <p style="font-size:0.85rem">Введення 20.2 кг DL<br>для превентивного захисту</p>
+      <div style="color:var(--accent-red);font-weight:700;margin-top:10px">ΔQ_loss = 16.2 МДж</div>
     </div>
     <div class="card" style="text-align:center;border-bottom:4px solid var(--accent-blue)">
       <div style="font-size:2rem">🏗️</div>
-      <h3 style="margin-top:10px">Економіка</h3>
-      <p style="font-size:0.85rem">Втрачаємо можливість розплавити<br>~12.2 кг сталевого брухту</p>
-      <div style="color:var(--accent-blue);font-weight:700;margin-top:10px">Зменшення % брухту</div>
+      <h3 style="margin-top:10px">Ефективність</h3>
+      <p style="font-size:0.85rem">Дефіцит тепла для плавлення<br>~12.2 кг металобрухту</p>
+      <div style="color:var(--accent-blue);font-weight:700;margin-top:10px">Скорочення брухтового ресурсу</div>
     </div>
   </div>
   <div class="ani d3" style="margin-top:20px;text-align:center">
     <div style="display:inline-block;padding:10px 20px;border-radius:30px;background:var(--gradient-fire);font-weight:700">
-      Плата за стійкість: 1 кг DL ≈ 0.6 кг Scrap
+      Питомий коефіцієнт заміщення: 1 кг DL ≈ 0.6 кг Scrap
     </div>
   </div>
 </div>
 </section>
 
-<!-- СЛАЙД 7: ЛОГІКА РОЗРАХУНКУ -->
+<!-- СЛАЙД 7: АЛГОРИТМ -->
 <section class="slide" data-slide="7">
 <div class="slide-content">
-  <h2>Логіка розрахунку (Крок за кроком)</h2>
+  <h2>Алгоритм розрахунку</h2>
   <div class="grid-2">
     <div class="ani">
       <div style="display:flex;flex-direction:column;gap:12px">
         <div class="card" style="padding:12px">
-          <span class="step-tag">1</span> <strong>MgO_sat</strong> за формулою (t, B)
+          <span class="step-tag">1</span> Розрахунок <strong>MgO_sat</strong> (f(t, B))
         </div>
         <div class="card" style="padding:12px">
-          <span class="step-tag">2</span> <strong>MgO_target</strong> = MgO_sat × β_sat
+          <span class="step-tag">2</span> Визначення <strong>MgO_target</strong>
         </div>
         <div class="card" style="padding:12px">
-          <span class="step-tag">3</span> <strong>Дефіцит</strong> Δ%MgO = target − 1.5%
+          <span class="step-tag">3</span> Оцінка дефіциту <strong>Δ%MgO</strong>
         </div>
       </div>
     </div>
     <div class="ani d2">
       <div style="display:flex;flex-direction:column;gap:12px">
         <div class="card" style="padding:12px">
-          <span class="step-tag">4</span> <strong>Маса флюсу</strong> m_dl (баланс MgO)
+          <span class="step-tag">4</span> Розрахунок маси флюсу <strong>m_dl</strong>
         </div>
         <div class="card" style="padding:12px">
-          <span class="step-tag">5</span> <strong>Витрати тепла</strong> Q_dl = m × 800
+          <span class="step-tag">5</span> Оцінка витрат тепла <strong>Q_dl</strong>
         </div>
         <div class="card" style="padding:12px;border:1px solid var(--accent-orange)">
-          <span class="step-tag">6</span> <strong>Новий брухт</strong> m_scrap = ΔQ_rem / dh
+          <span class="step-tag">6</span> Корекція брухтового ресурсу <strong>m_scrap</strong>
         </div>
       </div>
     </div>
@@ -374,10 +374,10 @@ input[type=range]::-webkit-slider-thumb:hover{transform:scale(1.2)}
 </div>
 </section>
 
-<!-- СЛАЙД 8: ІНТЕРАКТИВНИЙ КАЛЬКУЛЯТОР -->
+<!-- СЛАЙД 8: КАЛЬКУЛЯТОР -->
 <section class="slide" data-slide="8">
 <div class="slide-content">
-  <h2>Інтерактивний калькулятор ПР №6</h2>
+  <h2>Інтерактивна модель ПР №6</h2>
   <div class="slider-section ani">
     <div class="grid-2" style="margin-bottom:15px">
       <div>
@@ -398,9 +398,9 @@ input[type=range]::-webkit-slider-thumb:hover{transform:scale(1.2)}
     </div>
     <div class="calc-results">
       <div class="calc-card"><div class="val" id="resSat">6.79</div><div class="lbl">MgO_sat, %</div></div>
-      <div class="calc-card"><div class="val" id="resMass" style="color:var(--accent-orange)">20.24</div><div class="lbl">Маса флюсу, кг</div></div>
-      <div class="calc-card"><div class="val" id="resHeat" style="color:var(--accent-red)">16.19</div><div class="lbl">Тепло, МДж</div></div>
-      <div class="calc-card"><div class="val" id="resScrap" style="color:var(--accent-blue)">4.86</div><div class="lbl">Новий брухт, кг</div></div>
+      <div class="calc-card"><div class="val" id="resMass" style="color:var(--accent-orange)">20.24</div><div class="lbl">m_dl, кг</div></div>
+      <div class="calc-card"><div class="val" id="resHeat" style="color:var(--accent-red)">16.19</div><div class="lbl">Q_dl, МДж</div></div>
+      <div class="calc-card"><div class="val" id="resScrap" style="color:var(--accent-blue)">4.86</div><div class="lbl">m_scrap, кг</div></div>
     </div>
   </div>
 </div>
@@ -409,7 +409,7 @@ input[type=range]::-webkit-slider-thumb:hover{transform:scale(1.2)}
 <!-- СЛАЙД 9: РЕЗУЛЬТАТИ ВАРІАНТ 20 -->
 <section class="slide" data-slide="9">
 <div class="slide-content">
-  <h2>Результати: Варіант 20</h2>
+  <h2>Аналітичні результати: Варіант 20</h2>
   <div class="grid-wide">
     <div class="ani">
       <div class="card" style="padding:0;overflow:hidden">
@@ -417,9 +417,9 @@ input[type=range]::-webkit-slider-thumb:hover{transform:scale(1.2)}
           <thead><tr><th colspan="2">Технологічні параметри</th></tr></thead>
           <tbody>
             <tr><td>Температура випуску</td><td><strong>1616 °C</strong></td></tr>
-            <tr><td>Основність шлаку</td><td><strong>3.4</strong></td></tr>
+            <tr><td>Цільова основність шлаку</td><td><strong>3.4</strong></td></tr>
             <tr><td>Базова маса шлаку</td><td>142.6 кг</td></tr>
-            <tr class="hl-row"><td>Межа насичення MgO</td><td><strong>6.79 %</strong></td></tr>
+            <tr class="hl-row"><td>Межа насичення MgO_sat</td><td><strong>6.79 %</strong></td></tr>
           </tbody>
         </table>
       </div>
@@ -427,65 +427,65 @@ input[type=range]::-webkit-slider-thumb:hover{transform:scale(1.2)}
     <div class="ani-r d2">
       <div class="card" style="padding:0;overflow:hidden">
         <table class="res-table">
-          <thead><tr><th colspan="2">Результати розрахунку</th></tr></thead>
+          <thead><tr><th colspan="2">Розрахункові показники</th></tr></thead>
           <tbody>
-            <tr><td>Маса доломіту</td><td><strong style="color:var(--accent-orange)">20.24 кг</strong></td></tr>
-            <tr><td>Витрати тепла</td><td><strong style="color:var(--accent-red)">16.19 МДж</strong></td></tr>
-            <tr><td>Початковий брухт</td><td>17.09 кг</td></tr>
-            <tr class="hl-row"><td>Скоригований брухт</td><td><strong>4.86 кг</strong></td></tr>
+            <tr><td>Маса магнезіального флюсу</td><td><strong style="color:var(--accent-orange)">20.24 кг</strong></td></tr>
+            <tr><td>Витрати тепла на розчинення</td><td><strong style="color:var(--accent-red)">16.19 МДж</strong></td></tr>
+            <tr><td>Початковий брухтовий ресурс</td><td>17.09 кг</td></tr>
+            <tr class="hl-row"><td>Скоригований ресурс брухту</td><td><strong>4.86 кг</strong></td></tr>
           </tbody>
         </table>
       </div>
       <div class="ani d3" style="margin-top:15px;padding:12px;background:rgba(211,47,47,0.1);border-radius:8px;border:1px solid var(--accent-red);font-size:0.85rem;text-align:center">
-        ⚠️ Втрата <strong>71.5%</strong> брухтового ресурсу <br> заради стійкості футерівки.
+        ⚠️ Скорочення брухтового ресурсу на <strong>71.5%</strong> <br> обумовлене витратами на термостатування флюсів.
       </div>
     </div>
   </div>
 </div>
 </section>
 
-<!-- СЛАЙД 10: АНАЛІЗ ЧУТЛИВОСТІ -->
+<!-- СЛАЙД 10: АНАЛІЗ ФАКТОРІВ -->
 <section class="slide" data-slide="10">
 <div class="slide-content">
-  <h2>Аналіз чутливості</h2>
+  <h2>Аналіз впливу факторів</h2>
   <div class="grid-2">
     <div class="ani">
       <div class="card card-orange">
-        <h3>Вплив Температури</h3>
-        <p style="font-size:0.85rem;margin-bottom:10px">При B=3.4, β=1.0:</p>
+        <h3>Фактор температури</h3>
+        <p style="font-size:0.85rem;margin-bottom:10px">Вплив на витрату DL (B=3.4):</p>
         <div style="display:flex;flex-direction:column;gap:8px">
           <div style="display:flex;justify-content:space-between;padding:6px;background:var(--bg-tertiary);border-radius:4px">
-            <span>1500 °C</span><span style="font-weight:700">6.8 кг DL</span>
+            <span>1500 °C</span><span style="font-weight:700">6.8 кг</span>
           </div>
           <div style="display:flex;justify-content:space-between;padding:6px;background:var(--bg-tertiary);border-radius:4px;border:1px solid var(--accent-orange)">
-            <span>1616 °C</span><span style="font-weight:700">20.2 кг DL</span>
+            <span>1616 °C</span><span style="font-weight:700">20.2 кг</span>
           </div>
           <div style="display:flex;justify-content:space-between;padding:6px;background:var(--bg-tertiary);border-radius:4px">
-            <span>1650 °C</span><span style="font-weight:700">24.5 кг DL</span>
+            <span>1650 °C</span><span style="font-weight:700">24.5 кг</span>
           </div>
         </div>
       </div>
     </div>
     <div class="ani-r d1">
       <div class="card card-blue">
-        <h3>Вплив Основності</h3>
-        <p style="font-size:0.85rem;margin-bottom:10px">При t=1616°C, β=1.0:</p>
+        <h3>Фактор основності</h3>
+        <p style="font-size:0.85rem;margin-bottom:10px">Вплив на витрату DL (t=1616°C):</p>
         <div style="display:flex;flex-direction:column;gap:8px">
           <div style="display:flex;justify-content:space-between;padding:6px;background:var(--bg-tertiary);border-radius:4px">
-            <span>B = 3.0</span><span style="font-weight:700">20.7 кг DL</span>
+            <span>B = 3.0</span><span style="font-weight:700">20.7 кг</span>
           </div>
           <div style="display:flex;justify-content:space-between;padding:6px;background:var(--bg-tertiary);border-radius:4px;border:1px solid var(--accent-blue)">
-            <span>B = 3.4</span><span style="font-weight:700">20.2 кг DL</span>
+            <span>B = 3.4</span><span style="font-weight:700">20.2 кг</span>
           </div>
           <div style="display:flex;justify-content:space-between;padding:6px;background:var(--bg-tertiary);border-radius:4px">
-            <span>B = 4.0</span><span style="font-weight:700">19.5 кг DL</span>
+            <span>B = 4.0</span><span style="font-weight:700">19.5 кг</span>
           </div>
         </div>
       </div>
     </div>
   </div>
   <p class="ani d2" style="margin-top:20px;font-size:0.9rem;color:var(--text-secondary);text-align:center">
-    💡 <strong>Висновок:</strong> Температура є критичним чинником. Кожні 10°C перегріву <br> вимагають додатково ~1.2 кг доломіту на тонну шихти.
+    Температурний режим є домінуючим чинником. Кожні 10°C перегріву розплаву <br> обумовлюють зростання потреби у флюсах на ~1.2 кг/т.
   </p>
 </div>
 </section>
@@ -493,26 +493,40 @@ input[type=range]::-webkit-slider-thumb:hover{transform:scale(1.2)}
 <!-- СЛАЙД 11: ВИСНОВКИ -->
 <section class="slide" data-slide="11">
 <div class="slide-content" style="text-align:center">
-  <h1 class="ani">Висновки ПР №6</h1>
+  <h1 class="ani">Висновки та узагальнення ПР №6</h1>
   <div class="grid-3 ani d2" style="margin-top:30px">
     <div class="card card-orange">
       <div style="font-size:2rem">🛡️</div>
-      <h3>Стійкість</h3>
-      <p style="font-size:0.85rem">Досягнуто MgO-насичення шлаку. Хімічний знос футерівки мінімізовано.</p>
+      <h3>Стабільність</h3>
+      <p style="font-size:0.85rem">Досягнуто MgO-насичення розплаву. Мінімізовано рушійну силу розчинення вогнетривкої фази.</p>
     </div>
     <div class="card card-red">
       <div style="font-size:2rem">🔥</div>
-      <h3>Енергія</h3>
-      <p style="font-size:0.85rem">Захист футерівки "з'їдає" 16.2 МДж тепла (для варіанта 20).</p>
+      <h3>Енергетика</h3>
+      <p style="font-size:0.85rem">Захист футерівки обумовлює витрату 16.2 МДж теплової енергії (для варіанта 20).</p>
     </div>
     <div class="card card-blue">
       <div style="font-size:2rem">🏗️</div>
-      <h3>Ресурс</h3>
-      <p style="font-size:0.85rem">Маса брухту скоригована: 17.1 → 4.9 кг. Виявлено прямий компроміс.</p>
+      <h3>Ресурси</h3>
+      <p style="font-size:0.85rem">Брухтовий ресурс скориговано: 17.1 → 4.9 кг. Виявлено пряму детермінованість між стійкістю та економікою.</p>
     </div>
   </div>
-  <div class="ani d3" style="margin-top:40px">
-    <button class="nav-btn" style="width:auto;padding:10px 30px;font-weight:700" onclick="location.reload()">ПОВТОР</button>
+  <div style="display:flex;justify-content:center" class="ani d3">
+    <div class="restart-container">
+      <div class="fire-wrapper" id="fireEffect">
+        <div class="flame" style="left:5%;animation-delay:.1s;width:50px"></div>
+        <div class="flame" style="left:14%;animation-delay:.4s"></div>
+        <div class="flame" style="left:24%;animation-delay:.2s;width:58px"></div>
+        <div class="flame" style="left:34%;animation-delay:.6s"></div>
+        <div class="flame" style="left:45%;animation-delay:.1s;width:44px"></div>
+        <div class="flame" style="left:55%;animation-delay:.35s"></div>
+        <div class="flame" style="left:65%;animation-delay:.5s;width:52px"></div>
+        <div class="flame" style="left:75%;animation-delay:.25s"></div>
+        <div class="flame" style="left:85%;animation-delay:.7s;width:38px"></div>
+        <div class="flame" style="left:94%;animation-delay:.45s"></div>
+      </div>
+      <button class="restart-btn" id="restartBtn">Початок</button>
+    </div>
   </div>
 </div>
 </section>
@@ -520,7 +534,6 @@ input[type=range]::-webkit-slider-thumb:hover{transform:scale(1.2)}
 </div>
 
 <script>
-// SLIDE NAVIGATION
 let cur = 1;
 const slides = document.querySelectorAll('.slide');
 const total  = slides.length;
@@ -541,6 +554,9 @@ function goTo(n) {
   document.querySelector(`.slide[data-slide="${n}"]`).classList.add('active');
   cur = n;
   updateUI();
+  if (n === 11) {
+    document.getElementById('fireEffect').classList.remove('active');
+  }
 }
 
 function updateUI() {
@@ -552,9 +568,19 @@ function updateUI() {
 document.getElementById('prevBtn').addEventListener('click', () => goTo(cur - 1));
 document.getElementById('nextBtn').addEventListener('click', () => goTo(cur + 1));
 document.addEventListener('keydown', e => {
-  if (e.key === 'ArrowRight') goTo(cur + 1);
+  if (e.key === 'ArrowRight' || e.key === ' ') goTo(cur + 1);
   if (e.key === 'ArrowLeft') goTo(cur - 1);
 });
+
+const restartBtn = document.getElementById('restartBtn');
+const fireEffect = document.getElementById('fireEffect');
+if (restartBtn) {
+  restartBtn.addEventListener('click', () => {
+    if (fireEffect) fireEffect.classList.add('active');
+    restartBtn.textContent = '🔥 До розрахунків!';
+    restartBtn.style.borderColor = '#ffcf33';
+  });
+}
 
 // CALCULATOR LOGIC
 const MgO_init = 1.50;
@@ -599,6 +625,12 @@ function updateCalc() {
 });
 
 updateCalc();
+
+window.addEventListener('load', () => {
+  setTimeout(() => {
+    document.getElementById('preloader').style.display = 'none';
+  }, 1000);
+});
 </script>
 </body>
 </html>
