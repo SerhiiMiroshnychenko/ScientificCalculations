@@ -154,7 +154,7 @@ def _create_dayofweek_success_chart(data):
             plt.Line2D([0], [0], marker='o', color='w', markerfacecolor='#4169E1', markersize=10, label='Success Rate 50-80%'),
             plt.Line2D([0], [0], marker='o', color='w', markerfacecolor='#000080', markersize=10, label='Success Rate > 80%')
         ]
-        plt.legend(handles=legend_elements, loc='upper right')
+        plt.legend(handles=legend_elements, loc='upper right', fontsize=14)
 
         metrics, rows, box_lines = compute_categorical_success_stats(
             data.get('ranges', []),

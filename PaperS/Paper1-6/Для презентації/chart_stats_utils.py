@@ -21,11 +21,12 @@ def wilson_interval(successes, total, z=1.96):
     return max(0.0, (center - margin) * 100.0), min(100.0, (center + margin) * 100.0)
 
 
-def add_stats_box(ax, lines, loc="lower right", fontsize=10):
+def add_stats_box(ax, lines, loc="lower right", fontsize=14):
     if not lines:
         return
     anchors = {
         "lower right": (0.98, 0.04, "right", "bottom"),
+        "lower center": (0.50, 0.04, "center", "bottom"),
         "lower left": (0.02, 0.04, "left", "bottom"),
         "upper right": (0.98, 0.96, "right", "top"),
         "upper left": (0.02, 0.96, "left", "top"),

@@ -28,7 +28,7 @@ AXIS_FONT = 17
 TICK_FONT = 16
 LEGEND_FONT = 14
 POINT_LABEL_FONT = 12
-STATS_FONT = 12
+STATS_FONT = 14
 
 def _read_csv_data(csv_path):
     """Read CSV data from file"""

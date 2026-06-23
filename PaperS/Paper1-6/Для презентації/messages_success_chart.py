@@ -224,7 +224,7 @@ def _create_messages_success_chart(data):
                        markerfacecolor='#000080', markersize=10,
                        label='Success Rate > 80%')
         ]
-        plt.legend(handles=legend_elements, loc='upper right')
+        plt.legend(handles=legend_elements, loc='upper left', fontsize=14)
 
         metrics, rows, box_lines = compute_binned_numeric_stats(
             data,
