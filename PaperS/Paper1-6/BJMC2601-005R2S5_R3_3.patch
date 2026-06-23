@@ -1,0 +1,227 @@
+diff --git "a/PaperS/Paper1-6/BJMC2601-005R2S5 \342\200\223 \320\272\320\276\320\277\321\226\321\217.md" "b/PaperS/Paper1-6/BJMC2601-005R2S5 \342\200\223 \320\272\320\276\320\277\321\226\321\217.md"
+index bf5a4ce..1aafbbb 100644
+--- "a/PaperS/Paper1-6/BJMC2601-005R2S5 \342\200\223 \320\272\320\276\320\277\321\226\321\217.md"	
++++ "b/PaperS/Paper1-6/BJMC2601-005R2S5 \342\200\223 \320\272\320\276\320\277\321\226\321\217.md"	
+@@ -117,8 +117,7 @@ through a multi-algorithmic feature significance method. We address the
+ research question: which order characteristics have the greatest impact
+ on completion probability, and how should their relative importance be
+ quantified in a methodologically neutral way?\
+-To address problems P1--P3, this study makes the following contributions
+-to the body of scientific knowledge:
++To address problems P1--P3, this study makes the following contributions:
+ 
+ **C1.** The selection and methodological justification of five
+ mathematically distinct feature significance scorers -- Area Under the
+@@ -584,24 +583,10 @@ $f_{i}$'s significance; $| \cdot |$ is set cardinality, i.e., the number
+ of elements satisfying condition
+ $S_{j}\left( f_{l} \right) \geq S_{j}\left( f_{i} \right)$.
+ 
+-Unlike the classical Borda method (Dwork et al., 2001), which for a set
+-of elements $S = \{ s_{1},s_{2},\ldots,s_{n}\}$ and $k$ different
+-rankings $\tau_{1},\tau_{2},\ldots,\tau_{k}$ gives each element $s_{i}$
+-a score, given by Eq. (2):
+-
+-  ----------------------------------------------------------------------------------------------------------
+-  $$B\left( s_{i} \right) = \sum_{j = 1}^{k}\left( n - \tau_{j}\left( s_{i} \right) + 1 \right),$$   \(2\)
+-  -------------------------------------------------------------------------------------------------- -------
+-
+-  ----------------------------------------------------------------------------------------------------------
+-
+-where $\tau_{j}\left( s_{i} \right)$ is the position of element $s_{i}$
+-in ranking $\tau_{j}$, $n$ is the total number of elements, $k$ is the
+-number of different rankings (one per scorer), the proposed modification
+-applies arithmetic mean of ranks, given by Eq. (3):
++In contrast to the classical Borda method (Dwork et al., 2001), which aggregates complete rankings through a sum-of-positions logic, the proposed modification applies the arithmetic mean of the scorer-specific ranks:
+ 
+   -------------------------------------------------------------------------------------------------
+-  $$\bar{R}\left( f_{i} \right) = \frac{1}{k}\sum_{j = 1}^{k}R_{j}\left( f_{i} \right).$$   \(3\)
++  $$\bar{R}\left( f_{i} \right) = \frac{1}{k}\sum_{j = 1}^{k}R_{j}\left( f_{i} \right).$$   \(2\)
+   ----------------------------------------------------------------------------------------- -------
+ 
+   -------------------------------------------------------------------------------------------------
+@@ -612,9 +597,7 @@ from all involved scorers. A lower value of
+ $\bar{R}\left( f_{i} \right)$ indicates higher consolidated feature
+ significance. The consolidated ordering is obtained by applying Eq. (1)
+ to each (feature, scorer) pair and then aggregating the resulting
+-per-method ranks via Eq. (3); Eq. (2) is reproduced here only as the
+-classical reference formulation against which the proposed modification
+-is contrasted.
++per-method ranks via Eq. (2).
+ 
+ The proposed modification to the Borda method has several methodological
+ advantages. First, the rule is methodologically neutral, giving no
+@@ -651,10 +634,8 @@ hyperparameters detailed in the per-scorer descriptions above.
+ 
+ **Stage III** (Modified Borda rank aggregation). Per-scorer scores are
+ independently transformed into ranks using Eq. (1); these ranks are
+-aggregated into the consolidated ordering using Eq. (3), in contrast to
+-the classical sum-of-positions form given by Eq. (2). The Python
+-implementation of this aggregation is provided in Appendix B. Output.
+-The output of the workflow is the consolidated ranking of features,
++aggregated into the consolidated ordering using Eq. (2), in contrast to the classical sum-of-positions Borda score. The Python
++implementation of this aggregation is provided in Appendix B. The output of the workflow is the consolidated ranking of features,
+ which is examined empirically in Sections 4 and 5. By construction, this
+ multi-stage procedure compensates for the methodological limitations of
+ any individual scorer and provides a more reliable and balanced
+@@ -666,9 +647,8 @@ processes and decision-making.
+ Upon applying the multi-algorithmic method described in Section 3 to the
+ analyzed dataset, we derived feature importance scores for each of the
+ five feature significance scorers. These raw scores, shown in Table 1,
+-are subsequently transformed into per- scorer ranks via Eq. (1) and
+-consolidated through the modified Borda mean rank of Eq. (3) into the
+-ordering visualized in Fig. 8.
++are subsequently transformed into per-scorer ranks via Eq. (1) and
++consolidated through the modified Borda mean rank of Eq. (2) into the ordering visualized in Fig. 8.
+ 
+ **Table 1.** Feature importance scores by different scorers
+ 
+@@ -726,9 +706,7 @@ ordering visualized in Fig. 8.
+ 
+ Subsequently, we constructed a heatmap depicting the relative
+ significance of features across these scorers (see Fig. 8), where the
+-numbers in the cells correspond to the ranks assigned by the individual
+-scorers, "Average Rank" denotes the mean of these scorer-specific ranks,
+-and "Overall Rank" represents the final aggregated ordering (ties in
++numbers in the cells correspond to the ranks assigned by the individual scorers, "Average Rank" denotes the mean of these scorer-specific ranks, and "Overall Rank" represents the final aggregated ordering (ties in
+ "Average Rank" share the same overall rank).
+ 
+ Among the values reported in Table 1, 'order_messages' shows the highest
+@@ -761,6 +739,8 @@ height="3.2850754593175853in"}
+ 
+ **Figure 8.** Feature importance rank heatmap by different scorers
+ 
++Thus, Fig. 8 is the direct empirical application of Eqs. (1) and (2): the scorer-specific ranks are obtained from the Table 1 scores using Eq. (1), and the "Average Rank" and "Overall Rank" fields are obtained from these ranks using Eq. (2).
++
+ dCor results are similar to AUC but with less distinction between
+ values. However, for the most granular temporal features (hour, day,
+ month, quarter), their unimportance is clearly demonstrated by zero
+@@ -782,69 +762,80 @@ depending on context.
+ 
+ To provide empirical confirmation of the aggregated ranking results, we
+ present a set of binned success-rate plots illustrating how selected
+-predictors relate to order success.
++predictors relate to order success. To increase their analytical value,
++the plots report bin or category sample sizes, 95% Wilson confidence
++intervals for success rates, and the corresponding association metrics.
+ 
+ The success rate demonstrates a pronounced positive correlation with the
+-number of exchanged messages (\`order_messages\`). At minimal
+-communication levels (1--3 messages), the success rate is only 8%,
+-whereas intensive communication (9+ messages) consistently exceeds 80%,
+-reaching 90% at 17+ messages (see Fig. 9).
++number of exchanged messages (\`order_messages\`). Across 20
++equal-frequency bins (N = 86,794), the success rate increases from 7.7%
++for 1--3 messages to 90.2% for 23--282 messages. The association is
++statistically pronounced (Spearman rho = 0.454, p \< 0.001;
++point-biserial r = 0.282, p \< 0.001), and the weighted linear trend is
++3.75 percentage points per bin (R² = 0.806; see Fig. 9).
+ 
+-![](vertopal_c9d93472614048809bdae797894d3331/media/image9.png){width="4.960416666666666in"
+-height="2.7375in"}
++![](<Для презентації/R3_outputs/messages_success_chart_R3.png>){width="4.960416666666666in"}
+ 
+-**Figure 9.** Success rate by message count
++**Figure 9.** Binned success rate by message count with statistical summary
+ 
+ An overall positive trend is observed between the number of order
+ modifications (\`order_changes\`) and the success rate. Orders with
+-minimal changes (0--2) exhibit the lowest success rate (\~46%), while
+-orders with 6+ changes achieve 85% (see Fig. 10). The trend line
+-confirms a statistically significant positive relationship, indicating
+-that iterative alignment with customer requirements is associated with
+-higher completion probability.
++minimal changes (0--2) exhibit the lowest success rate (45.9%), while
++orders with 6 or more changes achieve 86.3%. The positive association is
++confirmed by Spearman rho = 0.241 (p \< 0.001) and point-biserial r =
++0.194 (p \< 0.001), with a weighted trend of 6.45 percentage points per
++bin (R² = 0.640; see Fig. 10). This indicates that iterative alignment
++with customer requirements is associated with higher completion
++probability.
+ 
+-![](vertopal_c9d93472614048809bdae797894d3331/media/image10.png){width="4.960416666666666in"
+-height="2.7375in"}
++![](<Для презентації/R3_outputs/changes_success_chart_R3.png>){width="4.960416666666666in"}
+ 
+-**Figure 10.** Success rate by changes count
++**Figure 10.** Binned success rate by changes count with statistical summary
+ 
+ The relationship between success rate and order amount
+ (\`order_amount\`) exhibits a nonlinear, inverted U-shaped pattern.
+-Maximum success (80--84%) is observed in the mid-range price segment
+-(300 -- 1000 USD), while both very small (\< 50 USD) and large
+-(\> 6000 USD) orders demonstrate substantially lower success rates
+-(\< 50%) (see Fig. 11). This nonlinearity is one of the reasons for the
+-discrepancy in the assessments of the importance of this feature across
+-different scorers.
+-
+-![](vertopal_c9d93472614048809bdae797894d3331/media/image11.png){width="4.960416666666666in"
+-height="2.923611111111111in"}
+-
+-**Figure 11.** Success rate by оrder amount
+-
+-Discount-related variables demonstrate weak marginal effects. Fig. 12a
+-shows that orders without discounts span the full 0--100% success range,
+-while Fig. 12b reveals a slight positive trend: success rates increase
+-from 55% to 82% as the discount amount grows. However, with only 89
+-discounted orders in the dataset, this sample is insufficient to
+-establish discount as a reliable predictor of order success.
+-
+-![](vertopal_c9d93472614048809bdae797894d3331/media/image12.png){width="4.960416666666666in"
+-height="1.9756944444444444in"}
+-
+-**Figure 12.** Success rate by discount
++Among orders with a positive amount (N = 67,242), maximum success is
++observed in the mid-range price segment, peaking at 84.2% in the
++710--789 USD bin. Both near-zero orders (5.3%) and high-value orders
++above approximately 6,000 USD (\<50%) demonstrate substantially lower
++success rates. The monotonic association is negative but modest
++(Spearman rho = -0.150, p \< 0.001; point-biserial r = -0.117,
++p \< 0.001), whereas the quadratic fit explains the binned pattern much
++better (R² = 0.736; see Fig. 11). This nonlinearity is one of the
++reasons for the discrepancy in the assessments of the importance of this
++feature across different scorers.
++
++![](<Для презентації/R3_outputs/amount_success_chart_R3.png>){width="4.960416666666666in"}
++
++**Figure 11.** Binned success rate by order amount with statistical summary
++
++Discount-related variables demonstrate weak and sample-limited marginal
++effects. Orders without discounts have a 63.1% success rate (n =
++86,705), whereas orders with discounts have a 73.0% success rate (n =
++89). This difference is borderline in a two-proportion test (p = 0.052)
++and has a negligible effect size (Cramer's V = 0.007). Within the
++positive-discount subset, success rates range from 55.6% to 83.3% across
++five bins, but the very small sample and wide confidence intervals
++(maximum Wilson 95% CI half-width = 20.9 percentage points) make this
++pattern exploratory rather than confirmatory (see Fig. 12).
++
++![](<Для презентації/R3_outputs/discount_success_chart_R3.png>){width="4.960416666666666in"}
++
++**Figure 12.** Success rate by discount presence and positive-discount amount with statistical summary
+ 
+ Success rate variation across weekdays is minimal: values range from 61%
+-to 72%, with no pronounced pattern. Friday exhibits the lowest rate
+-(61%), while weekends show slightly higher values (70--72%) (see Fig.
+-13). Point size is proportional to the number of orders on each day. The
+-low differentiation confirms the consolidated low importance of temporal
+-factors in the ranking.
+-
+-![](vertopal_c9d93472614048809bdae797894d3331/media/image13.png){width="4.960416666666666in"
+-height="2.7375in"}
+-
+-**Figure 13.** Success rate by day of week
++to 72%, with no practically meaningful pattern. Friday exhibits the
++lowest rate (61.3%), while Saturday and Sunday show slightly higher
++values (70.5% and 72.1%, respectively), although weekend order counts
++are small (139 and 122). The chi-square test is statistically
++significant due to the large total sample (χ²(6) = 51.23, p \< 0.001),
++but the effect size is negligible (Cramer's V = 0.024), confirming the
++consolidated low importance of temporal factors in the ranking (see Fig.
++13). Point size is proportional to the number of orders on each day.
++
++![](<Для презентації/R3_outputs/dayofweek_success_chart_R3.png>){width="4.960416666666666in"}
++
++**Figure 13.** Success rate by day of week with statistical summary
+ 
+ The presented visualizations serve as marginal (single-feature)
+ illustrations that complement the multi-scorer feature ranking by making
