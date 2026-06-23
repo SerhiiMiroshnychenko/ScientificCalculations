@@ -1,0 +1,163 @@
+diff --git "a/PaperS/Paper1-6/BJMC2601-005R2S5 \342\200\223 \320\272\320\276\320\277\321\226\321\217.md" "b/PaperS/Paper1-6/BJMC2601-005R2S5 \342\200\223 \320\272\320\276\320\277\321\226\321\217.md"
+index bf5a4ce..58366a4 100644
+--- "a/PaperS/Paper1-6/BJMC2601-005R2S5 \342\200\223 \320\272\320\276\320\277\321\226\321\217.md"	
++++ "b/PaperS/Paper1-6/BJMC2601-005R2S5 \342\200\223 \320\272\320\276\320\277\321\226\321\217.md"	
+@@ -1,3 +1,10 @@
++> **Revision R3 — working copy for your review.**
++> Marking of changes: `==new / changed text==`, `~~removed text~~`.
++> Reviewer comments addressed: **(C1)** shortened the "contributions" phrasing; **(C2)** removed the unused classical-Borda equation (former Eq. 2), renumbered the mean-rank equation to Eq. (2), and now reference Eqs. (1)–(2) where they construct Fig. 8 / Table 1; **(C3)** added concise statistics to the descriptions of Fig. 9–13 (source: `Для презентації/R3_outputs/`).
++> These markups are for review only; the clean text is ported into the .docx (with highlight) after we agree.
++
++---
++
+ A Multi-Algorithmic Method for Ranking B2B Order Success Factors in an
+ ERP Environment
+ 
+@@ -117,8 +124,8 @@ through a multi-algorithmic feature significance method. We address the
+ research question: which order characteristics have the greatest impact
+ on completion probability, and how should their relative importance be
+ quantified in a methodologically neutral way?\
+-To address problems P1--P3, this study makes the following contributions
+-to the body of scientific knowledge:
++To address problems P1--P3, this study makes the following contributions:~~ to the body of scientific
++knowledge~~
+ 
+ **C1.** The selection and methodological justification of five
+ mathematically distinct feature significance scorers -- Area Under the
+@@ -584,24 +591,12 @@ $f_{i}$'s significance; $| \cdot |$ is set cardinality, i.e., the number
+ of elements satisfying condition
+ $S_{j}\left( f_{l} \right) \geq S_{j}\left( f_{i} \right)$.
+ 
+-Unlike the classical Borda method (Dwork et al., 2001), which for a set
+-of elements $S = \{ s_{1},s_{2},\ldots,s_{n}\}$ and $k$ different
+-rankings $\tau_{1},\tau_{2},\ldots,\tau_{k}$ gives each element $s_{i}$
+-a score, given by Eq. (2):
+-
+-  ----------------------------------------------------------------------------------------------------------
+-  $$B\left( s_{i} \right) = \sum_{j = 1}^{k}\left( n - \tau_{j}\left( s_{i} \right) + 1 \right),$$   \(2\)
+-  -------------------------------------------------------------------------------------------------- -------
++==[R3-C2 — what changed: the classical Borda score is now stated inline in the prose rather than as a numbered display equation, because that formula is not used to construct any result; the former display Eq. (2) is therefore removed, and the mean-rank equation below is renumbered from Eq. (3) to Eq. (2).]==
+ 
+-  ----------------------------------------------------------------------------------------------------------
+-
+-where $\tau_{j}\left( s_{i} \right)$ is the position of element $s_{i}$
+-in ranking $\tau_{j}$, $n$ is the total number of elements, $k$ is the
+-number of different rankings (one per scorer), the proposed modification
+-applies arithmetic mean of ranks, given by Eq. (3):
++Unlike the classical Borda method (Dwork et al., 2001), which, for a set of elements $S = \{ s_{1},s_{2},\ldots,s_{n}\}$ and $k$ different rankings $\tau_{1},\tau_{2},\ldots,\tau_{k}$, assigns each element $s_{i}$ the sum-of-positions score $B\left( s_{i} \right) = \sum_{j = 1}^{k}\left( n - \tau_{j}\left( s_{i} \right) + 1 \right)$, where $\tau_{j}\left( s_{i} \right)$ is the position of element $s_{i}$ in ranking $\tau_{j}$, $n$ is the total number of elements, and $k$ is the number of different rankings (one per scorer), the proposed modification applies the arithmetic mean of ranks, given by Eq. (2):
+ 
+   -------------------------------------------------------------------------------------------------
+-  $$\bar{R}\left( f_{i} \right) = \frac{1}{k}\sum_{j = 1}^{k}R_{j}\left( f_{i} \right).$$   \(3\)
++  $$\bar{R}\left( f_{i} \right) = \frac{1}{k}\sum_{j = 1}^{k}R_{j}\left( f_{i} \right).$$   \(2\)
+   ----------------------------------------------------------------------------------------- -------
+ 
+   -------------------------------------------------------------------------------------------------
+@@ -612,9 +607,7 @@ from all involved scorers. A lower value of
+ $\bar{R}\left( f_{i} \right)$ indicates higher consolidated feature
+ significance. The consolidated ordering is obtained by applying Eq. (1)
+ to each (feature, scorer) pair and then aggregating the resulting
+-per-method ranks via Eq. (3); Eq. (2) is reproduced here only as the
+-classical reference formulation against which the proposed modification
+-is contrasted.
++per-method ranks via ~~Eq. (3)~~ ==Eq. (2)==~~; Eq. (2) is reproduced here only as the classical reference formulation against which the proposed modification is contrasted~~.
+ 
+ The proposed modification to the Borda method has several methodological
+ advantages. First, the rule is methodologically neutral, giving no
+@@ -651,8 +644,7 @@ hyperparameters detailed in the per-scorer descriptions above.
+ 
+ **Stage III** (Modified Borda rank aggregation). Per-scorer scores are
+ independently transformed into ranks using Eq. (1); these ranks are
+-aggregated into the consolidated ordering using Eq. (3), in contrast to
+-the classical sum-of-positions form given by Eq. (2). The Python
++aggregated into the consolidated ordering using ~~Eq. (3)~~ ==Eq. (2)==, in contrast to the classical sum-of-positions ~~form given by Eq. (2)~~ ==Borda score==. The Python
+ implementation of this aggregation is provided in Appendix B. Output.
+ The output of the workflow is the consolidated ranking of features,
+ which is examined empirically in Sections 4 and 5. By construction, this
+@@ -667,8 +659,7 @@ Upon applying the multi-algorithmic method described in Section 3 to the
+ analyzed dataset, we derived feature importance scores for each of the
+ five feature significance scorers. These raw scores, shown in Table 1,
+ are subsequently transformed into per- scorer ranks via Eq. (1) and
+-consolidated through the modified Borda mean rank of Eq. (3) into the
+-ordering visualized in Fig. 8.
++consolidated through the modified Borda mean rank of ~~Eq. (3)~~ ==Eq. (2)== into the ordering visualized in Fig. 8.
+ 
+ **Table 1.** Feature importance scores by different scorers
+ 
+@@ -726,9 +717,7 @@ ordering visualized in Fig. 8.
+ 
+ Subsequently, we constructed a heatmap depicting the relative
+ significance of features across these scorers (see Fig. 8), where the
+-numbers in the cells correspond to the ranks assigned by the individual
+-scorers, "Average Rank" denotes the mean of these scorer-specific ranks,
+-and "Overall Rank" represents the final aggregated ordering (ties in
++numbers in the cells correspond to the ranks assigned by the individual scorers ==(each obtained from Eq. (1))==, "Average Rank" denotes the mean of these scorer-specific ranks ==(the consolidated mean rank $\bar{R}(f_{i})$ of Eq. (2))==, and "Overall Rank" represents the final aggregated ordering (ties in
+ "Average Rank" share the same overall rank).
+ 
+ Among the values reported in Table 1, 'order_messages' shows the highest
+@@ -788,7 +777,7 @@ The success rate demonstrates a pronounced positive correlation with the
+ number of exchanged messages (\`order_messages\`). At minimal
+ communication levels (1--3 messages), the success rate is only 8%,
+ whereas intensive communication (9+ messages) consistently exceeds 80%,
+-reaching 90% at 17+ messages (see Fig. 9).
++reaching 90% at 17+ messages (see Fig. 9). ==This positive monotonic association is statistically significant (Spearman $\rho = 0.45$, $p < 0.001$; point-biserial $r = 0.28$) and approximately linear across the 20 equal-frequency bins ($R^{2} = 0.81$), with narrow per-bin 95% Wilson confidence intervals ($\leq \pm 1.5$ pp; $n = 86{,}794$).==
+ 
+ ![](vertopal_c9d93472614048809bdae797894d3331/media/image9.png){width="4.960416666666666in"
+ height="2.7375in"}
+@@ -801,7 +790,7 @@ minimal changes (0--2) exhibit the lowest success rate (\~46%), while
+ orders with 6+ changes achieve 85% (see Fig. 10). The trend line
+ confirms a statistically significant positive relationship, indicating
+ that iterative alignment with customer requirements is associated with
+-higher completion probability.
++higher completion probability. ==Quantitatively, the relationship is significant (Spearman $\rho = 0.24$, $p < 0.001$) and approximately linear across the six bins ($+6.4$ pp per bin, $R^{2} = 0.64$): the success rate rises from $45.9\%$ (0--2 changes) to $86.3\%$ (6+ changes), with per-bin 95% confidence intervals below $\pm 0.9$ pp ($n = 86{,}794$).==
+ 
+ ![](vertopal_c9d93472614048809bdae797894d3331/media/image10.png){width="4.960416666666666in"
+ height="2.7375in"}
+@@ -814,8 +803,7 @@ Maximum success (80--84%) is observed in the mid-range price segment
+ (300 -- 1000 USD), while both very small (\< 50 USD) and large
+ (\> 6000 USD) orders demonstrate substantially lower success rates
+ (\< 50%) (see Fig. 11). This nonlinearity is one of the reasons for the
+-discrepancy in the assessments of the importance of this feature across
+-different scorers.
++discrepancy in the assessments of the importance of this feature across different scorers. ==Consistent with this shape, a monotonic measure is weak and slightly negative (Spearman $\rho = -0.15$, $p < 0.001$), whereas a quadratic fit captures the inverted U well ($R^{2} = 0.74$), peaking at $84.2\%$ in the 710--789 USD bin ($n = 67{,}242$).==
+ 
+ ![](vertopal_c9d93472614048809bdae797894d3331/media/image11.png){width="4.960416666666666in"
+ height="2.923611111111111in"}
+@@ -826,8 +814,7 @@ Discount-related variables demonstrate weak marginal effects. Fig. 12a
+ shows that orders without discounts span the full 0--100% success range,
+ while Fig. 12b reveals a slight positive trend: success rates increase
+ from 55% to 82% as the discount amount grows. However, with only 89
+-discounted orders in the dataset, this sample is insufficient to
+-establish discount as a reliable predictor of order success.
++discounted orders in the dataset, this sample is insufficient to establish discount as a reliable predictor of order success. ==The difference between discounted ($73.0\%$, $n = 89$) and non-discounted ($63.1\%$, $n = 86{,}705$) orders is not statistically significant (two-proportion $z$-test, $p = 0.052$; Cramér's $V = 0.007$), and within the discounted subset the 95% confidence intervals are very wide (up to $\pm 21$ pp), confirming it is underpowered and exploratory only.==
+ 
+ ![](vertopal_c9d93472614048809bdae797894d3331/media/image12.png){width="4.960416666666666in"
+ height="1.9756944444444444in"}
+@@ -838,8 +825,7 @@ Success rate variation across weekdays is minimal: values range from 61%
+ to 72%, with no pronounced pattern. Friday exhibits the lowest rate
+ (61%), while weekends show slightly higher values (70--72%) (see Fig.
+ 13). Point size is proportional to the number of orders on each day. The
+-low differentiation confirms the consolidated low importance of temporal
+-factors in the ranking.
++low differentiation confirms the consolidated low importance of temporal factors in the ranking. ==Although the weekday differences are nominally significant given the large sample ($\chi^{2}(6) = 51.2$, $p < 0.001$), the effect size is negligible (Cramér's $V = 0.02$; range $61.3\%$--$72.1\%$), and the elevated weekend values rest on small samples (Saturday $n = 139$, Sunday $n = 122$) with correspondingly wide confidence intervals.==
+ 
+ ![](vertopal_c9d93472614048809bdae797894d3331/media/image13.png){width="4.960416666666666in"
+ height="2.7375in"}
+@@ -1419,16 +1405,4 @@ return ranks.sort_values(\"mean_rank\").reset_index(drop=True)
+ 
+ Received ...
+ 
+-[^1]: <https://github.com/serhii-miroshnychenko-mariupol/PublicData/blob/main/dataset-1.csv>
+-
+-[^2]: <https://feature-engine.trainindata.com/en/1.8.x/user_guide/creation/CyclicalFeatures.html>
+-
+-[^3]: <https://scikit-learn.org/stable/modules/generated/sklearn.preprocessing.RobustScaler.html>
+-
+-[^4]: https://scikit-learn.org/stable/modules/generated/sklearn.feature_selection.mutual_info_classif.html
+-
+-[^5]: <https://dcor.readthedocs.io/en/stable/functions/dcor.distance_correlation.html>
+-
+-[^6]: <https://scikit-learn.org/stable/modules/generated/sklearn.linear_model.LogisticRegression.html>
+-
+-[^7]: <https://scikit-learn.org/stable/modules/generated/sklearn.tree.DecisionTreeClassifier.html>
++[^1]: <https://github.com/serhii-miroshnychenko-mariupol/Pub
+\ No newline at end of file
