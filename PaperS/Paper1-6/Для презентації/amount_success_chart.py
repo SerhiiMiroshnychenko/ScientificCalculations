@@ -186,9 +186,6 @@ def _create_amount_success_chart(data):
         # Розраховуємо середню кількість ордерів на точку
         avg_orders = sum(counts) // len(counts) if counts else 0
 
-        plt.title(
-            f'Success Rate by Order Amount\n(each point represents ~{avg_orders} orders)',
-            pad=20, fontsize=14)
         plt.xlabel('Order Amount Range', fontsize=14)
         plt.ylabel('Success Rate (%)', fontsize=14)
 

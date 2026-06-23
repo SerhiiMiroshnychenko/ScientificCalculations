@@ -135,9 +135,6 @@ def _create_dayofweek_success_chart(data):
 
         avg_orders = sum(counts) // len(counts) if counts else 0
 
-        plt.title(
-            f'Success Rate by Day of Week\n(each point represents ~{avg_orders} orders, point size shows relative number per day)',
-            pad=20, fontsize=14)
         plt.xlabel('Day of Week', fontsize=14)
         plt.ylabel('Success Rate (%)', fontsize=14)
 

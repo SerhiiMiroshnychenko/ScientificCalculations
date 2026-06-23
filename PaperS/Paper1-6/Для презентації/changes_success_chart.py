@@ -189,9 +189,6 @@ def _create_changes_success_chart(data):
         # Calculate average orders per point
         avg_orders = sum(counts) // len(counts) if counts else 0
 
-        plt.title(
-            f'Success Rate by Changes Count\n(each point represents ~{avg_orders} orders)',
-            pad=20, fontsize=14)
         plt.xlabel('Changes Count Range', fontsize=14)
         plt.ylabel('Success Rate (%)', fontsize=14)
 

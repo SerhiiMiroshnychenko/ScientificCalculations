@@ -272,7 +272,6 @@ def _create_discount_success_chart(data):
             size1 = max(120, min(260, c1))
             ax_left.scatter(x[1], r1, s=size1, c=color1, alpha=0.7)
             ax_left.text(x[1], r1 + 3, f"{r1:.1f}%\n(n={c1})", ha='center', va='bottom', fontsize=POINT_LABEL_FONT)
-            ax_left.set_title('Success Rate: No discount vs With discount', fontsize=TITLE_FONT, pad=16)
             ax_left.set_xticks(x)
             ax_left.set_xticklabels(labels, fontsize=TICK_FONT)
             ax_left.tick_params(axis='y', labelsize=TICK_FONT)
@@ -335,9 +334,6 @@ def _create_discount_success_chart(data):
 
         ax_right.scatter(x_points, y_points, s=sizes, alpha=0.6, c=colors)
         avg_orders = (sum(counts) // len(counts)) if counts else 0
-        ax_right.set_title(
-            f'Success Rate by Discount Amount\n(each point ~{avg_orders} orders)',
-            fontsize=TITLE_FONT, pad=16)
         ax_right.set_xlabel('Discount Amount Range', fontsize=AXIS_FONT)
         ax_right.set_ylabel('Success Rate (%)', fontsize=AXIS_FONT)
         ax_right.set_ylim(-5, 112)
