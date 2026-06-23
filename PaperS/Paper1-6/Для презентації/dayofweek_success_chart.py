@@ -4,6 +4,12 @@ from mplfonts import use_font
 import csv
 from datetime import datetime
 
+from chart_stats_utils import (
+    add_stats_box,
+    compute_categorical_success_stats,
+    write_statistical_report,
+)
+
 # Configure Arial font for English labels
 use_font('Times New Roman')
 mpl.rcParams['pdf.fonttype'] = 42
@@ -75,17 +81,21 @@ def _prepare_dayofweek_success_data(csv_path):
         ranges = []
         rates = []
         counts = []
+        success_counts = []
         for d in weekdays:
             total = totals[d]
+            success_count = successes[d]
             success_rate = (successes[d] / total * 100) if total > 0 else 0.0
             ranges.append(d)
             rates.append(success_rate)
             counts.append(total)
+            success_counts.append(success_count)
 
         return {
             'ranges': ranges,
             'rates': rates,
             'orders_count': counts,
+            'successes': success_counts,
         }
 
     except Exception as e:
@@ -149,6 +159,16 @@ def _create_dayofweek_success_chart(data):
         ]
         plt.legend(handles=legend_elements, loc='upper right')
 
+        metrics, rows, box_lines = compute_categorical_success_stats(
+            data.get('ranges', []),
+            data.get('orders_count', []),
+            data.get('successes', []),
+            'day_of_week',
+        )
+        add_stats_box(plt.gca(), box_lines, loc='lower right')
+        data['stats'] = metrics
+        data['stat_rows'] = rows
+
         return True
 
     except Exception as e:
@@ -174,6 +194,14 @@ def create_dayofweek_success_chart(csv_path, output_path):
         print("Chart successfully saved to files:")
         print(f"- PNG: {output_path}.png")
         print(f"- SVG: {output_path}.svg")
+
+        write_statistical_report(
+            output_path,
+            'Figure 13. Success rate by day of week',
+            data.get('stats', {}),
+            data.get('stat_rows', []),
+            notes=['Wilson 95% confidence intervals are reported for each weekday.'],
+        )
 
         print("\nSummary Statistics:")
         total_orders = sum(data['orders_count'])

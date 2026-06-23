@@ -7,6 +7,13 @@ import csv
 from datetime import datetime
 from io import StringIO
 
+from chart_stats_utils import (
+    add_stats_box,
+    compute_binned_numeric_stats,
+    compute_categorical_success_stats,
+    write_statistical_report,
+)
+
 # Configure Arial font for English labels
 use_font('Times New Roman')
 mpl.rcParams['pdf.fonttype'] = 42
@@ -107,11 +114,14 @@ def _prepare_discount_success_data(csv_path):
                 'labels': [],
                 'rates': [],
                 'counts': [],
+                'successes': [],
             },
             'grouped': {
                 'ranges': [],
                 'rates': [],
                 'orders_count': [],
+                'successes': [],
+                'raw_points': pos_points,
             }
         }
 
@@ -125,6 +135,7 @@ def _prepare_discount_success_data(csv_path):
             # Add binary labels and metrics
             result['binary']['labels'] = ['No discount', 'With discount']
             result['binary']['counts'] = [zero_total, pos_total]
+            result['binary']['successes'] = [zero_success, pos_success]
             result['binary']['rates'] = [
                 (zero_success / zero_total * 100) if zero_total > 0 else 0.0,
                 (pos_success / pos_total * 100) if pos_total > 0 else 0.0,
@@ -159,7 +170,7 @@ def _prepare_discount_success_data(csv_path):
 
         # 2) Grouped dataset for positive discounts only
         if pos_points:
-            pos_ranges, pos_rates, pos_counts = [], [], []
+            pos_ranges, pos_rates, pos_counts, pos_success_counts = [], [], [], []
             start_idx = 0
             for i in range(num_groups):
                 current_group_size = group_size + (1 if i < remainder else 0)
@@ -188,12 +199,14 @@ def _prepare_discount_success_data(csv_path):
                 pos_ranges.append(range_str)
                 pos_rates.append(success_rate)
                 pos_counts.append(len(group_points))
+                pos_success_counts.append(successful_count)
 
                 start_idx = end_idx
 
             result['grouped']['ranges'] = pos_ranges
             result['grouped']['rates'] = pos_rates
             result['grouped']['orders_count'] = pos_counts
+            result['grouped']['successes'] = pos_success_counts
 
         grouped_ranges = result.get('grouped', {}).get('ranges', [])
         print(f"Created {len(grouped_ranges)} groups")
@@ -213,6 +226,8 @@ def _create_discount_success_chart(data):
 
     try:
         fig, (ax_left, ax_right) = plt.subplots(1, 2, figsize=(18, 8))
+        report_metrics = {}
+        report_rows = []
 
         # Left subplot: binary (No discount split into 5 subgroup points)
         if data.get('binary'):
@@ -258,6 +273,16 @@ def _create_discount_success_chart(data):
             ax_left.axvline(x=0.9, color='gray', linestyle='--', alpha=0.5, linewidth=1)
             # widen x-limits to fully show spread
             ax_left.set_xlim(-1.1, 1.4)
+
+            binary_metrics, binary_rows, binary_box = compute_categorical_success_stats(
+                labels,
+                counts,
+                data['binary'].get('successes', []),
+                'discount_flag',
+            )
+            add_stats_box(ax_left, binary_box, loc='lower right', fontsize=9)
+            report_metrics.update({f"binary_{k}": v for k, v in binary_metrics.items()})
+            report_rows.extend([{**row, "dataset": "discount_binary"} for row in binary_rows])
 
         # Right subplot: grouped positive discounts (scatter)
         grouped = data.get('grouped', {})
@@ -307,6 +332,20 @@ def _create_discount_success_chart(data):
         ]
         ax_right.legend(handles=legend_elements, loc='upper right')
 
+        grouped_metrics, grouped_rows, grouped_box = compute_binned_numeric_stats(
+            grouped,
+            grouped.get('raw_points', []),
+            'discount_total_positive',
+            trend_degree=1,
+        )
+        grouped_box.insert(0, f"Positive-discount n = {sum(counts):,}")
+        add_stats_box(ax_right, grouped_box, loc='lower right', fontsize=9)
+        report_metrics.update({f"positive_discount_{k}": v for k, v in grouped_metrics.items()})
+        report_rows.extend([{**row, "dataset": "positive_discount_ranges"} for row in grouped_rows])
+
+        data['stats'] = report_metrics
+        data['stat_rows'] = report_rows
+
         plt.tight_layout()
 
         return True
@@ -333,6 +372,17 @@ def create_discount_success_chart(csv_path, output_path):
         print("Chart successfully saved to files:")
         print(f"- PNG: {output_path}.png")
         print(f"- SVG: {output_path}.svg")
+
+        write_statistical_report(
+            output_path,
+            'Figure 12. Success rate by discount',
+            data.get('stats', {}),
+            data.get('stat_rows', []),
+            notes=[
+                'Wilson 95% confidence intervals are reported for each bin/category.',
+                'The positive-discount subset is sample-limited and should be interpreted as exploratory.',
+            ],
+        )
 
         print("\nSummary Statistics:")
         binary_counts = data.get('binary', {}).get('counts', [])

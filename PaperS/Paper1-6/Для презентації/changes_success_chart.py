@@ -7,6 +7,12 @@ import csv
 from datetime import datetime
 from io import StringIO
 
+from chart_stats_utils import (
+    add_stats_box,
+    compute_binned_numeric_stats,
+    write_statistical_report,
+)
+
 # Configure Arial font for English labels
 use_font('Times New Roman')
 mpl.rcParams['pdf.fonttype'] = 42
@@ -95,7 +101,9 @@ def _prepare_changes_success_data(csv_path):
         result = {
             'ranges': [],
             'rates': [],
-            'orders_count': []
+            'orders_count': [],
+            'successes': [],
+            'raw_points': data_points,
         }
 
         # Split into groups
@@ -125,6 +133,7 @@ def _prepare_changes_success_data(csv_path):
             result['ranges'].append(range_str)
             result['rates'].append(success_rate)
             result['orders_count'].append(len(group_points))
+            result['successes'].append(successful_count)
 
             start_idx = end_idx
 
@@ -224,6 +233,16 @@ def _create_changes_success_chart(data):
         ]
         plt.legend(handles=legend_elements, loc='upper right')
 
+        metrics, rows, box_lines = compute_binned_numeric_stats(
+            data,
+            data.get('raw_points', []),
+            'order_changes',
+            trend_degree=1,
+        )
+        add_stats_box(plt.gca(), box_lines, loc='lower right')
+        data['stats'] = metrics
+        data['stat_rows'] = rows
+
         return True
 
     except Exception as e:
@@ -263,6 +282,14 @@ def create_changes_success_chart(csv_path, output_path):
         print(f"Chart successfully saved to files:")
         print(f"- PNG: {output_path}.png")
         print(f"- SVG: {output_path}.svg")
+
+        write_statistical_report(
+            output_path,
+            'Figure 10. Success rate by changes count',
+            data.get('stats', {}),
+            data.get('stat_rows', []),
+            notes=['Wilson 95% confidence intervals are reported for each bin.'],
+        )
 
         # Print summary statistics
         print(f"\nSummary Statistics:")
