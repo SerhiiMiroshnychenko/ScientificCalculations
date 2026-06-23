@@ -11,6 +11,8 @@ from chart_stats_utils import (
     add_stats_box,
     compute_binned_numeric_stats,
     compute_categorical_success_stats,
+    format_p,
+    two_proportion_z,
     write_statistical_report,
 )
 
@@ -19,6 +21,14 @@ use_font('Times New Roman')
 mpl.rcParams['pdf.fonttype'] = 42
 mpl.rcParams['ps.fonttype'] = 42
 mpl.rcParams['text.usetex'] = False  # Disable LaTeX
+
+FIGSIZE = (18, 8)
+TITLE_FONT = 18
+AXIS_FONT = 17
+TICK_FONT = 16
+LEGEND_FONT = 14
+POINT_LABEL_FONT = 12
+STATS_FONT = 12
 
 def _read_csv_data(csv_path):
     """Read CSV data from file"""
@@ -225,7 +235,7 @@ def _create_discount_success_chart(data):
         return False
 
     try:
-        fig, (ax_left, ax_right) = plt.subplots(1, 2, figsize=(18, 8))
+        fig, (ax_left, ax_right) = plt.subplots(1, 2, figsize=FIGSIZE)
         report_metrics = {}
         report_rows = []
 
@@ -247,13 +257,13 @@ def _create_discount_success_chart(data):
                     color = '#87CEEB' if r < 50 else ('#4169E1' if r <= 80 else '#000080')
                     size = max(120, min(260, c))
                     ax_left.scatter(x[0] + off, r, s=size, c=color, alpha=0.7)
-                    ax_left.text(x[0] + off, r + 3, f"{r:.1f}%\n(n={c})", ha='center', va='bottom', fontsize=9)
+                    ax_left.text(x[0] + off, r + 3, f"{r:.1f}%\n(n={c})", ha='center', va='bottom', fontsize=POINT_LABEL_FONT)
             else:
                 r0, c0 = rates[0], counts[0]
                 color = '#87CEEB' if r0 < 50 else ('#4169E1' if r0 <= 80 else '#000080')
                 size = max(120, min(260, c0))
                 ax_left.scatter(x[0], r0, s=size, c=color, alpha=0.7)
-                ax_left.text(x[0], r0 + 3, f"{r0:.1f}%\n(n={c0})", ha='center', va='bottom', fontsize=9)
+                ax_left.text(x[0], r0 + 3, f"{r0:.1f}%\n(n={c0})", ha='center', va='bottom', fontsize=POINT_LABEL_FONT)
 
             # Single with-discount point at x=1
             r1 = rates[1] if len(rates) > 1 else 0.0
@@ -261,13 +271,13 @@ def _create_discount_success_chart(data):
             color1 = '#87CEEB' if r1 < 50 else ('#4169E1' if r1 <= 80 else '#000080')
             size1 = max(120, min(260, c1))
             ax_left.scatter(x[1], r1, s=size1, c=color1, alpha=0.7)
-            ax_left.text(x[1], r1 + 3, f"{r1:.1f}%\n(n={c1})", ha='center', va='bottom', fontsize=9)
-            ax_left.set_title('Success Rate: No discount vs With discount', fontsize=14, pad=12)
+            ax_left.text(x[1], r1 + 3, f"{r1:.1f}%\n(n={c1})", ha='center', va='bottom', fontsize=POINT_LABEL_FONT)
+            ax_left.set_title('Success Rate: No discount vs With discount', fontsize=TITLE_FONT, pad=16)
             ax_left.set_xticks(x)
-            ax_left.set_xticklabels(labels, fontsize=14)
-            ax_left.tick_params(axis='y', labelsize=14)
+            ax_left.set_xticklabels(labels, fontsize=TICK_FONT)
+            ax_left.tick_params(axis='y', labelsize=TICK_FONT)
             ax_left.set_ylim(-5, 112)
-            ax_left.set_ylabel('Success Rate (%)', fontsize=14)
+            ax_left.set_ylabel('Success Rate (%)', fontsize=AXIS_FONT)
             ax_left.grid(True, linestyle='--', alpha=0.3, axis='y')
             # Add vertical line to separate discount/no discount blocks
             ax_left.axvline(x=0.9, color='gray', linestyle='--', alpha=0.5, linewidth=1)
@@ -280,7 +290,27 @@ def _create_discount_success_chart(data):
                 data['binary'].get('successes', []),
                 'discount_flag',
             )
-            add_stats_box(ax_left, binary_box, loc='lower right', fontsize=9)
+            binary_successes = data['binary'].get('successes', [])
+            z_test = {}
+            if len(counts) >= 2 and len(binary_successes) >= 2:
+                z_test = two_proportion_z(binary_successes[1], counts[1], binary_successes[0], counts[0])
+                binary_metrics.update(
+                    {
+                        "two_proportion_z": None if z_test.get("z") is None else round(z_test["z"], 6),
+                        "two_proportion_p": z_test.get("p"),
+                        "with_minus_no_discount_rate_diff_pp": None
+                        if z_test.get("rate_diff_pp") is None
+                        else round(z_test["rate_diff_pp"], 6),
+                    }
+                )
+                binary_box = [
+                    f"No discount: {rates[0]:.1f}% (n = {counts[0]:,})",
+                    f"With discount: {rates[1]:.1f}% (n = {counts[1]:,})",
+                    f"Rate difference = {z_test['rate_diff_pp']:+.1f} pp",
+                    f"Two-proportion z-test: p {format_p(z_test.get('p'))}",
+                    f"Cramer's V = {binary_metrics.get('cramers_v', 0):.3f}",
+                ]
+            add_stats_box(ax_left, binary_box, loc='lower right', fontsize=STATS_FONT)
             report_metrics.update({f"binary_{k}": v for k, v in binary_metrics.items()})
             report_rows.extend([{**row, "dataset": "discount_binary"} for row in binary_rows])
 
@@ -307,17 +337,17 @@ def _create_discount_success_chart(data):
         avg_orders = (sum(counts) // len(counts)) if counts else 0
         ax_right.set_title(
             f'Success Rate by Discount Amount\n(each point ~{avg_orders} orders)',
-            fontsize=14, pad=12)
-        ax_right.set_xlabel('Discount Amount Range', fontsize=14)
-        ax_right.set_ylabel('Success Rate (%)', fontsize=14)
+            fontsize=TITLE_FONT, pad=16)
+        ax_right.set_xlabel('Discount Amount Range', fontsize=AXIS_FONT)
+        ax_right.set_ylabel('Success Rate (%)', fontsize=AXIS_FONT)
         ax_right.set_ylim(-5, 112)
         if len(ranges) <= 10:
             ax_right.set_xticks(range(len(ranges)))
-            ax_right.set_xticklabels(ranges, rotation=45, ha='right', fontsize=14)
+            ax_right.set_xticklabels(ranges, rotation=45, ha='right', fontsize=TICK_FONT)
         else:
             ax_right.set_xticks(range(len(ranges))[::2])
-            ax_right.set_xticklabels([ranges[i] for i in range(0, len(ranges), 2)], rotation=45, ha='right', fontsize=14)
-        ax_right.tick_params(axis='y', labelsize=14)
+            ax_right.set_xticklabels([ranges[i] for i in range(0, len(ranges), 2)], rotation=45, ha='right', fontsize=TICK_FONT)
+        ax_right.tick_params(axis='y', labelsize=TICK_FONT)
         ax_right.grid(True, linestyle='--', alpha=0.7)
         ax_right.axhline(y=0, color='gray', linestyle='-', alpha=0.3)
         ax_right.axhline(y=50, color='gray', linestyle='--', alpha=0.3)
@@ -330,7 +360,7 @@ def _create_discount_success_chart(data):
             plt.Line2D([0], [0], marker='o', color='w', markerfacecolor='#4169E1', markersize=10, label='Success Rate 50-80%'),
             plt.Line2D([0], [0], marker='o', color='w', markerfacecolor='#000080', markersize=10, label='Success Rate > 80%')
         ]
-        ax_right.legend(handles=legend_elements, loc='upper right')
+        ax_right.legend(handles=legend_elements, loc='upper right', fontsize=LEGEND_FONT)
 
         grouped_metrics, grouped_rows, grouped_box = compute_binned_numeric_stats(
             grouped,
@@ -339,7 +369,7 @@ def _create_discount_success_chart(data):
             trend_degree=1,
         )
         grouped_box.insert(0, f"Positive-discount n = {sum(counts):,}")
-        add_stats_box(ax_right, grouped_box, loc='lower right', fontsize=9)
+        add_stats_box(ax_right, grouped_box, loc='lower right', fontsize=STATS_FONT)
         report_metrics.update({f"positive_discount_{k}": v for k, v in grouped_metrics.items()})
         report_rows.extend([{**row, "dataset": "positive_discount_ranges"} for row in grouped_rows])
 

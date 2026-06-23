@@ -42,9 +42,9 @@ def add_stats_box(ax, lines, loc="lower right", fontsize=10):
         bbox={
             "boxstyle": "round,pad=0.45",
             "facecolor": "white",
-            "edgecolor": "#4a4a4a",
+            "edgecolor": "#b0b0b0",
             "alpha": 0.92,
-            "linewidth": 0.9,
+            "linewidth": 0.8,
         },
     )
 
@@ -136,6 +136,45 @@ def spearman_from_pairs(raw_pairs):
     return {"n": n, "rho": rho, "p": p}
 
 
+def point_biserial_from_pairs(raw_pairs):
+    cleaned = []
+    for x, y in raw_pairs or []:
+        x_clean = _clean_float(x)
+        if x_clean is not None:
+            cleaned.append((x_clean, 1.0 if bool(y) else 0.0))
+    n = len(cleaned)
+    if n < 3:
+        return {"n": n, "r": None, "p": None}
+
+    x_values = np.asarray([p[0] for p in cleaned], dtype=float)
+    y_values = np.asarray([p[1] for p in cleaned], dtype=float)
+    if scipy_stats is not None:
+        result = scipy_stats.pointbiserialr(y_values, x_values)
+        return {"n": n, "r": float(result.statistic), "p": float(result.pvalue)}
+
+    r = _pearson(x_values, y_values)
+    if r is None or abs(r) >= 1.0:
+        p = 0.0 if r is not None else None
+    else:
+        t_value = abs(r) * math.sqrt((n - 2) / max(1e-12, 1.0 - r * r))
+        p = 2.0 * _normal_sf(t_value)
+    return {"n": n, "r": r, "p": p}
+
+
+def two_proportion_z(success_1, total_1, success_2, total_2):
+    if total_1 <= 0 or total_2 <= 0:
+        return {"z": None, "p": None, "rate_diff_pp": None}
+    p1 = success_1 / total_1
+    p2 = success_2 / total_2
+    pooled = (success_1 + success_2) / (total_1 + total_2)
+    se = math.sqrt(pooled * (1.0 - pooled) * (1.0 / total_1 + 1.0 / total_2))
+    if se == 0.0:
+        return {"z": 0.0, "p": 1.0, "rate_diff_pp": (p1 - p2) * 100.0}
+    z_value = (p1 - p2) / se
+    p_value = 2.0 * (_normal_sf(abs(z_value)) if scipy_stats is None else scipy_stats.norm.sf(abs(z_value)))
+    return {"z": float(z_value), "p": float(p_value), "rate_diff_pp": (p1 - p2) * 100.0}
+
+
 def _weighted_polyfit(x_values, y_values, weights, degree):
     x = np.asarray(x_values, dtype=float)
     y = np.asarray(y_values, dtype=float)
@@ -187,6 +226,12 @@ def compute_binned_numeric_stats(data, raw_pairs, variable_name, trend_degree=1)
     rate_max = max(rates) if rates else 0.0
 
     spearman = spearman_from_pairs(raw_pairs)
+    point_biserial = point_biserial_from_pairs(raw_pairs)
+    ci_halfwidths = [
+        (row["ci95_high_pct"] - row["ci95_low_pct"]) / 2.0
+        for row in rows
+        if row["n"] > 0
+    ]
     metrics = {
         "variable": variable_name,
         "n": total_n,
@@ -198,6 +243,9 @@ def compute_binned_numeric_stats(data, raw_pairs, variable_name, trend_degree=1)
         "rate_range_pp": round(rate_max - rate_min, 4),
         "spearman_rho": None if spearman["rho"] is None else round(spearman["rho"], 6),
         "spearman_p": spearman["p"],
+        "point_biserial_r": None if point_biserial["r"] is None else round(point_biserial["r"], 6),
+        "point_biserial_p": point_biserial["p"],
+        "max_ci95_halfwidth_pp": round(max(ci_halfwidths), 4) if ci_halfwidths else None,
     }
 
     valid_idx = [i for i, count in enumerate(counts) if count > 0]
@@ -233,6 +281,8 @@ def compute_binned_numeric_stats(data, raw_pairs, variable_name, trend_degree=1)
             f"R^2 = {_fmt_optional(metrics.get('weighted_linear_r2'), 3)}"
         )
     box_lines.append(f"Bin rate range = {rate_min:.1f}-{rate_max:.1f}%")
+    if metrics.get("max_ci95_halfwidth_pp") is not None:
+        box_lines.append(f"Max 95% CI half-width = {metrics['max_ci95_halfwidth_pp']:.1f} pp")
     return metrics, rows, box_lines
 
 
