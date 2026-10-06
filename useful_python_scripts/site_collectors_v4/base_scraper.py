@@ -481,7 +481,7 @@ class BaseDocxScraper:
             for url in self.ordered_urls:
                 parsed = urlparse(url)
                 parts = parsed.path.strip('/').split('/')
-                # parts looks like: ['documentation', '19.0', 'applications', 'finance', 'accounting']
+                # parts looks like: ['documentation', '20.0', 'applications', 'finance', 'accounting']
                 if len(parts) > self.split_by_segment_index:
                     group_name = parts[self.split_by_segment_index]
                 else:
