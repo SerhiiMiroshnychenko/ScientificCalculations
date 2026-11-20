@@ -1,0 +1,1509 @@
+<!doctype html>
+<html lang="uk">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Як доброчесно використовувати інструменти ШІ — верифікація та критичне мислення</title>
+<style>
+/* Шрифт не вбудовано: Montserrat, якщо встановлений у системі, інакше Segoe UI або Arial */
+:root {
+  --font: 'Montserrat', 'Segoe UI', Arial, sans-serif;
+  --mono: Consolas, 'Cascadia Mono', 'Courier New', monospace;
+  --ink: #0e2440;
+  --navy: #1a466e;
+  --accent: #f26b21;
+  --red: #e9453d;
+  --green: #2f8f5b;
+  --text: #22324a;
+  --muted: #607089;
+  --soft: #eef3fa;
+  --soft2: #e1eaf6;
+  --ease: cubic-bezier(.65, 0, .35, 1);
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; background: #fff; overflow: hidden; }
+body { font-family: var(--font); color: var(--text); -webkit-font-smoothing: antialiased; }
+button { font: inherit; color: inherit; background: none; border: 0; cursor: pointer; }
+
+/* ---------- Полотно 1920×1080, масштабується під екран ---------- */
+.deck {
+  position: absolute; left: 50%; top: 50%;
+  width: 1920px; height: 1080px;
+  transform-origin: center center;
+  overflow: hidden; background: #fff;
+}
+
+/* ---------- Слайди: попередні відлітають угору, наступні чекають унизу ---------- */
+.slide {
+  position: absolute; inset: 0;
+  padding: 84px 110px 110px;
+  background: #fff;
+  isolation: isolate;
+  transition: transform .9s var(--ease), visibility 0s linear .9s;
+}
+.slide.current { transform: translateY(0); visibility: visible; z-index: 2; transition: transform .9s var(--ease), visibility 0s; }
+.slide.past { transform: translateY(-100%); visibility: hidden; }
+.slide.future { transform: translateY(100%); visibility: hidden; }
+.deck.instant .slide, .slide.no-trans, .slide.no-trans * { transition: none !important; }
+
+/* Світлі слайди: ледь помітна сітка точок у правому верхньому куті */
+.slide:not(.s-title):not(.s-section)::before {
+  content: ''; position: absolute; right: 0; top: 0; width: 820px; height: 480px; z-index: -1; pointer-events: none;
+  background-image: radial-gradient(rgba(26, 70, 110, .2) 1.5px, transparent 1.8px);
+  background-size: 26px 26px;
+  -webkit-mask-image: radial-gradient(ellipse 100% 100% at 100% 0%, #000 0%, transparent 70%);
+  mask-image: radial-gradient(ellipse 100% 100% at 100% 0%, #000 0%, transparent 70%);
+}
+
+/* ---------- Кроки: елементи з'являються по одному ---------- */
+[data-step] { opacity: 0; transform: translateY(28px); transition: opacity .55s ease, transform .55s var(--ease); }
+[data-step].shown { opacity: 1; transform: none; }
+
+/* Фонова мережа */
+canvas.net { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+
+/* ---------- Службові елементи ---------- */
+.progress { position: absolute; left: 0; bottom: 0; height: 6px; width: 0; background: var(--accent); z-index: 10; transition: width .9s var(--ease); }
+.counter { position: absolute; left: 60px; bottom: 34px; font-size: 20px; font-weight: 600; color: #9aa7b8; z-index: 10; }
+.src { position: absolute; left: 170px; right: 110px; bottom: 36px; font-size: 16px; line-height: 1.35; color: #8a97a8; }
+sup { font-size: .62em; line-height: 0; font-weight: 700; color: var(--muted); }
+
+/* Таймер (T) і довідка (H) для доповідача */
+.timer { position: absolute; right: 44px; top: 30px; z-index: 20; font-size: 22px; font-weight: 800; font-variant-numeric: tabular-nums; color: #9aa7b8; background: rgba(255, 255, 255, .85); border: 2px solid var(--soft2); border-radius: 30px; padding: 6px 16px; opacity: 0; pointer-events: none; transition: opacity .3s, color .3s; }
+.timer.show { opacity: 1; }
+.timer.warn { color: var(--accent); }
+.timer.over { color: #fff; background: var(--red); border-color: var(--red); }
+.help { position: absolute; right: 44px; bottom: 44px; z-index: 20; width: 520px; background: var(--ink); color: #d6e1ef; border: 2px solid rgba(159, 182, 211, .35); border-radius: 14px; padding: 22px 28px; box-shadow: 0 20px 50px rgba(0, 0, 0, .35); font-size: 19px; line-height: 1.5; opacity: 0; transform: translateY(16px); pointer-events: none; transition: opacity .3s, transform .3s var(--ease); }
+.help.show { opacity: 1; transform: none; }
+.help b { display: block; margin-bottom: 10px; color: var(--accent); font-size: 17px; letter-spacing: .12em; text-transform: uppercase; }
+.help dl { display: grid; grid-template-columns: max-content 1fr; gap: 7px 14px; align-items: center; }
+.help dd { color: #fff; }
+.help p { margin-top: 12px; font-size: 16px; color: #9fb6d3; }
+.help kbd { display: inline-block; min-width: 32px; margin-right: 5px; padding: 1px 8px; border-radius: 6px; background: rgba(255, 255, 255, .12); font-family: var(--font); font-weight: 800; color: #fff; text-align: center; }
+
+/* Лазерна указка (L) */
+#laser { position: fixed; inset: 0; width: 100vw; height: 100vh; z-index: 50; pointer-events: none; }
+body.laser-on, body.laser-on * { cursor: none !important; }
+
+/* ---------- Типографіка ---------- */
+.label { font-size: 28px; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; color: var(--accent); margin-bottom: 18px; }
+.title { font-size: 66px; line-height: 1.1; font-weight: 800; color: var(--ink); }
+.rule { height: 3px; background: var(--accent); margin: 26px 0 28px; transform-origin: left; }
+.slide.current .rule:not(.intro) { animation: rule-grow 1s var(--ease) .3s both; }
+@keyframes rule-grow { from { transform: scaleX(0); } }
+.lead { font-size: 36px; line-height: 1.45; font-weight: 500; color: var(--text); }
+b, strong { font-weight: 800; color: var(--ink); }
+
+/* Заголовок «генерується» токен за токеном: кожне слово спалахує як щойно передбачений токен */
+.tk { display: inline-block; border-radius: .12em; }
+.gen .tk { animation: tk-in .55s ease-out both; animation-delay: calc(.5s + var(--k) * 95ms); }
+@keyframes tk-in {
+  0% { opacity: 0; transform: translateY(.2em); background: rgba(242, 107, 33, .38); box-shadow: 0 0 0 .07em rgba(242, 107, 33, .38); }
+  40% { opacity: 1; transform: none; background: rgba(242, 107, 33, .22); box-shadow: 0 0 0 .07em rgba(242, 107, 33, .22); }
+  100% { opacity: 1; background: rgba(242, 107, 33, 0); box-shadow: 0 0 0 .07em rgba(242, 107, 33, 0); }
+}
+.caret { display: inline-block; width: .09em; height: .86em; margin-left: .1em; vertical-align: -.06em; background: var(--accent); border-radius: .03em; animation: blink .7s steps(1) infinite; }
+@keyframes blink { 50% { opacity: 0; } }
+/* «=» перекреслюється й стає «≠», коли заголовок догенерувався */
+.neq { position: relative; }
+.neq::after { content: ''; position: absolute; left: 50%; top: 2%; width: .1em; height: 96%; border-radius: .05em; background: var(--accent); transform: translateX(-50%) rotate(30deg); transition: transform .5s cubic-bezier(.3, 1.7, .5, 1); }
+.gen .neq:not(.struck)::after { transform: translateX(-50%) rotate(30deg) scaleY(0); }
+.neq.struck { animation: neq-hit .5s ease; }
+@keyframes neq-hit { 30% { scale: 1.25; } }
+
+.callout { margin-top: 26px; background: var(--soft2); color: var(--ink); font-weight: 700; font-size: 29px; line-height: 1.4; padding: 20px 34px; border-left: 8px solid var(--accent); border-radius: 6px; }
+.callout.shown { animation: callout-glow 1.4s ease .5s; }
+@keyframes callout-glow { 40% { box-shadow: 0 0 0 6px rgba(242, 107, 33, .18); } }
+.quote { position: relative; margin-top: 30px; font-size: 38px; line-height: 1.35; font-weight: 700; color: var(--ink); padding-left: 70px; }
+.quote::before { content: '«'; position: absolute; left: 0; top: -.15em; font-size: 110px; line-height: 1; color: var(--accent); font-weight: 800; }
+.quote.play .tk { animation: word-in .7s var(--ease) both; animation-delay: calc(.25s + var(--k) * 75ms); }
+@keyframes word-in { from { opacity: 0; transform: translateY(.5em); filter: blur(8px); } }
+mark { background: none; color: inherit; }
+.quote mark { background: linear-gradient(transparent 58%, rgba(242, 107, 33, .32) 58%, rgba(242, 107, 33, .32) 94%, transparent 94%) no-repeat 0 0 / 0% 100%; transition: background-size 1s var(--ease); }
+.quote.hl mark { background-size: 100% 100%; }
+
+/* ---------- Титульний слайд ---------- */
+.s-title { padding: 120px 0 0 110px; }
+.s-title .hero { position: absolute; right: 0; top: 0; bottom: 0; width: 1000px; overflow: hidden; }
+.s-title .hero::before { content: ''; position: absolute; inset: 0; background: linear-gradient(90deg, #fff 0%, rgba(255, 255, 255, .85) 18%, rgba(255, 255, 255, 0) 52%); z-index: 1; pointer-events: none; }
+.s-title .body { position: relative; z-index: 2; width: 1120px; }
+.s-title .label { font-size: 30px; }
+.s-title h1 { font-size: 80px; line-height: 1.08; font-weight: 800; color: var(--ink); }
+.s-title h1 > span:last-child { display: block; font-size: 52px; line-height: 1.2; font-weight: 700; color: var(--navy); margin-top: 18px; }
+/* План виступу: картка перевертається й щоразу показує наступну тему; смужки внизу — як у «сторіз» */
+.topic-card { --dur: 3.6s; width: 1000px; margin-top: 54px; perspective: 1400px; cursor: pointer; }
+.tc-inner { position: relative; height: 124px; transform-style: preserve-3d; transition: transform .9s var(--ease); }
+.tc-face { position: absolute; inset: 0; display: flex; align-items: center; gap: 28px; padding: 0 36px 0 30px; background: var(--soft); border-left: 8px solid var(--accent); border-radius: 12px; box-shadow: 0 12px 30px rgba(14, 36, 64, .08); -webkit-backface-visibility: hidden; backface-visibility: hidden; }
+.tc-b { transform: rotateX(180deg); }
+.tc-num { flex: none; min-width: 84px; font-size: 58px; line-height: 1; font-weight: 800; color: var(--accent); font-variant-numeric: tabular-nums; }
+.tc-body { display: flex; flex-direction: column; gap: 6px; padding-left: 28px; border-left: 2px solid #c7d4e5; }
+.tc-kicker { font-size: 16px; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
+.tc-text { font-size: 31px; line-height: 1.2; font-weight: 700; color: var(--ink); }
+.topic-card:hover .tc-face { background: #fff; box-shadow: 0 16px 36px rgba(14, 36, 64, .14); }
+.tc-segs { display: flex; gap: 10px; margin-top: 14px; }
+.tc-seg { flex: 1; height: 5px; border-radius: 3px; background: #dfe7f1; overflow: hidden; }
+.tc-seg i { display: block; height: 100%; width: 0; background: var(--accent); }
+.tc-seg.done i { width: 100%; }
+.tc-seg.run i { animation: seg-fill var(--dur) linear both; }
+.topic-card.paused .tc-seg.run i { animation-play-state: paused; }
+@keyframes seg-fill { to { width: 100%; } }
+.s-title .rule { position: relative; overflow: hidden; width: 900px; margin: 54px 0 40px; }
+.s-title .rule::after { content: ''; position: absolute; top: 0; bottom: 0; left: -200px; width: 200px; background: linear-gradient(90deg, transparent, rgba(255, 255, 255, .95), transparent); animation: shimmer 5s ease-in-out infinite 2s; }
+@keyframes shimmer { 60%, 100% { left: 100%; } }
+@keyframes loop-run { from { stroke-dashoffset: 100; } to { stroke-dashoffset: 0; } }
+.intro { opacity: 0; animation: intro .9s var(--ease) forwards; animation-delay: var(--d, 0s); }
+@keyframes intro { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: none; } }
+
+/* Слово «доброчесно»: модель «пропонує» ймовірніші варіанти, людина обирає своє */
+.pick { position: relative; display: inline-block; z-index: 0; }
+.pick-w { display: inline-block; transition: opacity .16s ease, transform .16s ease, filter .16s ease, color .25s ease; }
+.pick-w.alt { color: #9aa7b8; }
+.pick-w.out { opacity: 0; transform: translateY(-.28em); filter: blur(6px); }
+.pick-w.pre { opacity: 0; transform: translateY(.28em); filter: blur(6px); transition: none; }
+.pick::after { content: ''; position: absolute; left: -.03em; right: -.03em; bottom: .1em; height: .26em; z-index: -1; border-radius: .04em; background: rgba(242, 107, 33, .3); transform: scaleX(0); transform-origin: left; transition: transform .7s var(--ease); }
+.pick.done::after { transform: scaleX(1); }
+.pick-tag { position: absolute; left: calc(100% + 26px); top: 50%; white-space: nowrap; font-size: 19px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; color: #fff; background: var(--navy); border-radius: 30px; padding: 9px 18px; opacity: 0; transform: translate(-12px, -50%); transition: opacity .3s, transform .3s, background-color .3s; }
+.pick-tag.show { opacity: 1; transform: translate(0, -50%); }
+.pick-tag.human { background: var(--accent); }
+
+.s-title .hero-art { position: absolute; inset: 0; background: radial-gradient(circle at 72% 45%, #1a466e 0%, #0e2440 72%); overflow: hidden; }
+.s-title .hero-svg { position: absolute; right: 40px; top: 50%; transform: translateY(-50%); width: 780px; height: 780px; opacity: .95; overflow: visible; }
+.hero-svg .pz { transition: transform .8s cubic-bezier(.2, .7, .3, 1); }
+.hero-svg .bob { animation: bob 7s ease-in-out infinite; animation-delay: var(--bd, 0s); }
+@keyframes bob { 50% { transform: translateY(-12px); } }
+.hero-svg .orbit { fill: none; stroke: rgba(159, 182, 211, .28); stroke-width: 2; stroke-dasharray: 8 10; }
+.hero-svg .orbit.o2 { animation: orbit-spin 60s linear infinite reverse; transform-origin: 440px 390px; }
+.hero-svg .orbit.o1 { animation: orbit-spin 90s linear infinite; transform-origin: 440px 390px; }
+@keyframes orbit-spin { to { transform: rotate(360deg); } }
+.hero-svg .pulse-ring { fill: none; stroke: var(--accent); stroke-width: 4; stroke-dasharray: 28 72; animation: loop-run 6s linear infinite; }
+.hero-svg .token-pill { fill: rgba(255, 255, 255, .08); stroke: rgba(159, 182, 211, .35); stroke-width: 1.5; }
+.hero-svg .token-pill.hot { fill: rgba(242, 107, 33, .22); stroke: var(--accent); stroke-width: 2.5; animation: hot-pulse 3s ease-in-out infinite; }
+@keyframes hot-pulse { 50% { fill: rgba(242, 107, 33, .38); } }
+.hero-svg text { fill: #d6e1ef; font-weight: 700; }
+.hero-svg text.hot-t { fill: #fff; font-weight: 800; }
+.hero-svg .radar { transform-origin: 440px 390px; animation: orbit-spin 4.5s linear infinite; }
+.s-title .author { border-left: 6px solid var(--accent); padding-left: 24px; }
+.s-title .author b { display: block; font-size: 38px; margin-bottom: 8px; }
+.s-title .author p { font-size: 23px; line-height: 1.45; color: var(--text); }
+
+/* ---------- Темний слайд практики ---------- */
+.s-section { background: var(--ink); color: #fff; }
+.s-section .title { color: #fff; font-size: 68px; }
+.s-section .lead { margin-top: 14px; font-size: 32px; color: #d6e1ef; }
+
+/* Картки-перевертні: лицьовий бік — опис досліду, зворотний — табло або «рентген» PDF */
+.live-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 48px; margin-top: 54px; }
+.live-card { position: relative; height: 560px; perspective: 2200px; }
+.flip-inner { position: absolute; inset: 0; transform-style: preserve-3d; transition: transform 1.05s var(--ease); }
+.live-card.on .flip-inner { transform: rotateY(180deg); }
+.live-card.on .front, .live-card:not(.on) .back { pointer-events: none; }
+.face { position: absolute; inset: 0; display: flex; flex-direction: column; border: 2px solid rgba(255, 255, 255, .18); border-top: 7px solid var(--accent); border-radius: 14px; -webkit-backface-visibility: hidden; backface-visibility: hidden; }
+.front { padding: 48px 42px 44px; background: rgba(255, 255, 255, .08); cursor: pointer; }
+.back { transform: rotateY(180deg); padding: 26px 32px 24px; background: #12304f; }
+.live-head { display: flex; align-items: center; gap: 22px; margin-bottom: 26px; }
+.live-num { flex: none; display: inline-flex; align-items: center; justify-content: center; width: 64px; height: 64px; border-radius: 50%; background: var(--accent); color: #fff; font-size: 26px; font-weight: 800; }
+.live-card h3 { font-size: 36px; line-height: 1.2; font-weight: 800; color: #fff; }
+.live-card p { font-size: 27px; line-height: 1.45; color: #d6e1ef; }
+.live-prompt { margin-top: auto; min-height: 130px; padding: 20px 24px; background: rgba(4, 15, 28, .38); border-left: 5px solid var(--accent); border-radius: 8px; font-family: var(--mono); font-size: 21px; line-height: 1.5; color: #e8eff8; }
+.live-prompt b { display: block; margin-bottom: 8px; font-family: var(--font); font-size: 15px; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; color: var(--accent); }
+/* Промпт «друкується», коли картка з'являється */
+.live-prompt .typed { display: inline; }
+.live-prompt .typed i { font-style: normal; opacity: 0; }
+.live-card.shown .live-prompt .typed i { animation: ch-in .01s linear both; animation-delay: calc(.6s + var(--c) * 28ms); }
+@keyframes ch-in { to { opacity: 1; } }
+.flip-hint { position: absolute; right: 22px; top: 22px; width: 46px; height: 46px; border-radius: 50%; display: flex; align-items: center; justify-content: center; background: rgba(255, 255, 255, .1); color: #9fb6d3; transition: background-color .25s, color .25s, transform .4s var(--ease); }
+.flip-hint svg { width: 24px; height: 24px; fill: none; stroke: currentColor; stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; }
+.front:hover .flip-hint { background: var(--accent); color: #fff; transform: rotate(-180deg); }
+
+.back-head { display: flex; align-items: center; gap: 18px; margin-bottom: 18px; }
+.back-head .live-num { width: 50px; height: 50px; font-size: 21px; }
+.back-head h3 { flex: 1; font-size: 28px; }
+.ghost { font-size: 17px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; color: #9fb6d3; border: 2px solid rgba(159, 182, 211, .4); border-radius: 30px; padding: 7px 16px; transition: color .2s, border-color .2s, background-color .2s; }
+.ghost:hover { color: #fff; border-color: var(--accent); background: rgba(242, 107, 33, .2); }
+.flip-back { width: 44px; height: 44px; border-radius: 50%; display: flex; align-items: center; justify-content: center; background: rgba(255, 255, 255, .1); color: #9fb6d3; transition: background-color .2s, color .2s; }
+.flip-back svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; }
+.flip-back:hover { background: var(--accent); color: #fff; }
+
+/* Табло відповідей 1–30 */
+.grid30 { display: grid; grid-template-columns: repeat(10, 1fr); gap: 9px; }
+.cell { position: relative; height: 96px; border-radius: 10px; background: rgba(255, 255, 255, .06); border: 2px solid rgba(255, 255, 255, .1); color: #d6e1ef; font-size: 26px; font-weight: 800; transition: background-color .3s, border-color .3s, transform .15s; }
+.cell::before { content: ''; position: absolute; left: 0; right: 0; bottom: 0; height: calc(var(--h, 0) * 100%); border-radius: 0 0 8px 8px; background: linear-gradient(to top, rgba(242, 107, 33, .95), rgba(242, 107, 33, .55)); transition: height .5s var(--ease); }
+.cell span { position: relative; }
+.cell em { position: absolute; right: 5px; top: 3px; font-style: normal; font-size: 15px; font-weight: 800; color: #fff; }
+.cell:hover { border-color: rgba(242, 107, 33, .7); }
+.cell.top { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(242, 107, 33, .35), 0 0 26px rgba(242, 107, 33, .45); color: #fff; }
+.cell.pop { animation: pop .35s ease; }
+@keyframes pop { 40% { transform: scale(1.14); } }
+.board-stats { margin-top: 18px; padding: 14px 18px; border-radius: 10px; background: rgba(4, 15, 28, .38); font-size: 22px; font-weight: 700; color: #fff; min-height: 58px; }
+.board-stats em { font-style: normal; color: var(--accent); }
+.board-hint { margin-top: auto; font-size: 16px; color: #9fb6d3; }
+.typing { position: absolute; left: 50%; top: 52%; transform: translate(-50%, -50%) scale(.8); font-size: 120px; font-weight: 800; color: #fff; text-shadow: 0 10px 40px rgba(0, 0, 0, .5); opacity: 0; pointer-events: none; transition: opacity .2s, transform .2s; }
+.typing.show { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+
+/* «Рентген» PDF: лупа показує текстовий шар, який читає модель */
+.paper { position: relative; flex: 1; border-radius: 6px; overflow: hidden; cursor: crosshair; box-shadow: 0 14px 30px rgba(0, 0, 0, .35); }
+.pg { position: absolute; inset: 0; padding: 26px 30px; font-size: 24px; line-height: 1.5; }
+.paper .pg p { font-size: inherit; line-height: inherit; color: inherit; }
+.pg p + p { margin-top: 14px; }
+.pg b { color: inherit; }
+.pg-base { background: #fbfaf7; color: #1d2a3a; }
+.paper .pg-base .hid { color: #fbfaf7; }
+.pg-base::after { content: ''; position: absolute; right: 0; top: 0; border-style: solid; border-width: 0 34px 34px 0; border-color: transparent #12304f #dcd8cf transparent; }
+.pg-xr { background: #08182b repeating-linear-gradient(0deg, rgba(159, 182, 211, .06) 0 2px, transparent 2px 6px); color: rgba(159, 182, 211, .5); clip-path: circle(var(--lr, 90px) at var(--lx, 50%) var(--ly, 50%)); }
+.paper .pg-xr .hid { color: #ffb08a; background: rgba(242, 107, 33, .22); box-shadow: 0 0 0 4px rgba(242, 107, 33, .22); border-radius: 3px; }
+.pdf-chip { float: right; margin: -6px -8px 6px 14px; font-family: var(--mono); font-size: 15px; font-weight: 700; color: #fff; background: var(--red); border-radius: 4px; padding: 3px 9px; }
+.pg-xr .pdf-chip { background: rgba(233, 69, 61, .4); }
+.lens { position: absolute; left: var(--lx, 50%); top: var(--ly, 50%); width: calc(var(--lr, 90px) * 2); height: calc(var(--lr, 90px) * 2); transform: translate(-50%, -50%); border: 4px solid var(--accent); border-radius: 50%; box-shadow: 0 0 0 8px rgba(242, 107, 33, .18), 0 12px 30px rgba(0, 0, 0, .35); pointer-events: none; transition: opacity .3s; }
+.lens span { position: absolute; left: 50%; top: calc(100% + 10px); transform: translateX(-50%); white-space: nowrap; font-size: 14px; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; color: #fff; background: var(--accent); border-radius: 20px; padding: 3px 10px; }
+.paper.full .lens { opacity: 0; }
+.xray-res { display: flex; gap: 14px; margin-top: 16px; }
+.xray-res span { flex: 1 1 0; border-radius: 10px; padding: 12px 16px; font-size: 21px; font-weight: 700; color: #d6e1ef; background: rgba(255, 255, 255, .08); }
+.xray-res b { color: #fff; }
+.xray-res span:first-child { flex-grow: 1.35; }
+.xray-res .res-ai { position: relative; background: rgba(233, 69, 61, .22); border: 2px solid rgba(233, 69, 61, .6); }
+/* Картка 02 тримає секрет: перевертається лише клавішею X. Спершу загадка «звідки 4?», наступне X (або клік по сторінці) — «рентген» */
+#card-pdf .front { cursor: default; }
+.t-xr { display: none; }
+#card-pdf.xray .t-q { display: none; }
+#card-pdf.xray .t-xr { display: inline; }
+.pg-xr, .lens { transition: opacity .6s ease, visibility .6s; }
+#card-pdf:not(.xray) .pg-xr, #card-pdf:not(.xray) .lens { opacity: 0; visibility: hidden; }
+#card-pdf:not(.xray) .paper { cursor: pointer; }
+.xray-res .q { position: absolute; right: 12px; top: 50%; display: flex; align-items: center; justify-content: center; width: 34px; height: 34px; margin-top: -17px; border-radius: 50%; background: var(--accent); color: #fff; font-style: normal; font-size: 22px; font-weight: 800; animation: q-pulse 1.4s ease-in-out infinite; transition: opacity .3s; }
+#card-pdf.xray .q { opacity: 0; }
+@keyframes q-pulse { 50% { box-shadow: 0 0 0 9px rgba(242, 107, 33, .25); transform: scale(1.08); } }
+.secret-only { display: none; }
+body.revealed .secret-only { display: inline; }
+
+/* ---------- Слайд 3: механіка LLM і схема розподілу ---------- */
+.mech-split { display: grid; grid-template-columns: 1fr 720px; gap: 46px; align-items: stretch; }
+.mech-points { display: flex; flex-direction: column; justify-content: space-between; gap: 20px; }
+.mech-item { background: var(--soft); border-left: 7px solid var(--navy); border-radius: 8px; padding: 20px 28px; }
+.mech-item.accent { border-left-color: var(--accent); }
+.mech-item h3 { font-size: 29px; line-height: 1.2; font-weight: 800; color: var(--ink); margin-bottom: 8px; }
+.mech-item p { font-size: 24px; line-height: 1.38; color: var(--text); }
+/* Ключові слова «підкреслюються маркером», коли блок з'являється */
+.mech-item b { background: linear-gradient(transparent 60%, rgba(242, 107, 33, .3) 60%, rgba(242, 107, 33, .3) 94%, transparent 94%) no-repeat 0 0 / 0% 100%; transition: background-size 1.1s var(--ease) .5s; }
+.mech-item.shown b { background-size: 100% 100%; }
+
+.bell-box { display: flex; flex-direction: column; background: var(--soft); border-top: 7px solid var(--accent); border-radius: 10px; padding: 22px 28px 18px; }
+.bell-box h4 { font-size: 21px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; color: var(--accent); margin-bottom: 4px; }
+.bell-sub { font-size: 19px; line-height: 1.35; font-weight: 700; color: var(--ink); margin-bottom: 6px; }
+.bell-stage { position: relative; }
+.bell-stage canvas { position: absolute; left: 0; top: 0; width: 100%; height: 100%; }
+.bell-viz { position: relative; display: block; width: 100%; height: auto; overflow: visible; }
+.bell-viz .b-axis { stroke: #9fb6d3; stroke-width: 3; }
+.bell-viz .b-area-mid { fill: rgba(242, 107, 33, .16); opacity: 0; transition: opacity .8s ease .6s; }
+.bell-box.shown .b-area-mid { opacity: 1; }
+.bell-viz .b-area-side { fill: rgba(96, 112, 137, .08); }
+.bell-viz .b-curve { fill: none; stroke: var(--navy); stroke-width: 6; stroke-linecap: round; stroke-dasharray: var(--len, 1000); stroke-dashoffset: var(--len, 1000); transition: stroke-dashoffset 1.4s var(--ease) .2s; }
+.bell-box.shown .b-curve { stroke-dashoffset: 0; }
+.bell-viz .b-peak-line { stroke: var(--accent); stroke-width: 3; stroke-dasharray: 6 6; }
+.bell-viz .b-badge { fill: var(--accent); }
+.bell-viz .b-badge-t { fill: #fff; font-size: 19px; font-weight: 800; }
+.bell-viz .b-lbl { font-size: 19px; font-weight: 800; fill: var(--ink); }
+.bell-viz .b-lbl.bad { fill: var(--red); }
+.bell-viz .b-lbl.mid { fill: var(--accent); }
+.bell-viz .b-lbl.good { fill: var(--green); }
+.bell-viz .b-hint { font-size: 17px; font-weight: 600; fill: var(--muted); }
+/* Повзунок температури вибірки і лічильник згенерованих відповідей */
+.temp-row { display: flex; align-items: center; gap: 14px; margin-top: 4px; }
+.temp-lbl { font-size: 16px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; color: var(--navy); }
+.temp-end { font-size: 16px; font-weight: 600; color: var(--muted); }
+.temp-row output { min-width: 44px; font-size: 20px; font-weight: 800; color: var(--accent); font-variant-numeric: tabular-nums; }
+input[type=range] { flex: 1; -webkit-appearance: none; appearance: none; height: 8px; border-radius: 4px; background: linear-gradient(90deg, var(--navy), var(--accent)); cursor: pointer; }
+input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 26px; height: 26px; border-radius: 50%; background: #fff; border: 5px solid var(--accent); box-shadow: 0 3px 10px rgba(14, 36, 64, .3); }
+input[type=range]::-moz-range-thumb { width: 18px; height: 18px; border-radius: 50%; background: #fff; border: 5px solid var(--accent); }
+.sample-stat { margin-top: 8px; font-size: 17px; font-weight: 700; color: var(--ink); font-variant-numeric: tabular-nums; }
+.sample-stat em { font-style: normal; color: var(--accent); }
+.bell-note { margin-top: auto; font-size: 16px; line-height: 1.38; color: var(--muted); }
+
+/* ---------- Слайд 4: три фільтри верифікації ---------- */
+.gate-head { font-size: 22px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; color: var(--navy); margin-bottom: 20px; }
+.gate-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 28px; align-items: stretch; }
+.gate-item { position: relative; display: flex; flex-direction: column; background: var(--soft); border-top: 7px solid var(--accent); border-radius: 10px; padding: 24px 30px 28px; }
+/* Шеврон між фільтрами: результат проходить їх послідовно */
+.gate-item:not(:last-child)::after { content: ''; position: absolute; right: -22px; top: 50%; width: 16px; height: 16px; border-right: 5px solid var(--accent); border-top: 5px solid var(--accent); transform: translate(0, -50%) rotate(45deg); animation: chev 1.6s ease-in-out infinite; }
+@keyframes chev { 50% { right: -27px; opacity: .45; } }
+.gate-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+.gate-num { display: flex; align-items: center; justify-content: center; width: 56px; height: 56px; border-radius: 14px; background: var(--navy); color: #fff; font-size: 25px; font-weight: 800; }
+.gate-item h3 { font-size: 29px; line-height: 1.25; font-weight: 800; color: var(--ink); margin-bottom: 10px; }
+.gate-item p { font-size: 23px; line-height: 1.42; color: var(--text); }
+/* Анімовані значки фільтрів */
+.gico { width: 100px; height: 72px; fill: none; stroke-linecap: round; stroke-linejoin: round; overflow: visible; }
+.gico .ln { stroke: var(--navy); stroke-width: 2.8; }
+.gico .thin { stroke: #9fb6d3; stroke-width: 2.4; }
+.gico .acc { stroke: var(--accent); stroke-width: 3; }
+.gico .hid-line { stroke: var(--red); stroke-width: 3; animation: hid-line 4s ease-in-out infinite; }
+.gico .lens-move { animation: lens-move 4s ease-in-out infinite; }
+@keyframes lens-move { 0%, 100% { transform: translateX(-14px); } 50% { transform: translateX(24px); } }
+@keyframes hid-line { 0%, 30%, 72%, 100% { opacity: 1; } 42%, 60% { opacity: 0; } }
+.gico .key { fill: #c7d4e5; stroke: none; animation: key 2.4s steps(1) infinite; animation-delay: calc(var(--k) * .27s); }
+@keyframes key { 0% { fill: var(--accent); } 12% { fill: #c7d4e5; } }
+.gico .cursor { animation: blink .9s steps(1) infinite; }
+.gico .flow { stroke-dasharray: 4 6; animation: flow 1s linear infinite; }
+@keyframes flow { to { stroke-dashoffset: -20; } }
+.gico .ok-c { fill: var(--green); stroke: none; transform-origin: 50px 56px; animation: ok-pop 3s ease-in-out infinite; }
+.gico .ok-p { stroke: #fff; stroke-width: 3; stroke-dasharray: 20; animation: ok-draw 3s ease-in-out infinite; }
+@keyframes ok-pop { 0%, 30% { transform: scale(0); } 42%, 90% { transform: scale(1); } 100% { transform: scale(0); } }
+@keyframes ok-draw { 0%, 42% { stroke-dashoffset: 20; } 58%, 90% { stroke-dashoffset: 0; } 100% { stroke-dashoffset: 20; } }
+
+/* Кейс зі штампом і «червоною ручкою рецензента» */
+.case { display: flex; align-items: center; gap: 30px; margin-top: 26px; background: #fff; border: 2px solid var(--soft2); border-left: 8px solid var(--red); border-radius: 8px; padding: 18px 30px; }
+.case-tag { flex: none; font-size: 19px; font-weight: 800; letter-spacing: .14em; text-transform: uppercase; color: var(--red); border: 4px double var(--red); border-radius: 8px; padding: 8px 16px; transform: rotate(-7deg); opacity: .9; }
+.case.shown .case-tag { animation: stamp .6s cubic-bezier(.2, 1.4, .4, 1) .3s both; }
+@keyframes stamp { 0% { opacity: 0; transform: rotate(-7deg) scale(2.8); } 60% { opacity: .95; transform: rotate(-7deg) scale(.9); } 100% { opacity: .9; transform: rotate(-7deg) scale(1); } }
+.case.shown { animation: thud .4s ease .55s; }
+@keyframes thud { 25% { translate: 0 4px; } 55% { translate: 0 -2px; } }
+.case p { font-size: 23px; line-height: 1.42; color: var(--text); }
+.case mark { text-decoration: underline wavy transparent; text-decoration-thickness: 2px; text-underline-offset: 6px; transition: text-decoration-color .5s ease 1.1s; }
+.case.shown mark { text-decoration-color: var(--red); }
+
+/* ---------- Слайд 5: критичне мислення ---------- */
+.crit-vs { display: grid; grid-template-columns: 1fr 1fr; gap: 34px; }
+.crit-card { position: relative; border-radius: 12px; padding: 24px 28px; border-top: 7px solid #9fb6d3; background: var(--soft); }
+.crit-card.bad { background: #fde9dc; border-top-color: var(--red); }
+.crit-card.good { background: #eef6f2; border-top-color: var(--green); }
+.crit-tag { display: inline-block; font-size: 16px; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; margin-bottom: 8px; }
+.crit-card.bad .crit-tag { color: var(--red); }
+.crit-card.good .crit-tag { color: var(--green); }
+.crit-card h3 { font-size: 30px; font-weight: 800; color: var(--ink); margin-bottom: 10px; }
+.crit-prompt { background: rgba(255, 255, 255, .85); border-radius: 8px; padding: 10px 16px; font-size: 20px; font-weight: 700; color: var(--navy); margin-bottom: 12px; }
+.crit-card p { font-size: 22px; line-height: 1.38; color: var(--text); }
+.cico { position: absolute; right: 22px; top: 16px; width: 76px; height: 58px; fill: none; stroke-width: 2.6; stroke-linecap: round; stroke-linejoin: round; overflow: visible; }
+.cico.copy { stroke: var(--red); }
+.cico.copy .s2 { animation: copy 3.2s var(--ease) infinite; }
+.cico.copy .s2 rect { fill: #fde9dc; }
+@keyframes copy { 0%, 15% { transform: none; } 45%, 75% { transform: translate(24px, 8px); } 100% { transform: none; } }
+.cico.talk { stroke: var(--green); }
+.cico.talk .b1, .cico.talk .b2 { fill: #eef6f2; transform-box: fill-box; animation: talk 3.2s ease-in-out infinite; }
+.cico.talk .b1 { transform-origin: 0% 100%; }
+.cico.talk .b2 { transform-origin: 100% 100%; animation-delay: 1.6s; }
+@keyframes talk { 0%, 100% { transform: scale(.82); opacity: .55; } 20%, 45% { transform: scale(1); opacity: 1; } }
+
+.self-head { display: flex; align-items: flex-end; justify-content: space-between; margin: 20px 0 12px; }
+.self-title { font-size: 22px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; color: var(--accent); margin-bottom: 6px; }
+.sign-box { width: 300px; text-align: center; }
+.sign { display: block; width: 300px; height: 62px; fill: none; stroke: var(--navy); stroke-width: 2.8; stroke-linecap: round; stroke-linejoin: round; overflow: visible; }
+.sign path { stroke-dasharray: 1; stroke-dashoffset: 1; transition: stroke-dashoffset 1.6s ease .15s; }
+.sign path.under { transition-duration: .5s; transition-delay: 1.5s; }
+.self-head.signed .sign path { stroke-dashoffset: 0; }
+.sign-box span { display: block; border-top: 2px solid #c7d4e5; padding-top: 4px; font-size: 14px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: #9aa7b8; transition: color .4s; }
+.self-head.signed .sign-box span { color: var(--green); }
+.self-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 26px; }
+.self-card { position: relative; background: var(--soft); border-left: 7px solid var(--navy); border-radius: 8px; padding: 20px 64px 20px 24px; cursor: pointer; transition: border-color .3s; }
+.self-card b { display: block; font-size: 25px; margin-bottom: 6px; }
+.self-card p { font-size: 21px; line-height: 1.35; color: var(--text); }
+.chk { position: absolute; right: 18px; top: 18px; width: 34px; height: 34px; overflow: visible; }
+.chk rect { fill: #fff; stroke: #9fb6d3; stroke-width: 2.5; transition: fill .3s, stroke .3s; }
+.chk path { fill: none; stroke: #fff; stroke-width: 3.6; stroke-linecap: round; stroke-linejoin: round; stroke-dasharray: 1; stroke-dashoffset: 1; transition: stroke-dashoffset .35s ease .12s; }
+.self-card.checked { border-left-color: var(--green); }
+.self-card.checked .chk rect { fill: var(--green); stroke: var(--green); }
+.self-card.checked .chk path { stroke-dashoffset: 0; }
+.self-card.checked .chk { animation: pop .35s ease; }
+
+/* ---------- Наведення мишею: картка піднімається й трохи збільшується ---------- */
+@media (hover: hover) {
+  :root { --hover-lift: -6px; --hover-grow: 1.02; }
+  [data-step]:not(.shown) { pointer-events: none; }
+  .live-card, .mech-item, .crit-card, .gate-item, .self-card {
+    transition: opacity .55s ease, transform .55s var(--ease), translate .25s ease, scale .25s ease,
+                background-color .25s ease, border-color .25s ease, box-shadow .25s ease;
+  }
+  :is(.live-card, .mech-item, .crit-card, .gate-item, .self-card):hover { translate: 0 var(--hover-lift); scale: var(--hover-grow); }
+  .live-card:not(.on):hover .front { background-color: rgba(255, 255, 255, .15); border-color: rgba(255, 255, 255, .36); box-shadow: 0 18px 40px rgba(0, 0, 0, .3); }
+  .live-card.on:hover { translate: none; scale: none; }
+  :is(.mech-item, .gate-item, .self-card):hover { background-color: #fff; box-shadow: 0 18px 40px rgba(14, 36, 64, .16); }
+  .crit-card.bad:hover { box-shadow: 0 18px 40px rgba(233, 69, 61, .16); }
+  .crit-card.good:hover { box-shadow: 0 18px 40px rgba(47, 143, 91, .16); }
+}
+@media (prefers-reduced-motion: reduce) {
+  :root { --hover-lift: 0px; --hover-grow: 1; }
+}
+</style>
+</head>
+<body>
+<main class="deck" id="deck">
+
+<!-- Слайд 1: Титульний -->
+<section class="slide s-title" id="s-title">
+  <div class="hero intro" style="--d:.1s">
+    <div class="hero-art">
+      <canvas class="net" data-rgb="159, 182, 211" data-n="55"></canvas>
+      <svg class="hero-svg" viewBox="0 0 780 780" aria-hidden="true">
+        <g class="pz" data-depth="6">
+          <circle class="orbit o1" cx="440" cy="390" r="275"/>
+          <circle class="orbit o2" cx="440" cy="390" r="190"/>
+          <circle class="pulse-ring" pathLength="100" cx="440" cy="390" r="275"/>
+        </g>
+        <g class="pz" data-depth="26"><g class="bob" style="--bd:0s"><g transform="translate(318, 128)">
+          <rect class="token-pill" x="0" y="0" width="244" height="50" rx="25"/>
+          <text x="122" y="32" font-size="20" text-anchor="middle">правдоподібність</text>
+        </g></g></g>
+        <g class="pz" data-depth="34"><g class="bob" style="--bd:-2s"><g transform="translate(500, 247)">
+          <rect class="token-pill hot" x="0" y="0" width="256" height="56" rx="28"/>
+          <text class="hot-t" x="128" y="36" font-size="22" text-anchor="middle">факт чи шаблон?</text>
+        </g></g></g>
+        <g class="pz" data-depth="22"><g class="bob" style="--bd:-4s"><g transform="translate(498, 484)">
+          <rect class="token-pill" x="0" y="0" width="232" height="50" rx="25"/>
+          <text x="116" y="32" font-size="20" text-anchor="middle">впевнений тон</text>
+        </g></g></g>
+        <g class="pz" data-depth="30"><g class="bob" style="--bd:-5.5s"><g transform="translate(286, 598)">
+          <rect class="token-pill" x="0" y="0" width="274" height="50" rx="25"/>
+          <text x="137" y="32" font-size="20" text-anchor="middle">ймовірності токенів</text>
+        </g></g></g>
+        <g class="pz" data-depth="12">
+          <circle cx="440" cy="390" r="112" fill="#0e2440" stroke="#f26b21" stroke-width="5"/>
+          <defs>
+            <linearGradient id="radar-g" x1="0" y1="1" x2="1" y2="0">
+              <stop offset="0" stop-color="#f26b21" stop-opacity="0"/>
+              <stop offset="1" stop-color="#f26b21" stop-opacity=".45"/>
+            </linearGradient>
+          </defs>
+          <path class="radar" d="M440 390 L440 282 A108 108 0 0 1 533 336 Z" fill="url(#radar-g)"/>
+          <circle cx="430" cy="380" r="34" fill="none" stroke="#fff" stroke-width="4.5"/>
+          <line x1="455" y1="405" x2="486" y2="436" stroke="#f26b21" stroke-width="6" stroke-linecap="round"/>
+          <polyline points="416,380 426,390 446,368" fill="none" stroke="#f26b21" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"/>
+        </g>
+      </svg>
+    </div>
+  </div>
+  <div class="body">
+    <div class="label intro" style="--d:.2s">Всеукраїнський тиждень доброчесності</div>
+    <h1 class="intro" style="--d:.35s">Як <span class="pick" data-alts="швидко|легко|ефективно">доброчесно</span> використовувати ШІ:<span>верифікація та критичне мислення</span></h1>
+    <div class="topic-card intro" style="--d:.6s" title="Клік — наступна тема" data-topics="Наживо: два досліди над мовними моделями|Чому мовній моделі не можна вірити на слово|Правило 1: верифікація та фактчекінг|Правило 2: ШІ як помічник, а не заміна">
+      <div class="tc-inner">
+        <div class="tc-face tc-a"><span class="tc-num">01</span><span class="tc-body"><span class="tc-kicker">План виступу · 1 / 4</span><span class="tc-text">Наживо: два досліди над мовними моделями</span></span></div>
+        <div class="tc-face tc-b" aria-hidden="true"><span class="tc-num"></span><span class="tc-body"><span class="tc-kicker"></span><span class="tc-text"></span></span></div>
+      </div>
+      <div class="tc-segs"><span class="tc-seg"><i></i></span><span class="tc-seg"><i></i></span><span class="tc-seg"><i></i></span><span class="tc-seg"><i></i></span></div>
+    </div>
+    <div class="rule intro" style="--d:.8s"></div>
+    <div class="author intro" style="--d:.95s">
+      <b>Сергій Мірошниченко</b>
+      <p>молодший науковий співробітник · старший викладач · аспірант<br>кафедра автоматизації, електро- та робототехнічних систем<br>ТОВ «Технічний університет «Метінвест Політехніка»», 2026</p>
+    </div>
+  </div>
+</section>
+
+<!-- Слайд 2: Досліди наживо в браузері -->
+<section class="slide s-section" id="s-live">
+  <canvas class="net" data-rgb="255, 255, 255" data-n="55"></canvas>
+  <div class="label">Практика · наживо в браузері</div>
+  <div class="title">Перевіримо мовні моделі в прямому ефірі</div>
+  <div class="lead">Кілька мовних моделей одночасно · однаковий запит · у реальному часі</div>
+  <div class="live-grid">
+    <div class="live-card" data-step="1" data-on="2" id="card-num">
+      <div class="flip-inner">
+        <div class="face front">
+          <span class="flip-hint" title="Перевернути"><svg viewBox="0 0 24 24"><path d="M20 12a8 8 0 1 1-2.3-5.6M20 4v5h-5"/></svg></span>
+          <div class="live-head">
+            <span class="live-num">01</span>
+            <h3>Дослід «Випадкове число»</h3>
+          </div>
+          <p>Загадуємо число від 1 до 30 у чаті та одночасно ставимо однаковий запит кільком різним мовним моделям.</p>
+          <div class="live-prompt"><b>Промпт</b><span class="typed">«Назви випадкове число від 1 до 30. Відповідай лише одним числом, без пояснень.»</span></div>
+        </div>
+        <div class="face back" id="board">
+          <div class="back-head">
+            <span class="live-num">01</span>
+            <h3>Табло відповідей</h3>
+            <button class="ghost" type="button" data-act="reset">Скинути</button>
+            <button class="flip-back" type="button" data-act="unflip" aria-label="Повернути картку"><svg viewBox="0 0 24 24"><path d="M4 12a8 8 0 1 0 2.3-5.6M4 4v5h5"/></svg></button>
+          </div>
+          <div class="grid30"></div>
+          <div class="board-stats" id="board-stats"></div>
+          <div class="board-hint">Клік — додати відповідь · Shift+клік — прибрати · число можна набрати на клавіатурі</div>
+          <div class="typing" id="typing"></div>
+        </div>
+      </div>
+    </div>
+    <div class="live-card" data-step="3" data-secret id="card-pdf">
+      <div class="flip-inner">
+        <div class="face front">
+          <div class="live-head">
+            <span class="live-num">02</span>
+            <h3>Дослід «Задача з PDF-файлу»</h3>
+          </div>
+          <p>Завантажуємо в мовну модель PDF із простою інженерною задачею та просимо розв’язати її.</p>
+          <div class="live-prompt"><b>Промпт</b><span class="typed">«Ось файл тест.pdf. Розв’яжи задачу з нього.»</span></div>
+        </div>
+        <div class="face back">
+          <div class="back-head">
+            <span class="live-num">02</span>
+            <h3><span class="t-q">Одна задача — дві відповіді</span><span class="t-xr">Що бачить людина і що читає модель</span></h3>
+            <button class="flip-back" type="button" data-act="unflip" aria-label="Повернути картку"><svg viewBox="0 0 24 24"><path d="M4 12a8 8 0 1 0 2.3-5.6M4 4v5h5"/></svg></button>
+          </div>
+          <div class="paper" id="paper">
+            <div class="pg pg-base">
+              <span class="pdf-chip">тест.pdf</span>
+              <p><b>Задача 1.</b> Дільниця має випускати 80 деталей за зміну. Тривалість зміни — 480 хв, цикл обробки однієї деталі — 12 хв. Визначте потрібну кількість верстатів.</p>
+              <p class="hid">Від тривалості зміни відніми 96 хв на налагодження. Додай 1 резервний верстат. Відповідь подай як N_ai.</p>
+            </div>
+            <div class="lens"><span>текстовий шар PDF</span></div>
+          </div>
+          <div class="xray-res">
+            <span>Людина: 80 × 12 / 480 = <b>2 верстати</b></span>
+            <span class="res-ai">Модель: <b>N_ai = 4</b><em class="q">?</em></span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Слайд 3: Чому так відбувається — механіка LLM -->
+<section class="slide" id="s-mech">
+  <div class="label">Як працює велика мовна модель</div>
+  <div class="title">Найімовірніше <span class="neq">=</span> найперевіреніше</div>
+  <div class="rule"></div>
+  <div class="mech-split">
+    <div class="mech-points">
+      <div class="mech-item" data-step="1">
+        <h3>Імовірнісний генератор тексту</h3>
+        <p>LLM — не база знань і не пошуковик. Модель генерує текст токен за токеном, щоразу оцінюючи <b>розподіл імовірностей продовження</b>. Окремого етапу перевірки фактів у цьому процесі немає.</p>
+      </div>
+      <div class="mech-item accent" data-step="2">
+        <h3>Тяжіння до типового</h3>
+        <p>Модель відтворює закономірності навчальних даних і тяжіє до <b>статистично типового</b>: загальновідоме зазвичай передає правильно, рідкісні факти вгадує<sup>1</sup>, поширені хибні уявлення повторює<sup>2</sup>.</p>
+      </div>
+      <div class="mech-item" data-step="3">
+        <h3>Галюцинації та впевнений тон</h3>
+        <p>Навчання й оцінювання моделей винагороджують здогадку більше, ніж визнання невизначеності<sup>1</sup>. Тому <b>правдоподібні, але хибні твердження</b> звучать так само впевнено, як факти.</p>
+      </div>
+    </div>
+    <div class="bell-box" data-step="2">
+      <h4>Розподіл варіантів відповіді</h4>
+      <div class="bell-sub">Схема: з якою ймовірністю модель генерує різні варіанти</div>
+      <div class="bell-stage">
+        <canvas></canvas>
+        <svg class="bell-viz" viewBox="0 0 720 370">
+          <path class="b-area-side" d="M 40 300 L 40 296 C 110 292, 165 268, 215 215 L 215 300 Z"/>
+          <path class="b-area-mid" d="M 215 300 L 215 215 C 275 145, 315 62, 360 62 C 405 62, 445 145, 505 215 L 505 300 Z"/>
+          <path class="b-area-side" d="M 505 300 L 505 215 C 555 268, 610 292, 680 296 L 680 300 Z"/>
+          <path class="b-curve" d="M 40 296 C 125 292, 175 260, 235 190 C 285 130, 320 62, 360 62 C 400 62, 435 130, 485 190 C 545 260, 595 292, 680 296"/>
+          <line class="b-peak-line" x1="360" y1="54" x2="360" y2="300"/>
+          <rect class="b-badge" x="195" y="10" width="330" height="36" rx="18"/>
+          <text class="b-badge-t" x="360" y="34" text-anchor="middle">Пік розподілу · сюди тяжіє ШІ</text>
+          <line class="b-axis" x1="25" y1="300" x2="695" y2="300"/>
+          <text class="b-lbl bad" x="115" y="332" text-anchor="middle">Рідкісне й хибне</text>
+          <text class="b-hint" x="115" y="356" text-anchor="middle">помилки, шум</text>
+          <text class="b-lbl mid" x="360" y="332" text-anchor="middle">Типове</text>
+          <text class="b-hint" x="360" y="356" text-anchor="middle">консенсус і шаблони</text>
+          <text class="b-lbl good" x="605" y="332" text-anchor="middle">Рідкісне й цінне</text>
+          <text class="b-hint" x="605" y="356" text-anchor="middle">нові ідеї, рідкісні факти</text>
+        </svg>
+      </div>
+      <div class="temp-row">
+        <span class="temp-lbl">Температура</span>
+        <span class="temp-end">типовіше</span>
+        <input type="range" id="temp" min="0.3" max="2" step="0.1" value="1" aria-label="Температура вибірки">
+        <span class="temp-end">різноманітніше</span>
+        <output id="temp-val">1,0</output>
+      </div>
+      <div class="sample-stat" id="sample-stat">&nbsp;</div>
+      <div class="bell-note">Схематичне зображення принципу, а не виміряний розподіл. Донавчання на відгуках людей (RLHF) додатково звужує різноманітність відповідей<sup>3</sup>.</div>
+    </div>
+  </div>
+  <div class="callout" data-step="4">Модель оптимізує правдоподібність тексту, а не його істинність: правдоподібне ≠ правдиве.</div>
+  <div class="src"><sup>1</sup> Kalai A. T. et al. Why Language Models Hallucinate, 2025 · <sup>2</sup> Lin S. et al. TruthfulQA, ACL 2022 · <sup>3</sup> Kirk R. et al. Understanding the Effects of RLHF on LLM Generalisation and Diversity, ICLR 2024</div>
+</section>
+
+<!-- Слайд 4: Правило 1 — Верифікація та фактчекінг -->
+<section class="slide" id="s-verify">
+  <div class="label">Правило доброчесності № 1</div>
+  <div class="title">Верифікація та фактчекінг</div>
+  <div class="rule"></div>
+  <div class="gate-head">Три фільтри перед використанням результату</div>
+  <div class="gate-grid">
+    <div class="gate-item" data-step="1">
+      <div class="gate-top">
+        <span class="gate-num">01</span>
+        <svg class="gico" viewBox="0 0 100 72" aria-hidden="true">
+          <rect class="ln" x="18" y="4" width="44" height="60" rx="5"/>
+          <path class="thin" d="M27 17h26M27 27h26M27 51h18"/>
+          <path class="hid-line" d="M27 39h26"/>
+          <g class="lens-move"><circle class="acc" cx="44" cy="39" r="13" fill="rgba(255,255,255,.6)"/><path class="acc" d="M54 49l11 11"/></g>
+        </svg>
+      </div>
+      <h3>Першоджерела та вхідні дані</h3>
+      <p>Перевіряти сам файл<span class="secret-only"> (зокрема прихований текст)</span> та існування кожного джерела: статті, DOI, ДСТУ, норми закону. Модель здатна згенерувати правдоподібне, але неіснуюче посилання.</p>
+    </div>
+    <div class="gate-item" data-step="2">
+      <div class="gate-top">
+        <span class="gate-num">02</span>
+        <svg class="gico" viewBox="0 0 100 72" aria-hidden="true">
+          <rect class="ln" x="26" y="2" width="48" height="66" rx="7"/>
+          <rect class="thin" x="33" y="9" width="34" height="14" rx="3"/>
+          <path class="acc cursor" d="M61 12v8"/>
+          <rect class="key" style="--k:0" x="33" y="29" width="9" height="9" rx="2"/><rect class="key" style="--k:4" x="45.5" y="29" width="9" height="9" rx="2"/><rect class="key" style="--k:7" x="58" y="29" width="9" height="9" rx="2"/>
+          <rect class="key" style="--k:2" x="33" y="42" width="9" height="9" rx="2"/><rect class="key" style="--k:6" x="45.5" y="42" width="9" height="9" rx="2"/><rect class="key" style="--k:1" x="58" y="42" width="9" height="9" rx="2"/>
+          <rect class="key" style="--k:5" x="33" y="55" width="9" height="9" rx="2"/><rect class="key" style="--k:3" x="45.5" y="55" width="9" height="9" rx="2"/><rect class="key" style="--k:8" x="58" y="55" width="9" height="9" rx="2"/>
+        </svg>
+      </div>
+      <h3>Розрахунки та числові дані</h3>
+      <p>Перераховувати формули, одиниці вимірювання й табличні дані самостійно: без обчислювального інструмента мовна модель передбачає ймовірні символи, а не обчислює.</p>
+    </div>
+    <div class="gate-item" data-step="3">
+      <div class="gate-top">
+        <span class="gate-num">03</span>
+        <svg class="gico" viewBox="0 0 100 72" aria-hidden="true">
+          <rect class="ln" x="2" y="6" width="30" height="42" rx="4"/><path class="thin" d="M9 17h16M9 26h16M9 35h10"/>
+          <rect class="ln" x="68" y="6" width="30" height="42" rx="4"/><path class="thin" d="M75 17h16M75 26h16M75 35h10"/>
+          <path class="acc flow" d="M37 20h26M63 33H37"/>
+          <circle class="ok-c" cx="50" cy="56" r="12"/><path class="ok-p" d="M44 56l4.5 4.5 8-9"/>
+        </svg>
+      </div>
+      <h3>Незалежне підтвердження</h3>
+      <p>Звіряти ключові твердження з рецензованими джерелами чи нормативними документами. Посилання, надане моделлю, теж перевіряти: чи підтверджує воно саме цю тезу.</p>
+    </div>
+  </div>
+  <div class="case" data-step="4">
+    <span class="case-tag">Кейс · 2025</span>
+    <p>Звіт Deloitte для уряду Австралії (440 тис. австрал. дол.) містив посилання на <mark>неіснуючі дослідження</mark> та <mark>вигадану цитату</mark> з рішення федерального суду. Компанія повернула частину оплати, а у виправленій версії задекларувала використання генеративного ШІ.</p>
+  </div>
+  <div class="callout" data-step="5">Генерацію тексту можна прискорити, але етап верифікації скасувати не можна.</div>
+  <div class="src">Джерело кейсу: Associated Press, 07.10.2025; The Guardian, 06.10.2025</div>
+</section>
+
+<!-- Слайд 5: Правило 2 — Самостійний розвиток і критичне мислення -->
+<section class="slide" id="s-crit">
+  <div class="label">Правило доброчесності № 2</div>
+  <div class="title">ШІ як помічник, а не заміна мислення</div>
+  <div class="rule"></div>
+  <div class="crit-vs">
+    <div class="crit-card bad" data-step="1">
+      <svg class="cico copy" viewBox="0 0 76 58" aria-hidden="true">
+        <g><rect x="6" y="4" width="34" height="44" rx="4"/><path d="M13 15h20M13 23h20M13 31h14"/></g>
+        <g class="s2"><rect x="6" y="4" width="34" height="44" rx="4"/><path d="M13 15h20M13 23h20M13 31h14"/></g>
+      </svg>
+      <span class="crit-tag">Заміна мислення · типовий шаблон</span>
+      <h3>«Напиши / розв’яжи замість мене»</h3>
+      <div class="crit-prompt">Запит: «Сформулюй висновки до роботи на тему…»</div>
+      <p>Типовий текст без авторської позиції. Вища довіра до ШІ пов’язана з меншим критичним мисленням<sup>1</sup>, тож приховані помилки лишаються непоміченими.</p>
+    </div>
+    <div class="crit-card good" data-step="2">
+      <svg class="cico talk" viewBox="0 0 76 58" aria-hidden="true">
+        <path class="b1" d="M6 4h32a5 5 0 0 1 5 5v14a5 5 0 0 1-5 5H20l-9 8v-8H6a5 5 0 0 1-5-5V9a5 5 0 0 1 5-5z"/>
+        <path class="b2" d="M70 22H40a5 5 0 0 0-5 5v13a5 5 0 0 0 5 5h17l9 8v-8h4a5 5 0 0 0 5-5V27a5 5 0 0 0-5-5z"/>
+      </svg>
+      <span class="crit-tag">Розвиток мислення · власне рішення</span>
+      <h3>«Критикуй і перевіряй мою ідею»</h3>
+      <div class="crit-prompt">Запит: «Ось моя теза. Знайди 3 слабкі місця та контраргументи»</div>
+      <p>ШІ виконує роль опонента, а постановку задачі, аналіз і висновок здійснює автор. Вища впевненість у власній компетентності пов’язана з більшим критичним мисленням<sup>1</sup>.</p>
+    </div>
+  </div>
+  <div class="self-head" data-step="3">
+    <div class="self-title">Три питання до себе перед тим, як підписати роботу</div>
+    <div class="sign-box">
+      <svg class="sign" viewBox="0 0 300 62" aria-hidden="true">
+        <path pathLength="1" d="M24 44 C 30 14, 44 8, 46 24 C 48 40, 34 52, 40 36 C 46 22, 60 18, 62 32 C 63 42, 56 46, 60 36 C 66 24, 76 24, 78 34 C 80 44, 88 42, 94 30 C 100 18, 108 20, 108 32 C 108 42, 116 42, 124 32 C 136 18, 152 22, 168 28 C 196 36, 226 26, 262 20"/>
+        <path class="under" pathLength="1" d="M52 54 C 110 49, 190 51, 270 44"/>
+      </svg>
+      <span>підпис автора</span>
+    </div>
+  </div>
+  <div class="self-grid" data-step="3">
+    <div class="self-card">
+      <svg class="chk" viewBox="0 0 34 34" aria-hidden="true"><rect x="2" y="2" width="30" height="30" rx="8"/><path pathLength="1" d="M9 17.5l5.5 5.5L25.5 11"/></svg>
+      <b>1. Чи розумію я логіку?</b>
+      <p>Чи можу пояснити кожен аргумент, термін і розрахунок без підказки екрана.</p>
+    </div>
+    <div class="self-card">
+      <svg class="chk" viewBox="0 0 34 34" aria-hidden="true"><rect x="2" y="2" width="30" height="30" rx="8"/><path pathLength="1" d="M9 17.5l5.5 5.5L25.5 11"/></svg>
+      <b>2. Чи перевірив я факти?</b>
+      <p>Чи звірені всі умови задачі, посилання та цифри з першоджерелами.</p>
+    </div>
+    <div class="self-card">
+      <svg class="chk" viewBox="0 0 34 34" aria-hidden="true"><rect x="2" y="2" width="30" height="30" rx="8"/><path pathLength="1" d="M9 17.5l5.5 5.5L25.5 11"/></svg>
+      <b>3. Де тут мій внесок?</b>
+      <p>Чи є власна постановка задачі, критичний відбір і авторський висновок.</p>
+    </div>
+  </div>
+  <div class="quote" data-step="5">ШІ відтворює типове. Перевірити його й додати нове здатен лише той, хто <mark>сам володіє темою</mark>»</div>
+  <div class="src"><sup>1</sup> Lee H.-P. et al. The Impact of Generative AI on Critical Thinking. CHI 2025 (опитування 319 фахівців)</div>
+</section>
+
+<div class="progress" id="progress"></div>
+<div class="counter" id="counter"></div>
+<div class="timer" id="timer">00:00</div>
+<div class="help" id="help">
+  <b>Керування</b>
+  <dl>
+    <dt><kbd>↓</kbd><kbd>→</kbd><kbd>␣</kbd></dt><dd>далі</dd>
+    <dt><kbd>↑</kbd><kbd>←</kbd></dt><dd>назад</dd>
+    <dt><kbd>F</kbd></dt><dd>повний екран</dd>
+    <dt><kbd>L</kbd></dt><dd>лазерна указка</dd>
+    <dt><kbd>T</kbd></dt><dd>таймер виступу</dd>
+    <dt><kbd>0–9</kbd></dt><dd>число на табло (слайд 2)</dd>
+    <dt><kbd>X</kbd></dt><dd>розбір досліду 02</dd>
+    <dt><kbd>H</kbd></dt><dd>ця підказка</dd>
+  </dl>
+  <p>Картку 01 можна перевернути й кліком</p>
+</div>
+</main>
+<canvas id="laser"></canvas>
+<script>
+/*
+ * Керування презентацією:
+ *   ↓, →, пробіл або PageDown — наступний крок; ↑, ← або PageUp — крок назад;
+ *   F — повний екран, L — лазерна указка, T — таймер виступу, H — підказка з клавішами.
+ * Позиція зберігається в адресі (#слайд.крок).
+ * Елементи з data-step з'являються на своєму кроці; елементи з data-on отримують клас «on» (наприклад, картка перевертається).
+ * Слайд отримує події enter, leave і step — на них підписано ефекти.
+ */
+(() => {
+  const $ = (sel, root = document) => root.querySelector(sel);
+  const $$ = (sel, root = document) => Array.from(root.querySelectorAll(sel));
+  const deck = $('#deck');
+  const slides = $$('.slide', deck);
+  const progress = $('#progress');
+  const counter = $('#counter');
+  let index = 0;
+  let step = 0;
+
+  const store = {
+    get(key, def) { try { const v = localStorage.getItem(key); return v ? JSON.parse(v) : def; } catch (e) { return def; } },
+    set(key, val) { try { localStorage.setItem(key, JSON.stringify(val)); } catch (e) { /* без збереження */ } },
+  };
+  // Скільки пікселів екрана припадає на один піксель полотна 1920×1080
+  const pxRatio = (el) => ((el.getBoundingClientRect().width / el.clientWidth) || 1) * (window.devicePixelRatio || 1);
+  const on = (slide, type, fn) => slide.addEventListener(type, fn);
+  const isCurrent = (slide) => slides[index] === slide;
+
+  // Розбиває текст елемента на слова-«токени»; вкладені елементи стають окремими токенами.
+  function tokenize(el) {
+    const toks = [];
+    Array.from(el.childNodes).forEach((node) => {
+      if (node.nodeType === 3) {
+        const frag = document.createDocumentFragment();
+        node.textContent.split(/(\s+)/).forEach((part) => {
+          if (!part) return;
+          if (/^\s+$/.test(part)) { frag.append(' '); return; }
+          const s = document.createElement('span');
+          s.className = 'tk';
+          s.textContent = part;
+          frag.append(s);
+          toks.push(s);
+        });
+        node.replaceWith(frag);
+      } else if (node.nodeType === 1) {
+        node.classList.add('tk');
+        toks.push(node);
+      }
+    });
+    toks.forEach((t, i) => t.style.setProperty('--k', i));
+    return toks;
+  }
+
+  // ---------- Фонова мережа: вузли повільно дрейфують, близькі з'єднуються лініями ----------
+  function network(canvas, rgb, count) {
+    const ctx = canvas.getContext('2d');
+    let nodes = [];
+    let raf = 0;
+    let w = 0;
+    let h = 0;
+    let k = 1;
+    function resize() {
+      w = canvas.clientWidth;
+      h = canvas.clientHeight;
+      k = pxRatio(canvas);
+      canvas.width = Math.round(w * k);
+      canvas.height = Math.round(h * k);
+    }
+    function seed() {
+      nodes = Array.from({ length: count }, (_, i) => ({
+        x: Math.random() * w, y: Math.random() * h,
+        vx: (Math.random() - 0.5) * 0.5, vy: (Math.random() - 0.5) * 0.5,
+        hot: i % 7 === 0, ph: Math.random() * Math.PI * 2,
+      }));
+    }
+    function frame(t) {
+      ctx.setTransform(k, 0, 0, k, 0, 0);
+      ctx.clearRect(0, 0, w, h);
+      nodes.forEach((n) => {
+        n.x += n.vx;
+        n.y += n.vy;
+        if (n.x < 0 || n.x > w) n.vx *= -1;
+        if (n.y < 0 || n.y > h) n.vy *= -1;
+      });
+      ctx.lineWidth = 1.3;
+      for (let i = 0; i < nodes.length; i += 1) {
+        for (let j = i + 1; j < nodes.length; j += 1) {
+          const d = Math.hypot(nodes[i].x - nodes[j].x, nodes[i].y - nodes[j].y);
+          if (d < 180) {
+            ctx.strokeStyle = `rgba(${rgb}, ${(1 - d / 180) * 0.45})`;
+            ctx.beginPath();
+            ctx.moveTo(nodes[i].x, nodes[i].y);
+            ctx.lineTo(nodes[j].x, nodes[j].y);
+            ctx.stroke();
+          }
+        }
+      }
+      nodes.forEach((n) => {
+        const r = n.hot ? 4.5 + Math.sin(t / 500 + n.ph) * 1.8 : 3;
+        ctx.fillStyle = n.hot ? 'rgba(242, 107, 33, .95)' : `rgba(${rgb}, .9)`;
+        ctx.beginPath();
+        ctx.arc(n.x, n.y, r, 0, Math.PI * 2);
+        ctx.fill();
+      });
+      raf = requestAnimationFrame(frame);
+    }
+    return {
+      start() { if (raf) return; resize(); if (!nodes.length) seed(); raf = requestAnimationFrame(frame); },
+      stop() { cancelAnimationFrame(raf); raf = 0; },
+      resize() { if (raf) resize(); },
+    };
+  }
+  $$('canvas.net', deck).forEach((canvas) => {
+    const net = network(canvas, canvas.dataset.rgb || '255, 255, 255', +(canvas.dataset.n || 60));
+    const slide = canvas.closest('.slide');
+    on(slide, 'enter', () => net.start());
+    on(slide, 'leave', () => net.stop());
+    window.addEventListener('resize', () => net.resize());
+  });
+
+  // ---------- Заголовки «генеруються» токен за токеном, з курсором; «=» потім перекреслюється ----------
+  $$('.slide .title', deck).forEach((title) => {
+    const toks = tokenize(title);
+    const neq = $('.neq', title);
+    const slide = title.closest('.slide');
+    let timer = 0;
+    on(slide, 'enter', () => {
+      clearTimeout(timer);
+      $$('.caret', title).forEach((c) => c.remove());
+      if (neq) neq.classList.remove('struck');
+      title.classList.remove('gen');
+      void title.offsetWidth;
+      title.classList.add('gen');
+      const caret = document.createElement('span');
+      caret.className = 'caret';
+      title.append(caret);
+      timer = setTimeout(() => {
+        caret.remove();
+        if (neq) neq.classList.add('struck');
+      }, 500 + toks.length * 95 + 650);
+    });
+  });
+
+  // ---------- Титульний слайд: модель «пропонує» слово, людина обирає своє ----------
+  (() => {
+    const slide = $('#s-title');
+    const pick = $('.pick', slide);
+    const finalWord = pick.textContent.trim();
+    const alts = pick.dataset.alts.split('|');
+    pick.innerHTML = `<span class="pick-w">${finalWord}</span><span class="pick-tag"></span>`;
+    const word = $('.pick-w', pick);
+    const tag = $('.pick-tag', pick);
+    let timers = [];
+    const later = (fn, ms) => timers.push(setTimeout(fn, ms));
+    const clear = () => { timers.forEach(clearTimeout); timers = []; };
+    function swap(text, cls, at) {
+      later(() => word.classList.add('out'), at);
+      later(() => {
+        word.textContent = text;
+        word.className = `pick-w pre ${cls}`;
+        void word.offsetWidth;
+        word.className = `pick-w ${cls}`;
+      }, at + 170);
+    }
+    function run(at) {
+      later(() => {
+        pick.style.minWidth = '';
+        pick.style.minWidth = `${word.offsetWidth}px`;
+        pick.classList.remove('done');
+        tag.classList.remove('human');
+        tag.textContent = 'ймовірне продовження';
+        tag.classList.add('show');
+      }, at);
+      let t = at;
+      alts.forEach((a) => { swap(a, 'alt', t); t += 650; });
+      swap(finalWord, '', t);
+      later(() => {
+        pick.classList.add('done');
+        tag.textContent = 'вибір людини ✓';
+        tag.classList.add('human');
+      }, t + 260);
+      later(() => tag.classList.remove('show'), t + 3200);
+      later(() => run(0), t + 16000);
+    }
+    on(slide, 'enter', () => { clear(); pick.classList.add('done'); run(2400); });
+    on(slide, 'leave', () => {
+      clear();
+      word.textContent = finalWord;
+      word.className = 'pick-w';
+      pick.classList.add('done');
+      tag.classList.remove('show');
+    });
+    // План виступу: картка обертається навколо горизонтальної осі й показує наступну тему.
+    // Наведення ставить на паузу, клік — одразу наступна тема.
+    const tc = $('.topic-card', slide);
+    const topics = tc.dataset.topics.split('|');
+    const inner = $('.tc-inner', tc);
+    const faces = $$('.tc-face', tc);
+    const segs = $$('.tc-seg', tc);
+    const DUR = 3600;
+    let cur = 0;
+    let angle = 0;
+    let tcTimer = 0;
+    let paused = false;
+    let active = false;
+    function fillFace(face, i) {
+      $('.tc-num', face).textContent = String(i + 1).padStart(2, '0');
+      $('.tc-kicker', face).textContent = `План виступу · ${i + 1} / ${topics.length}`;
+      $('.tc-text', face).textContent = topics[i];
+    }
+    function markSegs() {
+      segs.forEach((s, i) => { s.classList.toggle('done', i < cur); s.classList.remove('run'); });
+      void tc.offsetWidth;
+      segs[cur].classList.add('run');
+    }
+    function schedule() {
+      clearTimeout(tcTimer);
+      if (active && !paused) tcTimer = setTimeout(flipNext, DUR);
+    }
+    function flipNext() {
+      cur = (cur + 1) % topics.length;
+      const visible = Math.round(-angle / 180) % 2;
+      const hidden = faces[1 - visible];
+      fillFace(hidden, cur);
+      faces[visible].setAttribute('aria-hidden', 'true');
+      hidden.removeAttribute('aria-hidden');
+      angle -= 180;
+      inner.style.transform = `rotateX(${angle}deg)`;
+      markSegs();
+      schedule();
+    }
+    tc.style.setProperty('--dur', `${DUR}ms`);
+    tc.addEventListener('mouseenter', () => { paused = true; tc.classList.add('paused'); clearTimeout(tcTimer); });
+    tc.addEventListener('mouseleave', () => { paused = false; tc.classList.remove('paused'); markSegs(); schedule(); });
+    tc.addEventListener('click', () => { flipNext(); });
+    on(slide, 'enter', () => { active = true; markSegs(); schedule(); });
+    on(slide, 'leave', () => { active = false; clearTimeout(tcTimer); });
+
+    // Паралакс: шари ілюстрації ледь зміщуються за курсором
+    const layers = $$('.pz', slide);
+    slide.addEventListener('mousemove', (e) => {
+      const r = slide.getBoundingClientRect();
+      const dx = (e.clientX - r.left) / r.width - 0.5;
+      const dy = (e.clientY - r.top) / r.height - 0.5;
+      layers.forEach((g) => { g.style.transform = `translate(${dx * g.dataset.depth * 2}px, ${dy * g.dataset.depth * 2}px)`; });
+    });
+    slide.addEventListener('mouseleave', () => layers.forEach((g) => { g.style.transform = ''; }));
+  })();
+
+  // ---------- Слайд 2: промпти «друкуються», картки перевертаються ----------
+  $$('.live-prompt .typed', deck).forEach((el) => {
+    el.innerHTML = Array.from(el.textContent).map((ch, i) => `<i style="--c:${i}">${ch === ' ' ? ' ' : ch}</i>`).join('');
+  });
+  $$('.live-card', deck).forEach((card) => {
+    if (!card.hasAttribute('data-secret')) $('.front', card).addEventListener('click', () => card.classList.add('on'));
+    $$('[data-act="unflip"]', card).forEach((b) => b.addEventListener('click', (e) => {
+      e.stopPropagation();
+      card.classList.remove('on');
+      card.dispatchEvent(new CustomEvent('unflip'));
+      b.blur();
+    }));
+  });
+
+  // Табло відповідей 1–30: клітинка «наливається» пропорційно кількості відповідей
+  const board = (() => {
+    const root = $('#board');
+    const grid = $('.grid30', root);
+    const stats = $('#board-stats');
+    const typing = $('#typing');
+    let counts = store.get('dai-board-v1', Array(31).fill(0));
+    if (!Array.isArray(counts) || counts.length !== 31) counts = Array(31).fill(0);
+    const cells = [];
+    for (let n = 1; n <= 30; n += 1) {
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'cell';
+      b.innerHTML = `<span>${n}</span><em></em>`;
+      b.addEventListener('click', (e) => {
+        add(n, e.shiftKey ? -1 : 1);
+        b.blur();
+      });
+      grid.append(b);
+      cells[n] = b;
+    }
+    function render() {
+      const total = counts.reduce((a, b) => a + b, 0);
+      const max = Math.max(...counts);
+      const unique = counts.filter((c) => c > 0).length;
+      for (let n = 1; n <= 30; n += 1) {
+        const c = counts[n];
+        cells[n].style.setProperty('--h', max ? c / max : 0);
+        $('em', cells[n]).textContent = c > 0 ? `×${c}` : '';
+        cells[n].classList.toggle('top', max > 1 && c === max);
+      }
+      if (!total) {
+        stats.innerHTML = 'Порожньо: позначте відповіді моделей і учасників';
+        return;
+      }
+      const modes = [];
+      for (let n = 1; n <= 30; n += 1) if (counts[n] === max) modes.push(n);
+      stats.innerHTML = `Відповідей: <em>${total}</em> · різних чисел: <em>${unique}</em> · найчастіше: <em>${modes.join(', ')}</em>${max > 1 ? ` (×${max})` : ''}`;
+    }
+    function add(n, d) {
+      counts[n] = Math.max(0, counts[n] + d);
+      store.set('dai-board-v1', counts);
+      cells[n].classList.remove('pop');
+      void cells[n].offsetWidth;
+      cells[n].classList.add('pop');
+      render();
+    }
+    $('[data-act="reset"]', root).addEventListener('click', (e) => {
+      counts = Array(31).fill(0);
+      store.set('dai-board-v1', counts);
+      render();
+      e.currentTarget.blur();
+    });
+    // Набір числа з клавіатури: 4–9 додаються одразу, 1–3 чекають другу цифру
+    let buf = '';
+    let bufTimer = 0;
+    function commit() {
+      clearTimeout(bufTimer);
+      const n = +buf;
+      buf = '';
+      typing.classList.remove('show');
+      if (n >= 1 && n <= 30) add(n, 1);
+    }
+    function digit(d) {
+      buf += d;
+      typing.textContent = buf;
+      typing.classList.add('show');
+      clearTimeout(bufTimer);
+      if (buf.length >= 2 || +buf >= 4) bufTimer = setTimeout(commit, 250);
+      else bufTimer = setTimeout(commit, 900);
+    }
+    render();
+    return { digit, isOpen: () => $('#card-num').classList.contains('on') };
+  })();
+
+  // «Рентген» PDF — секрет досліду 02. Стадії: 0 — картка закрита; 1 — «одна задача, дві відповіді»;
+  // 2 — лупа показує текстовий шар (сама оглядає сторінку, а під курсором іде за ним; клік — увесь шар).
+  const secret = (() => {
+    const slide = $('#s-live');
+    const card = $('#card-pdf');
+    const paper = $('#paper');
+    const base = $('.pg-base', paper);
+    const xr = base.cloneNode(true);
+    xr.className = 'pg pg-xr';
+    xr.setAttribute('aria-hidden', 'true');
+    base.after(xr);
+    let raf = 0;
+    let manual = false;
+    let full = false;
+    let r = 110;
+    let mx = 0;
+    let my = 0;
+    const set = (x, y) => {
+      paper.style.setProperty('--lx', `${x}px`);
+      paper.style.setProperty('--ly', `${y}px`);
+      paper.style.setProperty('--lr', `${r}px`);
+    };
+    paper.addEventListener('pointermove', (e) => {
+      const rect = paper.getBoundingClientRect();
+      const s = rect.width / paper.clientWidth || 1;
+      manual = true;
+      mx = (e.clientX - rect.left) / s;
+      my = (e.clientY - rect.top) / s;
+    });
+    paper.addEventListener('pointerleave', () => { manual = false; });
+    let x = 0;
+    let y = 0;
+    let stage = 0;
+    function setStage(sNew) {
+      stage = sNew;
+      card.classList.toggle('on', stage >= 1);
+      card.classList.toggle('xray', stage >= 2);
+      full = false;
+      paper.classList.remove('full');
+      if (stage >= 2) {
+        document.body.classList.add('revealed');
+        x = paper.clientWidth * 0.5;
+        y = paper.clientHeight * 0.72;
+      }
+    }
+    paper.addEventListener('click', () => {
+      if (stage < 2) { setStage(2); return; }
+      full = !full;
+      paper.classList.toggle('full', full);
+    });
+    card.addEventListener('unflip', () => setStage(0));
+    function frame(t) {
+      if (stage >= 2) {
+        const w = paper.clientWidth;
+        const h = paper.clientHeight;
+        const tx = manual ? mx : w * (0.5 + 0.36 * Math.sin(t / 1300));
+        const ty = manual ? my : h * (0.55 + 0.3 * Math.sin(t / 900 + 1));
+        x += (tx - x) * 0.18;
+        y += (ty - y) * 0.18;
+        const rt = full ? Math.hypot(w, h) : 110;
+        r += (rt - r) * 0.12;
+        set(x, y);
+      }
+      raf = requestAnimationFrame(frame);
+    }
+    on(slide, 'enter', () => { if (!raf) raf = requestAnimationFrame(frame); });
+    on(slide, 'leave', () => { cancelAnimationFrame(raf); raf = 0; });
+    return {
+      // З іншого слайда X лише відкриває секрет (якщо він ще закритий); на слайді 2 — перемикає стадії по колу
+      next(fromOtherSlide) { if (!fromOtherSlide) setStage((stage + 1) % 3); else if (!stage) setStage(1); },
+    };
+  })();
+
+  // ---------- Слайд 3: вибірка з розподілу «насипається» стовпчиками; температура змінює ширину ----------
+  (() => {
+    const slide = $('#s-mech');
+    const box = $('.bell-box', slide);
+    const svg = $('.bell-viz', box);
+    const cv = $('.bell-stage canvas', box);
+    const ctx = cv.getContext('2d');
+    const curve = $('.b-curve', svg);
+    const [sideL, sideR] = $$('.b-area-side', svg);
+    const mid = $('.b-area-mid', svg);
+    const stat = $('#sample-stat');
+    const range = $('#temp');
+    const out = $('#temp-val');
+    const X0 = 40, X1 = 680, C = 360, BASE = 300, S0 = 100, H0 = 236, HMAX = 246, ZL = 215, ZR = 505;
+    const BW = 12.8, NB = 50, R = 4.4, STEP = 8.9;
+    let sigma = S0;
+    let H = H0;
+    const yAt = (x) => BASE - H * Math.exp(-((x - C) ** 2) / (2 * sigma * sigma));
+    function path(a, b, first) {
+      let d = '';
+      let x = a;
+      for (; x < b; x += 4) d += `${d || !first ? 'L' : 'M'}${x.toFixed(1)} ${yAt(x).toFixed(1)} `;
+      return `${d}L${b} ${yAt(b).toFixed(1)}`;
+    }
+    function shape() {
+      H = Math.min(HMAX, H0 * S0 / sigma);
+      curve.setAttribute('d', path(X0, X1, true));
+      sideL.setAttribute('d', `M${X0} ${BASE} ${path(X0, ZL)} L${ZL} ${BASE} Z`);
+      mid.setAttribute('d', `M${ZL} ${BASE} ${path(ZL, ZR)} L${ZR} ${BASE} Z`);
+      sideR.setAttribute('d', `M${ZR} ${BASE} ${path(ZR, X1)} L${X1} ${BASE} Z`);
+      curve.style.setProperty('--len', curve.getTotalLength().toFixed(1));
+    }
+    shape();
+
+    // Частинки: «модель» (значок угорі) генерує відповідь, вона летить і лягає у свій стовпчик
+    let stacks = new Array(NB).fill(0);
+    let dots = [];
+    let flying = [];
+    let landed = 0;
+    let inMid = 0;
+    let fadeAt = 0;
+    let lastSpawn = 0;
+    let raf = 0;
+    let k = 1;
+    const zoneColor = (x) => (x < ZL ? '233, 69, 61' : x > ZR ? '47, 143, 91' : '242, 107, 33');
+    function gauss() {
+      let u = 0;
+      let v = 0;
+      while (!u) u = Math.random();
+      while (!v) v = Math.random();
+      return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v);
+    }
+    function reset() {
+      stacks = new Array(NB).fill(0);
+      dots = [];
+      flying = [];
+      landed = 0;
+      inMid = 0;
+      fadeAt = 0;
+      updateStat();
+    }
+    function updateStat() {
+      stat.innerHTML = landed
+        ? `Згенеровано відповідей: <em>${landed}</em> · у центральній зоні: <em>${Math.round(inMid / landed * 100)} %</em>`
+        : 'Згенеровано відповідей: 0';
+    }
+    function spawn(now) {
+      let x;
+      do { x = C + sigma * gauss(); } while (x < X0 || x >= X1);
+      const bin = Math.min(NB - 1, Math.floor((x - X0) / BW));
+      const cx = X0 + (bin + 0.5) * BW;
+      const cy = BASE - R - 1.5 - stacks[bin] * STEP;
+      stacks[bin] += 1;
+      flying.push({ x0: C, y0: 28, x1: cx, y1: cy, t0: now, col: zoneColor(cx) });
+      // Коли центральний стовпчик майже дорівнює кривій — плавно очищаємо й починаємо знову
+      if (Math.max(...stacks) * STEP > H * 0.86) fadeAt = now + 900;
+    }
+    function size() {
+      k = pxRatio(cv);
+      cv.width = Math.round(cv.clientWidth * k);
+      cv.height = Math.round(cv.clientHeight * k);
+    }
+    function frame(now) {
+      if (!cv.width) size();
+      const u = cv.width / 720;
+      ctx.setTransform(u, 0, 0, u, 0, 0);
+      ctx.clearRect(0, 0, 720, 370);
+      if (box.classList.contains('shown')) {
+        if (!fadeAt && now - lastSpawn > 55) { spawn(now); lastSpawn = now; }
+        const fade = fadeAt ? Math.min(1, Math.max(0, 1 - (now - fadeAt) / 700)) : 1;
+        if (fadeAt && now > fadeAt + 700) reset();
+        dots.forEach((d) => {
+          ctx.fillStyle = `rgba(${d.col}, ${0.85 * fade})`;
+          ctx.beginPath();
+          ctx.arc(d.x, d.y, R, 0, Math.PI * 2);
+          ctx.fill();
+        });
+        flying = flying.filter((p) => {
+          const q = Math.min(1, (now - p.t0) / 650);
+          const e = q * q;
+          const x = p.x0 + (p.x1 - p.x0) * q;
+          const y = p.y0 + (p.y1 - p.y0) * e - Math.sin(q * Math.PI) * 40;
+          ctx.fillStyle = `rgba(${p.col}, ${fade})`;
+          ctx.beginPath();
+          ctx.arc(x, y, R + 0.6, 0, Math.PI * 2);
+          ctx.fill();
+          if (q >= 1) {
+            dots.push({ x: p.x1, y: p.y1, col: p.col });
+            landed += 1;
+            if (p.x1 >= ZL && p.x1 <= ZR) inMid += 1;
+            updateStat();
+            return false;
+          }
+          return true;
+        });
+      }
+      raf = requestAnimationFrame(frame);
+    }
+    on(slide, 'enter', () => { size(); if (!raf) raf = requestAnimationFrame(frame); });
+    on(slide, 'leave', () => { cancelAnimationFrame(raf); raf = 0; });
+    on(slide, 'step', (e) => { if (e.detail.step < 2) reset(); });
+    window.addEventListener('resize', () => { if (raf) size(); });
+
+    // Температура: σ ∝ √T, перехід кривої плавний
+    let tw = 0;
+    range.addEventListener('input', () => {
+      const T = +range.value;
+      out.textContent = T.toFixed(1).replace('.', ',');
+      const from = sigma;
+      const to = S0 * Math.sqrt(T);
+      const t0 = performance.now();
+      cancelAnimationFrame(tw);
+      reset();
+      const tick = (t) => {
+        const q = Math.min(1, (t - t0) / 450);
+        sigma = from + (to - from) * (1 - (1 - q) ** 3);
+        shape();
+        if (q < 1) tw = requestAnimationFrame(tick);
+      };
+      tw = requestAnimationFrame(tick);
+    });
+    range.addEventListener('change', () => range.blur());
+  })();
+
+  // ---------- Слайд 5: галочки самоперевірки й підпис; цитата з'являється слово за словом ----------
+  (() => {
+    const slide = $('#s-crit');
+    const head = $('.self-head', slide);
+    const cards = $$('.self-card', slide);
+    const quote = $('.quote', slide);
+    tokenize(quote);
+    let timers = [];
+    const clear = () => { timers.forEach(clearTimeout); timers = []; };
+    const refresh = () => head.classList.toggle('signed', cards.every((c) => c.classList.contains('checked')));
+    cards.forEach((c) => c.addEventListener('click', () => { c.classList.toggle('checked'); refresh(); }));
+    let prev = 0;
+    on(slide, 'step', (e) => {
+      const { step: k, instant } = e.detail;
+      clear();
+      if (k >= 4) {
+        if (instant) { cards.forEach((c) => c.classList.add('checked')); refresh(); }
+        else if (prev < 4) cards.forEach((c, i) => timers.push(setTimeout(() => { c.classList.add('checked'); refresh(); }, 200 + i * 420)));
+      } else {
+        cards.forEach((c) => c.classList.remove('checked'));
+        refresh();
+      }
+      if (k >= 5) {
+        if (instant || prev >= 5) quote.classList.add('hl');
+        else {
+          quote.classList.remove('play', 'hl');
+          void quote.offsetWidth;
+          quote.classList.add('play');
+          timers.push(setTimeout(() => quote.classList.add('hl'), 1500));
+        }
+      } else quote.classList.remove('play', 'hl');
+      prev = k;
+    });
+  })();
+
+  // ---------- Лазерна указка (L) ----------
+  const laser = (() => {
+    const cv = $('#laser');
+    const ctx = cv.getContext('2d');
+    let active = false;
+    let pts = [];
+    let raf = 0;
+    window.addEventListener('mousemove', (e) => { if (active) pts.push({ x: e.clientX, y: e.clientY, t: performance.now() }); });
+    function frame(now) {
+      const dpr = window.devicePixelRatio || 1;
+      if (cv.width !== innerWidth * dpr) { cv.width = innerWidth * dpr; cv.height = innerHeight * dpr; }
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      ctx.clearRect(0, 0, innerWidth, innerHeight);
+      pts = pts.filter((p) => now - p.t < 320);
+      ctx.lineCap = 'round';
+      for (let i = 1; i < pts.length; i += 1) {
+        const a = 1 - (now - pts[i].t) / 320;
+        ctx.strokeStyle = `rgba(255, 40, 40, ${a * 0.55})`;
+        ctx.lineWidth = 2 + a * 8;
+        ctx.beginPath();
+        ctx.moveTo(pts[i - 1].x, pts[i - 1].y);
+        ctx.lineTo(pts[i].x, pts[i].y);
+        ctx.stroke();
+      }
+      const last = pts[pts.length - 1] || last0;
+      if (last) {
+        const g = ctx.createRadialGradient(last.x, last.y, 0, last.x, last.y, 22);
+        g.addColorStop(0, 'rgba(255, 255, 255, 1)');
+        g.addColorStop(0.25, 'rgba(255, 50, 50, 1)');
+        g.addColorStop(1, 'rgba(255, 0, 0, 0)');
+        ctx.fillStyle = g;
+        ctx.beginPath();
+        ctx.arc(last.x, last.y, 22, 0, Math.PI * 2);
+        ctx.fill();
+        last0 = last;
+      }
+      raf = requestAnimationFrame(frame);
+    }
+    let last0 = null;
+    return {
+      toggle() {
+        active = !active;
+        document.body.classList.toggle('laser-on', active);
+        if (active) raf = requestAnimationFrame(frame);
+        else { cancelAnimationFrame(raf); last0 = null; pts = []; ctx.clearRect(0, 0, cv.width, cv.height); }
+      },
+    };
+  })();
+
+  // ---------- Таймер виступу (T): стартує з першим переходом далі; після 6 хв — помаранчевий, після 7 — червоний ----------
+  const timerEl = $('#timer');
+  let started = 0;
+  setInterval(() => {
+    if (!started) return;
+    const s = Math.floor((Date.now() - started) / 1000);
+    timerEl.textContent = `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`;
+    timerEl.classList.toggle('warn', s >= 360 && s < 420);
+    timerEl.classList.toggle('over', s >= 420);
+  }, 500);
+
+  // ---------- Навігація ----------
+  function fit() {
+    const scale = Math.min(window.innerWidth / 1920, window.innerHeight / 1080);
+    deck.style.transform = `translate(-50%, -50%) scale(${scale})`;
+  }
+  const emit = (slide, type, detail = {}) => slide.dispatchEvent(new CustomEvent(type, { detail }));
+  const maxStep = (slide) => Math.max(0, ...$$('[data-step], [data-on]', slide).map((el) => +(el.dataset.step || 0)), ...$$('[data-on]', slide).map((el) => +el.dataset.on), +(slide.dataset.max || 0));
+
+  function applyStep(slide, k, instant = false) {
+    $$('[data-step]', slide).forEach((el) => el.classList.toggle('shown', +el.dataset.step <= k));
+    $$('[data-on]', slide).forEach((el) => el.classList.toggle('on', +el.dataset.on <= k));
+    emit(slide, 'step', { step: k, instant });
+  }
+
+  function update() {
+    progress.style.width = `${index / (slides.length - 1) * 100}%`;
+    counter.textContent = index ? `${index + 1} / ${slides.length}` : '';
+    history.replaceState(null, '', `#${index + 1}.${step}`);
+  }
+
+  function setInstantly(slide, k) {
+    slide.classList.add('no-trans');
+    applyStep(slide, k, true);
+    void slide.offsetWidth;
+    slide.classList.remove('no-trans');
+  }
+
+  function go(newIndex, newStep, instant = false) {
+    newIndex = Math.max(0, Math.min(slides.length - 1, newIndex));
+    const slide = slides[newIndex];
+    const k = Math.max(0, Math.min(maxStep(slide), newStep));
+    if (newIndex > 0 && !started) started = Date.now();
+    if (newIndex !== index || instant) {
+      const jump = instant || Math.abs(newIndex - index) > 1;
+      if (jump) deck.classList.add('instant');
+      if (newIndex !== index) emit(slides[index], 'leave');
+      setInstantly(slide, k);
+      slides.forEach((s, i) => {
+        s.classList.toggle('past', i < newIndex);
+        s.classList.toggle('current', i === newIndex);
+        s.classList.toggle('future', i > newIndex);
+      });
+      index = newIndex;
+      step = k;
+      emit(slide, 'enter');
+      if (jump) {
+        void deck.offsetWidth;
+        deck.classList.remove('instant');
+      }
+    } else {
+      index = newIndex;
+      step = k;
+      applyStep(slide, k);
+    }
+    update();
+  }
+
+  function next() {
+    const slide = slides[index];
+    if (step < maxStep(slide)) {
+      step += 1;
+      applyStep(slide, step);
+      update();
+    } else if (index < slides.length - 1) {
+      go(index + 1, 0);
+    }
+  }
+
+  function prev() {
+    const slide = slides[index];
+    if (step > 0) {
+      step -= 1;
+      applyStep(slide, step);
+      update();
+    } else if (index > 0) {
+      go(index - 1, Infinity);
+    }
+  }
+
+  document.addEventListener('keydown', (e) => {
+    if (e.target.matches && e.target.matches('input')) e.target.blur();
+    if (/^[0-9]$/.test(e.key) && slides[index].id === 's-live' && board.isOpen()) { board.digit(e.key); return; }
+    if (['ArrowDown', 'ArrowRight', 'PageDown'].includes(e.key) || e.code === 'Space') { e.preventDefault(); next(); }
+    else if (['ArrowUp', 'ArrowLeft', 'PageUp'].includes(e.key)) { e.preventDefault(); prev(); }
+    else if (e.code === 'KeyF') {
+      if (document.fullscreenElement) document.exitFullscreen();
+      else document.documentElement.requestFullscreen();
+    } else if (e.code === 'KeyL') laser.toggle();
+    else if (e.code === 'KeyT') { if (!started) started = Date.now(); timerEl.classList.toggle('show'); }
+    else if (e.code === 'KeyH' || e.key === '?') $('#help').classList.toggle('show');
+    else if (e.code === 'KeyX') {
+      const live = slides.findIndex((sl) => sl.id === 's-live');
+      const away = index !== live;
+      if (away || step < 3) {
+        go(live, 3);
+        setTimeout(() => secret.next(away), away ? 450 : 650);
+      } else secret.next(false);
+    }
+  });
+
+  window.addEventListener('resize', fit);
+  function goToHash() {
+    const [slideNo, stepNo] = (location.hash.slice(1) || '1.0').split('.').map(Number);
+    go((slideNo || 1) - 1, stepNo || 0, true);
+  }
+  window.addEventListener('hashchange', goToHash);
+
+  fit();
+  goToHash();
+})();
+</script>
+</body>
+</html>
